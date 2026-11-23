@@ -584,8 +584,11 @@ class Game {
     const moving = Math.hypot(move.x, move.y) > 0.1;
     this.player.update(dt, move, this.rig.yaw, w, null, (k) => this.audio.footstep(w.audio.footstep, k));
     // the camera swings behind the explorer while walking, but not when walking backward (S): the explorer turns to face
-    // the camera and walks straight towards it, instead of the camera chasing round in a circle
-    const follow = moving && move.y > -0.1;
+    // the camera and walks straight towards it, instead of the camera chasing round in a circle. It also waits until the
+    // explorer has finished turning to its walking direction (e.g. S then W), so it doesn't wobble while the heading sweeps round.
+    const turnLeft = Math.atan2(this.player.moveDir.x, this.player.moveDir.z) - this.player.heading;
+    const turned = Math.abs(Math.atan2(Math.sin(turnLeft), Math.cos(turnLeft))) < 0.35;
+    const follow = moving && move.y > -0.1 && turned;
     this.rig.update(dt, this.player, look, w.heightAt, follow, t - this.input.lastLookTime, w.colliders);
     // With the map open (you can't walk then), turning the camera (right side of the screen / mouse) also turns the
     // explorer to face where the camera looks, so the map's arrow (the explorer's heading) turns with it.
