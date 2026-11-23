@@ -225,7 +225,7 @@ export function createSnowStorms({ scene, heightAt, createParticles, density = 1
               [1568, 2093, 2637].forEach((f, i) => audio.tone({ freq: f, type: 'triangle', dur: 0.5, gain: 0.05, when: 0.05 + i * 0.06 }));
               if (ctx.growl) setTimeout(() => audio.growl(ctx.growl, 1), 450);
             }
-            if (!toldStorm && ctx.hud) { toldStorm = true; ctx.hud.toast('Snow storm! The Yeti can sense you — get out of the storm', 3800); }
+            if (!toldStorm && ctx.hud) { toldStorm = true; ctx.hud.toast('Snow storms... make the Yeti so hungry!', 3800); }
             break;
           }
         }

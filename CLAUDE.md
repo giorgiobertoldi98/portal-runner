@@ -8,6 +8,7 @@ This repo is the only home of the project: the code and `docs/NOTES.md` here are
 - `docs/NOTES.md` is the living design + technical reference. Read it before working on anything.
 - Keep it updated in the same commit as any change to behaviour, tuning, layout or architecture.
 - It describes **the current state only**: no history, no "previously", no references to past implementations. Git history is the changelog.
+- Its **Design principles** section collects the general principles behind the game. Whenever a general principle comes up (stated by Giorgio, or implied by feedback that goes beyond one feature), add it there in the same commit, and follow every principle listed when designing anything new.
 
 @docs/NOTES.md
 
@@ -26,13 +27,20 @@ This repo is the only home of the project: the code and `docs/NOTES.md` here are
 
 ## Non-negotiables (details in NOTES.md)
 - Landscape only, on mobile and PC. No portrait layouts; portrait shows the rotate notice.
-- Every visible change must look right at 667×375, 932×430, 1024×768 (touch emulated), 1280×720, 1920×1080 and ~820×760. Screenshot these (e.g. with Playwright) and check for overlap, clipping and unwanted scrolling before calling a change done.
+- Think flexibly about screen sizes from the start (relative units, no fixed assumptions), but only check two while developing: a standard PC (1280×720) and a standard smartphone held sideways (667×375, touch emulated). Check for overlap, clipping and unwanted scrolling before calling a change done. Wider coverage (tablets, large monitors, near-square windows) is a pass for the end of development.
 - Every build must work on mobile (touch) and PC (keyboard + mouse).
 - One game mode, no difficulty levels, no stamina, no speed ramps over time; speeds are fractions of V.
 - Never show level numbers to the player; worlds are named only.
 - Fun but not impossible.
 
+- Prompt visually rather than with toasts; keep toasts few, short and suggestive (see Design principles in NOTES.md). Whenever the game prompts the player to open a tool or press something, it also shows an arrow pointing at it and one or two plain words.
+
+## Code quality
+- Keep the code clean and easy to read, with concise, understandable comments (say why, not what the line already says).
+- As development goes on, notice when something would clearly benefit from being modularised for reuse or decoupling, and do it, without overdoing it: no abstractions for a single use.
+
 ## Working style
 - Before a large change, state the plan briefly. Challenge design ideas when they conflict with the rules above or seem likely to make the game less fun.
 - Commit in small, descriptive commits. Run the game and check the browser console for errors before committing.
 - Never commit or merge to main. You can merge to the dev branch only if I tell you explictly. For new features / developments, branch off dev and when you think you are done, open a pr to dev which I must always approve
+- When a piece of work is finished, remind me or propose merging into dev (and open the PR), unless there is certainly more to do first.

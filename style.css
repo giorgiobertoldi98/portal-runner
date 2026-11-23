@@ -28,15 +28,23 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #05060c; col
 #banner-name { font-family: Cinzel, serif; font-weight: 800; font-size: clamp(28px, 6vw, 56px); letter-spacing: .08em; color: #fff; text-shadow: 0 0 24px var(--accent), 0 2px 8px rgba(0, 0, 0, .6); }
 #banner-tag { margin-top: 6px; font-size: clamp(13px, 2.2vw, 16px); opacity: .9; text-shadow: 0 1px 6px rgba(0, 0, 0, .7); padding: 0 20px; }
 
-#toast { position: absolute; top: 34%; left: 50%; transform: translateX(-50%); padding: 8px 16px; border-radius: 18px; max-width: min(92vw, 560px); width: max-content; text-align: center; background: var(--panel); border: 1px solid var(--line); font-weight: 600; font-size: 14px; opacity: 0; transition: opacity .4s; }
-#toast.show { opacity: 1; }
+/* toasts: one short line centred just below the HUD's top row (clear of the world chip however wide it grows), in the chip's style (panel,
+   thin border, small type), with a dot in the world's colour. It slides down a touch as it fades in. */
+#toast { position: absolute; z-index: 4; top: calc(max(10px, env(safe-area-inset-top)) + 56px); left: 50%; transform: translate(-50%, -6px);
+  display: flex; align-items: center; gap: 8px; width: max-content; max-width: min(64vw, 520px); padding: 7px 13px 7px 11px;
+  border-radius: 11px; background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  font: 500 13px/1.35 Inter, sans-serif; letter-spacing: .01em; text-wrap: balance; pointer-events: none;
+  opacity: 0; transition: opacity .45s, transform .45s; }
+#toast::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 #vignette { position: fixed; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at center, transparent 45%, rgba(190, 0, 20, .55) 100%); transition: opacity .15s; }
 #fade { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .55s ease; z-index: 5; }
 #fade.on { opacity: 1; }
 
-/* the explorer's tools: journal / map (same spot), drop a gem, and the contextual action (e.g. take the map).
-   PC: a row of labelled pills at the bottom centre. Touch: a column of round buttons just above the look pad. */
+/* the explorer's tools: your items (note, map, ...), drop a gem, and the contextual action (e.g. take the map).
+   PC: a slot bar of items, then labelled pills, at the bottom centre. Touch: buttons in the right-hand gutter, above
+   the look pad: the action at the bottom, then drop, then the items, which wrap into new columns to the left. */
 #tools { position: absolute; z-index: 4; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; align-items: center; gap: 10px; pointer-events: none; }
 .tool { display: none; position: relative; pointer-events: auto; align-items: center; justify-content: center; gap: 8px; padding: 9px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: #fff; font: 600 14px Inter, sans-serif; cursor: pointer; touch-action: none; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .tool.show { display: flex; animation: toolin .22s ease-out; }
@@ -45,7 +53,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #05060c; col
 .tool kbd { font: 700 11px Inter, sans-serif; padding: 2px 6px; border-radius: 6px; background: rgba(255, 255, 255, .14); }
 .tool .ico { display: contents; }
 .tool .n { display: none; }
-#btn-journal { color: #f3e2bf; border-color: rgba(243, 226, 191, .45); }
+#btn-note { color: #f3e2bf; border-color: rgba(243, 226, 191, .45); }
 #btn-map { color: #ffd28a; border-color: rgba(255, 196, 107, .5); }
 /* the drop tool takes the colour of this world's gems (--gem, set at each level start) */
 #btn-drop { color: color-mix(in srgb, var(--gem, #ff2d95) 55%, white); border-color: color-mix(in srgb, var(--gem, #ff2d95) 50%, transparent); }
@@ -53,10 +61,25 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #05060c; col
 .tool.act { color: #ffe6b8; border-color: #ffc46b; background: rgba(70, 46, 14, .72); box-shadow: 0 0 18px rgba(255, 196, 107, .45); animation: toolin .22s ease-out, actpulse 1.6s ease-in-out .22s infinite; }
 @keyframes actpulse { 50% { box-shadow: 0 0 4px rgba(255, 196, 107, .2); } }
 .tool.fresh { animation: toolin .22s ease-out, mapfresh 1.2s ease-out 3; }
-/* a tool calling for attention until it's used (the journal at the start of a world): a slow glow that keeps going */
+/* a tool calling for attention until it's used (the note at the start of a world): a slow glow that keeps going */
 .tool.attn { animation: toolin .22s ease-out, attn 1.6s ease-in-out .22s infinite; border-color: #ffd28a; }
 @keyframes attn { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 210, 138, .75), 0 0 14px rgba(255, 210, 138, .45); } 60% { box-shadow: 0 0 0 12px rgba(255, 210, 138, 0), 0 0 22px rgba(255, 210, 138, .7); } }
 .tool .tl { white-space: nowrap; }
+/* items. PC: a slot bar; slots have the size and look of the system buttons, the selected one is ringed in the world's
+   colour and carries a label above the bar for a moment (name, Tab, and the wheel when there's more than one) */
+#items { position: relative; display: flex; align-items: center; gap: 6px; }
+#items.none { display: none; }
+body:not(.touch) #items .tool { width: 40px; height: 40px; padding: 0; border-radius: 12px; }
+body:not(.touch) #items .tool:not(.sel):not(:hover) { opacity: .7; }
+body:not(.touch) #items .tool.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 12px color-mix(in srgb, var(--accent) 40%, transparent); }
+body:not(.touch) #items .tool.sel.attn { box-shadow: none; }
+#items .tool .tl { display: none; }
+#items .tool .k { position: absolute; right: 4px; bottom: 2px; font: 700 9px/1 Inter, sans-serif; font-style: normal; opacity: .55; }
+#item-label { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); display: flex; align-items: center; gap: 7px; padding: 4px 10px; border-radius: 99px; background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font: 600 12px Inter, sans-serif; white-space: nowrap; opacity: 0; transition: opacity .3s; pointer-events: none; }
+#item-label kbd { font: 700 10px Inter, sans-serif; padding: 2px 5px; border-radius: 5px; background: rgba(255, 255, 255, .14); }
+#item-label .wheel { display: none; opacity: .7; }
+#items.many #item-label .wheel { display: block; }
+#item-label.show, #items.attn #item-label { opacity: 1; }
 /* touch: one right-hand gutter (--edge) shared with the sound / pause buttons and the turn pad, so the tools sit in a
    column right above the pad, the same size and shape as the buttons at the top */
 body.touch #hud { --edge: calc(14px + env(safe-area-inset-right)); }
@@ -67,12 +90,26 @@ body.touch .tool kbd { display: none; }
 body.touch .tool .tl { position: absolute; right: calc(100% + 8px); top: 50%; transform: translateY(-50%); padding: 4px 9px; border-radius: 99px; background: var(--panel); border: 1px solid var(--line); color: #fff; font: 600 12px Inter, sans-serif; opacity: 0; pointer-events: none; }
 body.touch .tool.fresh .tl { animation: tlshow 3.6s ease forwards; }
 body.touch .tool.attn .tl { animation: none; opacity: 1; }
+/* every prompt to use something also carries an arrow pointing at it: beside a touch button, above the PC slot bar
+   (on its label) and above the action pill, nudging gently */
+body.touch .tool.attn .tl::after { content: '→'; display: inline-block; margin-left: 6px; animation: nudge-x 1s ease-in-out infinite; }
+#items.attn #item-label::after { content: '↓'; display: inline-block; animation: nudge-y 1s ease-in-out infinite; }
+.tool.act::after { content: '↓'; position: absolute; left: 50%; bottom: calc(100% + 2px); margin-left: -6px; font-size: 18px; line-height: 1; color: #ffc46b; animation: nudge-y 1s ease-in-out infinite; }
+body.touch .tool.act::after { content: '→'; left: auto; bottom: auto; right: calc(100% + 6px); top: 50%; margin: -9px 0 0; animation-name: nudge-x; }
+@keyframes nudge-x { 50% { transform: translateX(4px); } }
+@keyframes nudge-y { 50% { transform: translateY(4px); } }
 @keyframes tlshow { 0% { opacity: 0; } 8%, 80% { opacity: 1; } 100% { opacity: 0; } }
 /* the contextual action always says what it does */
 body.touch .tool.act { width: auto; height: 40px; padding: 0 14px 0 11px; border-radius: 12px; }
 body.touch .tool.act .tl { position: static; transform: none; opacity: 1; padding: 0; border: 0; background: none; color: inherit; font-size: 14px; }
 body.touch .tool .n { display: block; position: absolute; top: -5px; right: -5px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 10px; background: var(--gem, #ff2d95); color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .55); font: 700 11px/19px Inter, sans-serif; text-align: center; box-shadow: 0 0 8px color-mix(in srgb, var(--gem, #ff2d95) 70%, transparent); }
 body.touch .tool .n:empty { display: none; }
+/* touch items: a tap holds one up. They fill a column of up to --max-rows (main.js sets --rows), then wrap into new
+   columns to the left, so they never climb into the sound / pause buttons */
+body.touch #items { --max-rows: 4; display: grid; grid-auto-flow: column; grid-template-rows: repeat(var(--rows, 1), auto); direction: rtl; gap: 8px; }
+body.touch #items.none, body.touch #item-label, body.touch #items .tool .k { display: none; }
+body.touch #items > * { direction: ltr; }
+body.touch #items .tool .tl { display: block; }
 
 /* touch controls: always visible while playing on touch screens */
 #joystick, #lookpad { display: none; position: absolute; pointer-events: none; z-index: 4; }
@@ -146,6 +183,7 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
   .gems .gem-icon { width: 19px; height: 19px; }
   .gems .unit { font-size: 12px; }
   .gems .carry { font-size: 12px; }
+  #toast { top: calc(max(14px, env(safe-area-inset-top)) + 70px); font-size: 14px; }
 }
 
 /* carried-gems badge beside the count */
@@ -169,9 +207,10 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
   body.touch #tools { bottom: calc(126px + env(safe-area-inset-bottom)); gap: 6px; }
   body.touch .tool { width: 36px; height: 36px; border-radius: 10px; }
   body.touch .tool.act { height: 36px; border-radius: 10px; }
+  body.touch #items { --max-rows: 2; gap: 6px; }
   #banner { top: 12%; }
   #banner-name { font-size: clamp(24px, 5vw, 40px); }
-  #toast { top: 24%; font-size: 13px; padding: 6px 14px; }
+  #toast { top: calc(max(8px, env(safe-area-inset-top)) + 56px); font-size: 12px; padding: 6px 11px 6px 9px; }
   #call-chip { top: auto; bottom: calc(16px + env(safe-area-inset-bottom)); }
 }
 
@@ -245,7 +284,7 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 /* the map tool's glow when it first appears */
 @keyframes mapfresh { 0% { box-shadow: 0 0 0 0 rgba(255, 196, 107, .8); } 100% { box-shadow: 0 0 0 14px rgba(255, 196, 107, 0); } }
 
-/* ── held items (the map, a journal page): held up almost full screen, inset by a thin border of world (--held-m),
+/* ── held items (the map, a note): held up almost full screen, inset by a thin border of world (--held-m),
    so their proportions follow the screen's. While one is open you can't walk: the HUD steps aside except the
    pads the item keeps (both, the turn pad only, or none), and toasts sit on the item's top edge. Only the corner
    controls take clicks; drags pass through to the pads. */
@@ -296,31 +335,18 @@ body.holding #toast { z-index: 5; top: calc(max(var(--held-m), env(safe-area-ins
 #map-view .lg-hole::before { width: 15px; height: 15px; margin: -1px -1px -1px -1.5px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-10.5 -10.5 21 21'%3E%3Cpath d='M1.00%2C0.00 L1.12%2C0.23 L1.18%2C0.50 L1.17%2C0.80 L1.09%2C1.12 L0.92%2C1.43 L0.67%2C1.71 L0.34%2C1.95 L-0.06%2C2.12 L-0.51%2C2.20 L-1.00%2C2.18 L-1.49%2C2.05 L-1.98%2C1.81 L-2.42%2C1.45 L-2.79%2C0.99 L-3.07%2C0.44 L-3.23%2C-0.19 L-3.27%2C-0.86 L-3.16%2C-1.56 L-2.89%2C-2.24 L-2.48%2C-2.88 L-1.93%2C-3.43 L-1.25%2C-3.88 L-0.47%2C-4.19 L0.38%2C-4.34 L1.28%2C-4.32 L2.17%2C-4.10 L3.03%2C-3.69 L3.82%2C-3.11 L4.48%2C-2.35 L4.99%2C-1.45 L5.32%2C-0.44 L5.44%2C0.64 L5.34%2C1.75 L5.01%2C2.85 L4.45%2C3.88 L3.67%2C4.79 L2.71%2C5.55 L1.59%2C6.12 L0.35%2C6.45 L-0.96%2C6.53 L-2.29%2C6.34 L-3.57%2C5.88 L-4.76%2C5.16 L-5.81%2C4.19 L-6.65%2C3.01 L-7.25%2C1.66 L-7.58%2C0.19 L-7.60%2C-1.35 L-7.31%2C-2.88 L-6.71%2C-4.35 L-5.81%2C-5.70 L-4.64%2C-6.85 L-3.24%2C-7.77 L-1.66%2C-8.40 L0.04%2C-8.70 L1.79%2C-8.66 L3.53%2C-8.26 L5.18%2C-7.50 L6.67%2C-6.42 L7.93%2C-5.04 L8.91%2C-3.42 L9.55%2C-1.60 L9.81%2C0.33' fill='none' stroke='rgb%2830%2C90%2C140%29' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; }
 #map-view .map-compass { width: clamp(44px, 9vmin, 76px); height: auto; color: #3a2a1c; opacity: .85; }
 
-/* the journal page: picture on the left, words on the right; stacked on squarer screens */
+/* the note: the picture on the left, its one line on the right; stacked on squarer screens */
 #briefing.hidden { display: none; }
-#briefing .brief-page { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: clamp(14px, 3vw, 40px); row-gap: 4px;
+#briefing .brief-page { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: center; column-gap: clamp(14px, 3vw, 40px);
   padding: clamp(12px, 3vmin, 30px) clamp(14px, 3.4vmin, 36px); border-radius: 6px 10px 8px 12px; color: #3a2c20;
   background: radial-gradient(ellipse at 30% 20%, rgba(255, 250, 238, .7), transparent 60%), radial-gradient(ellipse at 85% 85%, rgba(170, 120, 60, .12), transparent 50%), linear-gradient(160deg, #f2e7cf, #e6d6b4);
   box-shadow: 0 18px 50px rgba(0, 0, 0, .5), inset 0 0 50px rgba(120, 86, 40, .24), inset 0 0 0 1px rgba(90, 60, 30, .25); }
-#briefing .brief-head { grid-column: 2; grid-row: 1; padding-right: 50px; }
-#briefing .brief-kicker { font: 700 clamp(10px, 1.8vmin, 13px) Inter, sans-serif; letter-spacing: .18em; text-transform: uppercase; color: #8a6a44; }
-#briefing h2 { margin: 2px 0 0; font: 700 clamp(26px, 5.4vmin, 46px)/1.05 Caveat, 'Segoe Print', cursive; color: #2f2219; }
-#briefing .brief-image { grid-column: 1; grid-row: 1 / 3; min-height: 0; overflow: hidden; display: grid; place-items: center; border-radius: 4px; }
+#briefing .brief-image { height: 100%; min-height: 0; overflow: hidden; display: grid; place-items: center; border-radius: 4px; }
 #briefing .brief-image svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 3px 6px rgba(80, 56, 28, .28)); transform: rotate(-.8deg); }
-#briefing .brief-side { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; justify-content: flex-start; padding-top: clamp(4px, 1.6vmin, 16px); padding-right: 50px; }
-#briefing .brief-text { margin: 0 0 8px; font: 500 clamp(13px, 2.3vmin, 18px)/1.45 Inter, sans-serif; color: #3a2c20; }
-#briefing .brief-again { font: 500 clamp(11px, 1.8vmin, 14px) Inter, sans-serif; color: #8a6a44; }
-/* PC: the words sit as one block beside the picture, centred on it (on touch they stay high, clear of the turn pad) */
-body:not(.touch) #briefing .brief-page { grid-template-rows: 1fr auto auto 1fr; }
-body:not(.touch) #briefing .brief-head { grid-row: 2; }
-body:not(.touch) #briefing .brief-side { grid-row: 3; }
-body:not(.touch) #briefing .brief-image { grid-row: 1 / 5; }
+#briefing .brief-text { margin: 0; padding-right: 50px; font: 700 clamp(24px, 5vmin, 40px)/1.15 Caveat, 'Segoe Print', cursive; color: #2f2219; }
 @media (max-aspect-ratio: 3/2) {
-  body #briefing.held-item .brief-page { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; }
-  body #briefing.held-item .brief-head { grid-column: 1; grid-row: 1; }
-  body #briefing.held-item .brief-image { grid-column: 1; grid-row: 2; }
-  body #briefing.held-item .brief-side { grid-column: 1; grid-row: 3; padding-right: 0; padding-bottom: 4px; }
-  body.touch #briefing .brief-side { padding-right: 110px; }
+  body #briefing.held-item .brief-page { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  body #briefing.held-item .brief-text { padding-right: 0; padding-bottom: 4px; text-align: center; }
 }
 
 /* landscape only: a screen taller than it is wide is covered by this notice (and a run in progress pauses) */
