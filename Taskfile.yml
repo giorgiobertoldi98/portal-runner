@@ -26,3 +26,29 @@ tasks:
     desc: Serve the repo root without opening the browser
     cmds:
       - uv run --no-project python -m http.server {{.PORT}}
+
+  start:
+    desc: Start the game server in the background and open the browser
+    cmds:
+      - task: stop
+      - cmd: powershell -NoProfile -Command 'Start-Process -WindowStyle Hidden -FilePath uv -ArgumentList "run --no-project python -m http.server {{.PORT}}"'
+        platforms: [windows]
+      - cmd: nohup uv run --no-project python -m http.server {{.PORT}} >/dev/null 2>&1 &
+        platforms: [linux, darwin]
+      - cmd: cmd /c start "" http://localhost:{{.PORT}}
+        platforms: [windows]
+      - cmd: open http://localhost:{{.PORT}}
+        platforms: [darwin]
+        ignore_error: true
+      - cmd: xdg-open http://localhost:{{.PORT}}
+        platforms: [linux]
+        ignore_error: true
+
+  stop:
+    desc: Stop the game server (whatever is listening on PORT)
+    cmds:
+      - cmd: powershell -NoProfile -Command 'Get-NetTCPConnection -LocalPort {{.PORT}} -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }; exit 0'
+        platforms: [windows]
+      - cmd: lsof -ti tcp:{{.PORT}} | xargs -r kill
+        platforms: [linux, darwin]
+        ignore_error: true
