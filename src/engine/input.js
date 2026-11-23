@@ -19,6 +19,7 @@ export class Input {
     this.lookpadEl = document.getElementById('lookpad');
     this.enabled = false;
     this.locked = false;
+    this.mouseTravel = 0;       // how far the mouse has turned the camera (px): a real turn, not a jitter or the click that locks the pointer, marks a mouse player
     this.holding = false;
     this.hold = { move: true, look: true, zoom: false };
     this.touches = new Map();   // touch pointers down, for pinching
@@ -35,6 +36,7 @@ export class Input {
     addEventListener('blur', () => this.keys.clear());
     addEventListener('wheel', (e) => {
       const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
+      if (this.enabled) this.mouseTravel += 200;   // scrolling the wheel in a run is a mouse player for sure
       if (!this.holding) {
         // one step per mouse notch; a trackpad's small deltas add up to one (main.js reads them only during a run)
         this.wheelAcc += dy;
@@ -52,7 +54,7 @@ export class Input {
     addEventListener('pointercancel', (e) => this.onUp(e));
     document.addEventListener('pointerlockchange', () => { this.locked = document.pointerLockElement === canvas; });
     addEventListener('mousemove', (e) => {
-      if (this.locked && this.enabled) this.addLook(e.movementX, e.movementY);
+      if (this.locked && this.enabled) { this.mouseLook(e.movementX, e.movementY); }
     });
     this.canvas = canvas;
   }
@@ -61,6 +63,13 @@ export class Input {
     this.look.dx += dx; this.look.dy += dy;
     this.lastLookTime = performance.now() / 1000;
   }
+
+  mouseLook(dx, dy) {
+    this.mouseTravel += Math.abs(dx) + Math.abs(dy);
+    this.addLook(dx, dy);
+  }
+  // playing with the mouse (prompts say "Click" and show the wheel) rather than the keyboard alone (Enter, 1–9)
+  get usedMouse() { return this.mouseTravel > 120; }
 
   onDown(e) {
     if (!this.enabled) return;
@@ -119,7 +128,7 @@ export class Input {
       }
     }
     if (this.mouseDrag && e.pointerType === 'mouse' && !this.locked) {
-      this.addLook(e.clientX - this.mouseDrag.x, e.clientY - this.mouseDrag.y);
+      this.mouseLook(e.clientX - this.mouseDrag.x, e.clientY - this.mouseDrag.y);
       this.mouseDrag.x = e.clientX; this.mouseDrag.y = e.clientY;
     }
     if (this.joy.id === e.pointerId) {
@@ -170,6 +179,14 @@ export class Input {
     this.zoomF = 1;
     this.wheelAcc = 0;
     this.wheelSteps = 0;
+  }
+
+  // While an item that lets you turn but not walk is held up (the map), ← / → turn the camera instead (keyboard
+  // players have no other way to point themselves). Called once per frame.
+  keyLook(dt) {
+    if (!this.holding || !this.hold.look || this.hold.move) return;
+    const x = (this.keys.has('ArrowRight') ? 1 : 0) - (this.keys.has('ArrowLeft') ? 1 : 0);
+    if (x) this.addLook(x * 480 * dt, 0);   // about 2 rad/s (see cameraRig)
   }
 
   consumeLook() {

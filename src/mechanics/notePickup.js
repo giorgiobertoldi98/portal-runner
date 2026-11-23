@@ -5,19 +5,21 @@ import * as THREE from 'three';
 import { softTexture, flatMat } from '../engine/utils.js';
 
 const REACH = 2.2;        // how close you must be for the action to appear (m)
-const DISTANCE = 4.5;     // how far from the spawn point the note lies (m)
+const FLOAT = 1.0;        // how high it hovers above the snow (m)
+const DISTANCE = 4.5;    // how far from the spawn point the note lies (m)
 
 export function createNotePickup({ scene, heightAt }) {
-  // a slightly curled sheet of paper, with a few ink lines, and a soft glow on the snow around it
+  // a sheet of paper floating above the snow, turning slowly and bobbing, in a warm amber that stands out against
+  // white, with a glow around it
   const group = new THREE.Group();
-  const paper = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.012, 0.72), flatMat({ color: 0xf1e6cc, emissive: 0x7a5a28, emissiveIntensity: 0.5 }));
-  paper.rotation.set(0.05, 0.4, -0.04);
-  paper.castShadow = true;
-  group.add(paper);
-  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTexture(), color: 0xffc46b, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
-  halo.scale.set(2, 2, 1);
-  halo.position.y = 0.25;
-  group.add(halo);
+  const paper = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.014, 0.82), flatMat({ color: 0xf2a33a, emissive: 0xc2661a, emissiveIntensity: 0.7 }));
+  // no shadow: it floats, and a dark patch moving over the snow beneath it is distracting
+  const bob = new THREE.Group();   // the paper and its glow float together
+  bob.add(paper);
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTexture(), color: 0xffa844, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+  halo.scale.set(2.6, 2.6, 1);
+  bob.add(halo);
+  group.add(bob);
   group.visible = false;
   scene.add(group);
 
@@ -44,7 +46,9 @@ export function createNotePickup({ scene, heightAt }) {
 
     update(t, player) {
       if (!group.visible) { canTake = false; return; }
-      halo.material.opacity = 0.45 + 0.2 * Math.sin(t * 2.4);
+      halo.material.opacity = 0.5 + 0.2 * Math.sin(t * 2.4);
+      bob.position.y = FLOAT + 0.12 * Math.sin(t * 1.6);
+      paper.rotation.set(0.18 * Math.sin(t * 1.1), t * 0.7, 0.12 * Math.sin(t * 0.9));
       canTake = Math.hypot(group.position.x - player.x, group.position.z - player.z) < REACH;
     },
 

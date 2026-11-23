@@ -22,10 +22,10 @@
 //       canCall?() -> bool,            //   false = the Resonance Call is silent (glacier: always)
 //       introHint?(touch) -> string,   //   a toast: the first hint of the level
 //       hasMap?() -> bool, mapMarks?() -> { hole },     //   a map among your items (true once found), drawn from world.mapInfo
-//       action?() -> { id, label, icon } | null, doAction?(ctx),   // a contextual action (E / the action button),
+//       action?() -> { id, label, icon } | null, doAction?(ctx),   // a contextual action (Space / the action button),
 //                                      //   e.g. taking the glacier's map from its crate
 //       briefing?(touch) -> { kicker, title, image (SVG markup), text } | null,
-//                                      //   a note: one of your items while non-null (note button / Tab);
+//                                      //   a note: one of your items while non-null (note button / Space);
 //                                      //   it calls for attention as the level opens and replaces introHint
 //       onRespawn?({ base, heading, player }) -> string | null,  // after being caught; the string is added to the catch toast
 //     },

@@ -12,6 +12,7 @@ import { createGem, gemMapColor } from './entities/gem.js';
 import { Monster } from './entities/monster.js';
 import { Resonance } from './entities/resonance.js';
 import { HUD } from './ui/hud.js';
+import { gemIconURL } from './ui/gemIcon.js';
 import { MapView } from './ui/mapView.js';
 import { Briefing } from './ui/briefing.js';
 import { SettingsScreen } from './ui/settingsScreen.js';
@@ -61,7 +62,7 @@ class Game {
       { id: 'map', btn: this.hud.el.mapBtn, has: () => this.hasMap(), isOpen: () => this.mapView.open, open: () => { if (!this.mapView.open) this.toggleMap(); } },
     ];
     this.items = [];     // ids, in the order found
-    this.itemSel = 0;    // the selected one (PC: the wheel or 1-9 picks it, Tab opens it)
+    this.itemSel = 0;    // the selected one (PC: the wheel or 1-9 picks it, Space opens it)
     this.rig = new CameraRig(this.camera);
     this.player = new Player();
     this.resonance = new Resonance();
@@ -126,19 +127,20 @@ class Game {
     muteBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMute(); });
     addEventListener('keydown', (e) => {
       const live = this.state === 'playing' || this.state === 'frozen';
-      // Tab: put away what you hold up, or hold up the selected item
-      if (e.code === 'Tab') {
+      // Space: put away what you hold up; else use the action within reach (take the note / map); else hold up the selected item
+      if (e.code === 'Space' && live) {
         e.preventDefault();
-        if (live && this.heldItem()) this.closeHeld();
-        else if (this.state === 'playing') this.useItem(this.items[this.itemSel]);
+        if (e.repeat) return;
+        if (this.heldItem()) this.closeHeld();
+        else if (this.state === 'playing') { if (this.hud.actId) this.actionQueued = true; else this.useItem(this.items[this.itemSel]); }
         return;
       }
       // 1-9 pick an item (while nothing is held up)
       const digit = /^(Digit|Numpad)([1-9])$/.exec(e.code);
       if (digit && this.state === 'playing' && !this.heldItem() && +digit[2] <= this.items.length) { this.selectItem(+digit[2] - 1); return; }
-      // the note: Esc, Enter or Space also put it away
+      // the note: Esc or Enter also put it away (Space does too, above)
       if (this.briefing.open && live) {
-        if (['Escape', 'Enter', 'Space', 'NumpadEnter'].includes(e.code)) { e.preventDefault(); this.closeBriefing(); return; }
+        if (['Escape', 'Enter', 'NumpadEnter'].includes(e.code)) { e.preventDefault(); this.closeBriefing(); return; }
       }
       // the open map: Esc puts it away (instead of pausing); + / − zoom it
       if (this.mapView.open && live) {
@@ -149,7 +151,6 @@ class Game {
       if (e.code === 'Escape' && this.state === 'menu' && !document.getElementById('screen-settings').classList.contains('hidden')) this.hud.showScreen('menu');
       if (e.code === 'KeyM') toggleMute();
       if ((e.code === 'KeyQ' || e.code === 'KeyG') && this.state === 'playing') this.dropQueued = true;
-      if (e.code === 'KeyE' && this.state === 'playing') this.actionQueued = true;
     });
     // tapping or clicking an item holds it up straight away (and selects it)
     for (const d of this.ITEMS) d.btn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.state === 'playing') this.useItem(d.id); });
@@ -166,13 +167,14 @@ class Game {
   toggleMap() {
     if (!this.hasMap()) return;
     if (!this.mapView.open && this.briefing.open) this.briefing.dismiss();
+    if (!this.mapView.open) this.mapView.setHint(isTouch ? 'Drag on the right to turn' : this.input.usedMouse ? 'Drag to turn' : '← → to turn');
     this.mapView.show(!this.mapView.open);
     this.syncHolding();
     this.audio.noiseBurst({ type: 'bandpass', freq: 2200, q: 1, dur: 0.22, gain: 0.07, attack: 0.01, sweepTo: this.mapView.open ? 3200 : 1200 });
   }
   // put away whatever is held up (the map, the note) without a sound: when caught, between levels, leaving the run
-  putAway() { this.mapView.show(false); this.briefing.dismiss(); this.syncHolding(); }
-  // put away the item you hold up, by hand (Tab)
+  putAway() { this.relock = false; this.mapView.show(false); this.briefing.dismiss(); this.syncHolding(); }
+  // put away the item you hold up, by hand (Space)
   closeHeld() { if (this.mapView.open) this.toggleMap(); else if (this.briefing.open) this.closeBriefing(); }
 
   // keep the items in step with what the world says you have: a new one joins the end, gets selected and glows
@@ -185,6 +187,8 @@ class Game {
     }
     this.itemSel = clamp(this.itemSel, 0, Math.max(0, this.items.length - 1));
     this.hud.setItems(this.items, this.items[this.itemSel] ?? null);
+    // the item guide shows the mouse wheel for mouse players, 1–9 for the keyboard alone
+    this.hud.setItemKeys(this.input.usedMouse);
   }
   selectItem(i) {
     const n = this.items.length;
@@ -193,7 +197,7 @@ class Game {
     this.syncItems();
     this.hud.flashItemLabel();
   }
-  // hold up an item (Tab on the selected one, or a tap / click on its button); a held-up item is put away instead
+  // hold up an item (Space on the selected one, or a tap / click on its button); a held-up item is put away instead
   useItem(id) {
     const d = this.ITEMS.find((x) => x.id === id);
     if (!d || !this.items.includes(id)) return;
@@ -218,7 +222,8 @@ class Game {
     document.body.classList.toggle('hold-look', !!item && look);
     this.input.reset();
     this.input.setHold(item ? { move, look, zoom: !!h.zoom } : null);
-    if (item) this.input.releaseLock();
+    if (item) { this.relock = this.input.locked || this.relock; this.input.releaseLock(); }
+    else if (this.relock) { this.relock = false; if (!isTouch && (this.state === 'playing' || this.state === 'frozen')) this.input.requestLock(); }   // put it away and the mouse looks again, no extra click
   }
 
   // the world's briefing card (the glacier: a note with a sketch), one of your items (see ITEMS)
@@ -361,6 +366,7 @@ class Game {
       this.resonance.setColor(def.theme.colB);
       this.player.setGemLook(def.gem);
       document.documentElement.style.setProperty('--gem', '#' + new THREE.Color(gemMapColor(def.gem)).getHexString()); // the map legend's gem colour
+      this.hud.setGemIcon(gemIconURL(this.renderer, def.gem));
       this.spawnPlayerAndMonster();
       this.insertTimer = 0;
       this.dropQueued = false; this.actionQueued = false; this.hud.setAction(null);
@@ -579,6 +585,7 @@ class Game {
     const w = this.world;
     const P = this.player.position;
     this.time += dt;
+    this.input.keyLook(dt);
     const look = this.input.consumeLook();
     const move = this.input.getMove();
     const moving = Math.hypot(move.x, move.y) > 0.1;
@@ -610,7 +617,7 @@ class Game {
         enabled: !w.portal.active, gems: this.groundGemSpots(), portal: { x: w.portal.position.x, z: w.portal.position.z }, base: this.base,
       };
       w.mechanics.update(dt, t, mctx);
-      // a contextual action within reach (the glacier: take the map from its crate), used with E or the action button
+      // a contextual action within reach (the glacier: take the map from its crate), used with Space, a click or the action button
       const act = w.mechanics.action ? w.mechanics.action() : null;
       if (this.actionQueued) { this.actionQueued = false; if (act && w.mechanics.doAction) w.mechanics.doAction(mctx); }
       this.hud.setAction(w.mechanics.action ? w.mechanics.action() : null);
