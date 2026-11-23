@@ -91,10 +91,7 @@ body:not(.touch) #tools { bottom: calc(34px + env(safe-area-inset-bottom)); }   
 #items.many #item-keys .open::before { content: '·'; margin-right: 4px; opacity: .5; }
 #item-keys kbd { font: 700 10px Inter, sans-serif; color: #fff; padding: 2px 5px; border-radius: 5px; background: rgba(255, 255, 255, .15); }
 #item-keys svg { opacity: .9; }
-/* mouse players pick with the wheel, keyboard-only players with 1–9; everyone opens with Space */
-#item-keys .m { display: none; }
-#item-keys.mouse .m { display: block; }
-#item-keys.mouse .k { display: none; }
+/* pick with the wheel (once there are several), open with Space */
 #item-keys .pick { display: none; }
 #items.many #item-keys .pick { display: flex; }
 body.touch #item-keys { display: none; }
