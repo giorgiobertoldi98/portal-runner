@@ -181,6 +181,14 @@ export class Input {
     this.wheelSteps = 0;
   }
 
+  // While an item that lets you turn but not walk is held up (the map), ← / → turn the camera instead (keyboard
+  // players have no other way to point themselves). Called once per frame.
+  keyLook(dt) {
+    if (!this.holding || !this.hold.look || this.hold.move) return;
+    const x = (this.keys.has('ArrowRight') ? 1 : 0) - (this.keys.has('ArrowLeft') ? 1 : 0);
+    if (x) this.addLook(x * 480 * dt, 0);   // about 2 rad/s (see cameraRig)
+  }
+
   consumeLook() {
     const l = { dx: this.look.dx, dy: this.look.dy };
     this.look.dx = this.look.dy = 0;

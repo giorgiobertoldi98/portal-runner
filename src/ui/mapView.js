@@ -32,7 +32,8 @@ export class MapView {
     this.el.className = 'held-item';
     this.el.innerHTML = '<div class="scroll"><i class="rod"></i><div class="sheet">'
       + '<div class="map-side map-side-l"><div class="map-title"></div><i class="map-rule"></i>'
-      + '<ul class="map-legend"><li class="lg-you">You</li><li class="lg-gem">Gems</li><li class="lg-portal">Portal</li><li class="lg-hole">Ice hole</li></ul></div>'
+      + '<ul class="map-legend"><li class="lg-you">You</li><li class="lg-gem">Gems</li><li class="lg-portal">Portal</li><li class="lg-hole">Ice hole</li></ul>'
+      + '<p class="map-hint"></p></div>'
       + '<div class="map-chart"><canvas></canvas></div>'
       + '<div class="map-side map-side-r">' + COMPASS + '</div>'
       + '</div><i class="rod"></i></div>';
@@ -58,6 +59,9 @@ export class MapView {
     this.el.classList.toggle('show', on);
     if (on) { this.layout(); this.lastT = null; }
   }
+
+  // how to turn (and so point your arrow), for the controls in use: set by main.js each time the map opens
+  setHint(text) { this.el.querySelector('.map-hint').textContent = text; }
 
   zoomBy(f) { if (f !== 1) { this.zoom.by(f); this.ctl.refresh(); } }
 
