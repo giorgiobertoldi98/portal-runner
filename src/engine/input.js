@@ -13,6 +13,7 @@ export class Input {
     this.joy = { id: null, ox: 0, oy: 0, x: 0, y: 0, active: false };
     this.lookPointer = null;
     this.mouseDrag = null;
+    this.clickWasDrag = false;
     this.joystickEl = joystickEl;
     this.knobEl = knobEl;
     this.joyRadius = 55;
@@ -75,7 +76,7 @@ export class Input {
     if (!this.enabled) return;
     if (e.pointerType === 'mouse') {
       if (this.holding && !this.hold.look) return;
-      this.mouseDrag = { x: e.clientX, y: e.clientY };
+      this.mouseDrag = { x: e.clientX, y: e.clientY, moved: 0 };
       return;
     }
     // touch / pen
@@ -128,6 +129,7 @@ export class Input {
       }
     }
     if (this.mouseDrag && e.pointerType === 'mouse' && !this.locked) {
+      this.mouseDrag.moved += Math.abs(e.clientX - this.mouseDrag.x) + Math.abs(e.clientY - this.mouseDrag.y);
       this.mouseLook(e.clientX - this.mouseDrag.x, e.clientY - this.mouseDrag.y);
       this.mouseDrag.x = e.clientX; this.mouseDrag.y = e.clientY;
     }
@@ -144,7 +146,7 @@ export class Input {
   }
 
   onUp(e) {
-    if (e.pointerType === 'mouse') this.mouseDrag = null;
+    if (e.pointerType === 'mouse') { this.clickWasDrag = !!this.mouseDrag && this.mouseDrag.moved > 6; this.mouseDrag = null; }   // a drag to look isn't a click
     this.touches.delete(e.pointerId);
     if (this.touches.size < 2) this.pinchD = 0;
     if (this.joy.id === e.pointerId) {

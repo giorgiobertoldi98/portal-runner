@@ -158,7 +158,8 @@ class Game {
     document.getElementById('btn-act').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.state === 'playing') this.actionQueued = true; });
     document.getElementById('game').addEventListener('click', () => {
       if (this.state !== 'playing' || isTouch || this.holding) return;
-      if (this.hud.actId) this.actionQueued = true;   // a click uses the action within reach (only when one is shown)
+      // a click (not the end of a drag to look) uses the action within reach, else holds up the selected item
+      if (!this.input.clickWasDrag) { if (this.hud.actId) this.actionQueued = true; else if (this.items.length) this.useItem(this.items[this.itemSel]); }
       this.input.requestLock();
     });
   }
