@@ -157,13 +157,7 @@ class Game {
     dropBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.state === 'playing') this.dropQueued = true; });
     document.getElementById('btn-act').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.state === 'playing') this.actionQueued = true; });
     document.getElementById('game').addEventListener('click', () => {
-      if (this.state !== 'playing' && this.state !== 'frozen') return;
-      if (isTouch) return;
-      if (this.holding) { if (!this.input.clickWasDrag) this.closeHeld(); return; }   // a click puts away what you hold up
-      if (this.state !== 'playing') return;
-      // a click (not the end of a drag to look) uses the action within reach, else holds up the selected item
-      if (!this.input.clickWasDrag) { if (this.hud.actId) this.actionQueued = true; else if (this.items.length) this.useItem(this.items[this.itemSel]); }
-      this.input.requestLock();
+      if (this.state === 'playing' && !isTouch && !this.holding) this.input.requestLock();
     });
   }
 
@@ -191,9 +185,8 @@ class Game {
     }
     this.itemSel = clamp(this.itemSel, 0, Math.max(0, this.items.length - 1));
     this.hud.setItems(this.items, this.items[this.itemSel] ?? null);
-    // key hints follow what you play with: the mouse (click, wheel) or the keyboard alone (Space, 1–9, Space)
-    const mouse = this.input.usedMouse;
-    this.hud.setActionKey(mouse); this.hud.setItemKeys(mouse);
+    // the item guide shows the mouse wheel for mouse players, 1–9 for the keyboard alone
+    this.hud.setItemKeys(this.input.usedMouse);
   }
   selectItem(i) {
     const n = this.items.length;
