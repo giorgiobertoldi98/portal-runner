@@ -54,6 +54,14 @@ class Game {
     this.mapView.onClose = () => { if (this.mapView.open) this.toggleMap(); };
     this.holding = false;
     this.briefing = new Briefing();
+    // Your items: things you hold up to read, gathered as you find them in a world (in that order) and kept until you
+    // leave it, whatever happens meanwhile. Each world decides what exists through its hooks (briefing(), hasMap()).
+    this.ITEMS = [
+      { id: 'journal', btn: this.hud.el.journalBtn, has: () => !!this.briefingData(), isOpen: () => this.briefing.open, open: () => this.openBriefing() },
+      { id: 'map', btn: this.hud.el.mapBtn, has: () => this.hasMap(), isOpen: () => this.mapView.open, open: () => { if (!this.mapView.open) this.toggleMap(); } },
+    ];
+    this.items = [];     // ids, in the order found
+    this.itemSel = 0;    // the selected one (PC: the wheel or 1-9 picks it, Tab opens it)
     this.rig = new CameraRig(this.camera);
     this.player = new Player();
     this.resonance = new Resonance();
@@ -94,7 +102,7 @@ class Game {
     document.getElementById('btn-start').addEventListener('click', start);
     document.getElementById('btn-again').addEventListener('click', start);
     document.getElementById('btn-resume').addEventListener('click', () => this.resume());
-    const toMenu = () => { this.briefing.dismiss(); this.closeMap(); this.world?.mechanics?.reset(); this.resonance.reset(); this.hud.setDrop(false); this.hud.setAction(null); this.hud.setCall(false); this.audio.init(); this.audio.click(); this.showMenu(); this.input.releaseLock(); this.syncHolding(); };
+    const toMenu = () => { this.briefing.dismiss(); this.putAway(); this.world?.mechanics?.reset(); this.resonance.reset(); this.hud.setDrop(false); this.hud.setAction(null); this.hud.setCall(false); this.audio.init(); this.audio.click(); this.showMenu(); this.input.releaseLock(); this.syncHolding(); };
     document.getElementById('btn-quit').addEventListener('click', toMenu);
     document.getElementById('btn-menu').addEventListener('click', toMenu);
     document.getElementById('btn-pause').addEventListener('click', (e) => { e.stopPropagation(); if (this.state === 'playing') this.pause(); else if (this.state === 'paused') this.resume(); });
@@ -117,25 +125,34 @@ class Game {
     const toggleMute = () => { this.audio.init(); this.audio.setMuted(!this.audio.muted); muteBtn.classList.toggle('muted', this.audio.muted); };
     muteBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMute(); });
     addEventListener('keydown', (e) => {
-      // the journal page: J toggles it; Esc, Enter or Space closes it
-      if (this.briefing.open && (this.state === 'playing' || this.state === 'frozen')) {
-        if (['Escape', 'Enter', 'Space', 'KeyJ', 'NumpadEnter'].includes(e.code)) { e.preventDefault(); this.closeBriefing(); return; }
+      const live = this.state === 'playing' || this.state === 'frozen';
+      // Tab: put away what you hold up, or hold up the selected item
+      if (e.code === 'Tab') {
+        e.preventDefault();
+        if (live && this.heldItem()) this.closeHeld();
+        else if (this.state === 'playing') this.useItem(this.items[this.itemSel]);
+        return;
+      }
+      // 1-9 pick an item (while nothing is held up)
+      const digit = /^(Digit|Numpad)([1-9])$/.exec(e.code);
+      if (digit && this.state === 'playing' && !this.heldItem() && +digit[2] <= this.items.length) { this.selectItem(+digit[2] - 1); return; }
+      // the journal page: Esc, Enter or Space also put it away
+      if (this.briefing.open && live) {
+        if (['Escape', 'Enter', 'Space', 'NumpadEnter'].includes(e.code)) { e.preventDefault(); this.closeBriefing(); return; }
       }
       // the open map: Esc puts it away (instead of pausing); + / − zoom it
-      if (this.mapView.open && (this.state === 'playing' || this.state === 'frozen')) {
+      if (this.mapView.open && live) {
         if (e.code === 'Escape') { e.preventDefault(); this.toggleMap(); return; }
         if (ZOOM_KEYS[e.code] && this.mapView.hold.zoom) { e.preventDefault(); this.mapView.zoomBy(ZOOM_KEYS[e.code]); return; }
       }
-      if (e.code === 'KeyJ' && this.state === 'playing') { this.openBriefing(); return; }
       if (e.code === 'Escape' || e.code === 'KeyP') { if (this.state === 'playing') this.pause(); else if (this.state === 'paused') this.resume(); }
       if (e.code === 'Escape' && this.state === 'menu' && !document.getElementById('screen-settings').classList.contains('hidden')) this.hud.showScreen('menu');
       if (e.code === 'KeyM') toggleMute();
       if ((e.code === 'KeyQ' || e.code === 'KeyG') && this.state === 'playing') this.dropQueued = true;
       if (e.code === 'KeyE' && this.state === 'playing') this.actionQueued = true;
-      if (e.code === 'Tab' && (this.state === 'playing' || this.state === 'paused')) { e.preventDefault(); if (this.state === 'playing') this.toggleMap(); }
     });
-    document.getElementById('btn-journal').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.state === 'playing') this.openBriefing(); });
-    document.getElementById('btn-map').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.state === 'playing') this.toggleMap(); });
+    // tapping or clicking an item holds it up straight away (and selects it)
+    for (const d of this.ITEMS) d.btn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.state === 'playing') this.useItem(d.id); });
     const dropBtn = document.getElementById('btn-drop');
     dropBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.state === 'playing') this.dropQueued = true; });
     document.getElementById('btn-act').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.state === 'playing') this.actionQueued = true; });
@@ -151,14 +168,40 @@ class Game {
     if (!this.mapView.open && this.briefing.open) this.briefing.dismiss();
     this.mapView.show(!this.mapView.open);
     this.syncHolding();
-    if (this.mapView.open && !this.mapTurnTaught) {   // once per game: the camera turns you while the map is open
-      this.mapTurnTaught = true;
-      this.hud.toast(isTouch ? 'Drag on the right to turn and point your arrow' : 'Move the mouse to turn and point your arrow', 3800);
-    }
     this.audio.noiseBurst({ type: 'bandpass', freq: 2200, q: 1, dur: 0.22, gain: 0.07, attack: 0.01, sweepTo: this.mapView.open ? 3200 : 1200 });
   }
-  // put away whatever is held up (the map, the journal page): when caught, between levels, leaving the run
-  closeMap() { this.mapView.show(false); this.hud.setMap(false); this.briefing.dismiss(); this.syncHolding(); }
+  // put away whatever is held up (the map, the journal page) without a sound: when caught, between levels, leaving the run
+  putAway() { this.mapView.show(false); this.briefing.dismiss(); this.syncHolding(); }
+  // put away the item you hold up, by hand (Tab)
+  closeHeld() { if (this.mapView.open) this.toggleMap(); else if (this.briefing.open) this.closeBriefing(); }
+
+  // keep the items in step with what the world says you have: a new one joins the end, gets selected and glows
+  // until you first hold it up
+  syncItems() {
+    for (const d of this.ITEMS) {
+      const i = this.items.indexOf(d.id), has = this.world ? d.has() : false;
+      if (has && i < 0) { this.items.push(d.id); this.itemSel = this.items.length - 1; this.hud.attention(d.btn, true); }
+      else if (!has && i >= 0) { this.items.splice(i, 1); this.hud.attention(d.btn, false); }
+    }
+    this.itemSel = clamp(this.itemSel, 0, Math.max(0, this.items.length - 1));
+    this.hud.setItems(this.items, this.items[this.itemSel] ?? null);
+  }
+  selectItem(i) {
+    const n = this.items.length;
+    if (!n) return;
+    this.itemSel = ((i % n) + n) % n;
+    this.syncItems();
+    this.hud.flashItemLabel();
+  }
+  // hold up an item (Tab on the selected one, or a tap / click on its button); a held-up item is put away instead
+  useItem(id) {
+    const d = this.ITEMS.find((x) => x.id === id);
+    if (!d || !this.items.includes(id)) return;
+    this.itemSel = this.items.indexOf(id);
+    if (d.isOpen()) this.closeHeld();
+    else { d.open(); if (d.isOpen()) this.hud.attention(d.btn, false); }
+    this.syncItems();
+  }
 
   // Holding an item up (the map, the journal page): it covers almost the whole screen and the HUD steps aside
   // (style.css, body.holding). Each item's `hold` says which pads still work ('both', 'right' or 'none'), whether it
@@ -178,13 +221,12 @@ class Game {
     if (item) this.input.releaseLock();
   }
 
-  // the world's briefing card (the glacier: a journal page with a sketch), opened from the journal tool or J
+  // the world's briefing card (the glacier: a journal page with a sketch), one of your items (see ITEMS)
   briefingData() { return this.world?.mechanics?.briefing?.(isTouch) || null; }
   openBriefing() {
     const data = this.briefingData();
     if (!data || this.state !== 'playing' || this.briefing.open) return false;
-    this.closeMap();
-    this.hud.attention(this.hud.el.journalBtn, false);   // read at last: the journal tool stops calling for attention
+    this.putAway();
     this.audio.noiseBurst({ type: 'bandpass', freq: 2400, q: 1, dur: 0.25, gain: 0.07, attack: 0.01, sweepTo: 3400 });
     this.briefing.show(data, { touch: isTouch, onClose: () => {
       this.audio.noiseBurst({ type: 'bandpass', freq: 2400, q: 1, dur: 0.2, gain: 0.06, attack: 0.01, sweepTo: 1300 });
@@ -296,7 +338,6 @@ class Game {
     this.catches = 0;
     this.level = 0;
     this.callTaught = false;
-    this.toldNoCall = false;
     this.hud.setLives(this.lives, GAME.lives);
     this.hud.showScreen(null);
     this.input.enabled = true;
@@ -323,13 +364,15 @@ class Game {
       this.spawnPlayerAndMonster();
       this.insertTimer = 0;
       this.dropQueued = false; this.actionQueued = false; this.hud.setAction(null);
-      this.closeMap();
+      this.putAway();
       this.stillTime = 0;
       this.audio.setLevel(AUDIO.runLevel);
       this.audio.setAmbient(w.audio.ambient, w.audio.music);
       this.hud.setAccent(def.theme.css);
-      this.hud.setJournal(false);
-      this.hud.attention(this.hud.el.journalBtn, false);
+      for (const d of this.ITEMS) this.hud.attention(d.btn, false);
+      this.items = []; this.itemSel = 0;   // each world's items stay behind when you leave it
+      this.input.consumeWheel();
+      this.syncItems();
       this.updateGemHud();
       w.update(0.016, this.time, this.camera, this.player.position);
       this.renderer.compile(w.scene, this.camera);
@@ -337,21 +380,12 @@ class Game {
         this.hud.fade(false);
         this.state = 'playing';
         this.clock.getDelta();
-        const gameId = this.gameId;
-        const banner = () => this.hud.showBanner(def.name, def.tagline);
-        banner();
-        // a world with a briefing (the glacier's journal page): the journal tool glows until you read it, and a
-        // prompt invites you to. It replaces the world's first hint.
-        if (w.mechanics?.briefing?.(isTouch)) {
-          this.hud.setJournal(true);
-          this.hud.attention(this.hud.el.journalBtn, true);
-          setTimeout(() => {
-            if (this.gameId === gameId && this.world === w && this.state === 'playing' && !this.briefing.open && this.hud.el.journalBtn.classList.contains('attn'))
-              this.hud.toast(isTouch ? 'Something in your journal… tap the journal button to read it' : 'Something in your journal… press J to read it', 5200);
-          }, 3200);
-          return;
-        }
-        // the first hint of a run: the world's own (e.g. the glacier's silent call), otherwise how to send a Resonance Call
+        this.hud.showBanner(def.name, def.tagline);
+        // a world with a briefing (the glacier's journal page): the journal joins your items and glows until you read
+        // it. That is the world's first hint.
+        this.syncItems();
+        if (w.mechanics?.briefing?.(isTouch)) return;
+        // the first hint of a run: the world's own (introHint), otherwise how to send a Resonance Call
         const intro = w.mechanics?.introHint?.(isTouch);
         if (intro) setTimeout(() => this.state === 'playing' && this.hud.toast(intro, 5200), 3800);
         else if (!this.callTaught) { this.callTaught = true; setTimeout(() => this.state === 'playing' && this.hud.toast(CALL_HINT(), 4200), 3800); }
@@ -437,7 +471,7 @@ class Game {
 
   caught() {
     this.hud.setCall(false);
-    this.closeMap();
+    this.putAway();
     this.lives--;
     this.catches++;
     this.hud.setLives(this.lives, GAME.lives);
@@ -455,7 +489,7 @@ class Game {
     this.updateGemHud();
     if (this.lives <= 0) {
       this.world.mechanics?.reset();
-      this.hud.setMap(false);
+      this.syncItems();
       this.state = 'over';
       this.input.releaseLock();
       this.audio.lose();
@@ -478,7 +512,7 @@ class Game {
 
   win() {
     this.hud.setCall(false);
-    this.closeMap();
+    this.putAway();
     this.state = 'over';
     this.input.releaseLock();
     this.audio.win();
@@ -598,7 +632,6 @@ class Game {
     const callOk = !w.mechanics?.canCall || w.mechanics.canCall();
     const stillNow = !moving && this.player.speed < 0.4;
     this.stillTime = stillNow ? (this.stillTime || 0) + dt : 0;
-    if (!callOk && !this.hasMap() && !w.portal.active && this.stillTime > 1.5 && this.time > 12 && !this.toldNoCall && w.mechanics.callLockedHint) { this.toldNoCall = true; this.hud.toast(w.mechanics.callLockedHint, 4200); }
     if (callOk && !this.callTaught && !w.portal.active) { this.callTaught = true; setTimeout(() => this.state === 'playing' && this.hud.toast(CALL_HINT(), 4200), 4600); }
     if (w.portal.active || !callOk) {
       if (this.resonance.radius > 0 || this.resonance.trailTarget) this.resonance.reset();
@@ -633,7 +666,7 @@ class Game {
         this.player.setCarried(this.carried.length);
         this.audio.pickup();
         this.updateGemHud();
-        if (this.delivered === 0 && this.carried.length === 1 && this.level === 0) this.hud.toast('Bring it to the portal — every gem you carry slows you down', 3600);
+        if (this.delivered === 0 && this.carried.length === 1 && this.level === 0) this.hud.toast('This gem is slowing me down...', 3600);
       }
       g.update(dt, t);
     }
@@ -660,7 +693,6 @@ class Game {
           w.monster.object.visible = false;
           this.hud.setDanger(0);
           this.audio.activate();
-          this.hud.toast(this.level === WORLDS.length - 1 ? 'The way home is open — step through!' : 'The portal is open — step through!', 3200);
         }
         this.updateGemHud();
       }
@@ -673,10 +705,10 @@ class Game {
     }
 
     w.update(dt, t, this.camera, P);
-    const held = this.hasMap();
-    this.hud.setMap(held);
-    this.hud.setJournal(!!this.briefingData());
-    if (!held && this.mapView.open) this.closeMap();
+    this.syncItems();
+    const steps = this.input.consumeWheel();
+    if (steps && !this.heldItem()) this.selectItem(this.itemSel + steps);
+    if (!this.hasMap() && this.mapView.open) this.putAway();
     if (this.mapView.open) {
       this.mapView.zoomBy(this.input.consumeZoom());
       this.mapView.draw(w, {

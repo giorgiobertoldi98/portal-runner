@@ -1,4 +1,4 @@
-// The journal sketch at the start of the Frozen Peaks (opened from the journal tool): a quick field drawing, in ink and
+// The journal sketch at the start of the Frozen Peaks (the journal item): a quick field drawing, in ink and
 // blue wash, of a ring of ice spikes the explorer once saw somewhere in the snow. It is drawn from almost ground level,
 // so the ring reads as a cluster of spikes standing on a snowy rise: no opening, no way in, no hint of what lies
 // inside. It matches the look of the hole's crown in iceCave.js (outward-leaning blue-ice shards, four spires a little

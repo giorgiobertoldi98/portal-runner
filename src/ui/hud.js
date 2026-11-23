@@ -15,8 +15,10 @@ export class HUD {
       banner: $('banner'), bannerName: $('banner-name'),
       bannerTag: $('banner-tag'), toast: $('toast'), vignette: $('vignette'), fade: $('fade'),
       menu: $('screen-menu'), settings: $('screen-settings'), pause: $('screen-pause'), end: $('screen-end'), loading: $('screen-loading'),
+      items: $('items'), itemLabel: $('item-label'), itemName: $('item-name'),
       mapBtn: $('btn-map'), journalBtn: $('btn-journal'), endTitle: $('end-title'), endText: $('end-text'), endStats: $('end-stats'), joystick: $('joystick'),
     };
+    this.itemBtns = { journal: this.el.journalBtn, map: this.el.mapBtn };   // item id -> its button
     this.bannerTimer = null;
     this.toastTimer = null;
   }
@@ -48,17 +50,41 @@ export class HUD {
     this.el.callBar.style.width = `${Math.round(k * 100)}%`;
   }
 
-  // the map button appears once you hold a map (it glows briefly the first time)
-  setMap(on) {
-    if (this.mapOn === on) return;
-    this.mapOn = on;
-    this.el.mapBtn.classList.toggle('show', on);
-    if (on) this.fresh(this.el.mapBtn);
+  // Your items (things you hold up to read: the journal page, the map), in the order you found them, and the selected
+  // one. PC: a slot bar; the label above it names the selected item for a moment after the selection changes (and
+  // while that item calls for attention). Touch: buttons that fill a column of up to --max-rows, then wrap leftwards.
+  setItems(ids, sel) {
+    const key = ids.join() + '|' + sel;
+    if (this.itemsKey === key) return;
+    const prevSel = this.itemsKey ? this.itemsKey.split('|')[1] : null;
+    this.itemsKey = key;
+    const box = this.el.items;
+    box.classList.toggle('none', !ids.length);
+    const rows = parseInt(getComputedStyle(box).getPropertyValue('--max-rows'), 10) || 4;
+    box.style.setProperty('--rows', String(Math.max(1, Math.min(ids.length, rows))));
+    for (const [id, btn] of Object.entries(this.itemBtns)) {
+      const i = ids.indexOf(id);
+      btn.classList.toggle('show', i >= 0);
+      btn.classList.toggle('sel', id === sel);
+      btn.style.order = String(i);
+      btn.querySelector('.k').textContent = i >= 0 && i < 9 ? String(i + 1) : '';
+    }
+    box.classList.toggle('many', ids.length > 1);
+    this.el.itemName.textContent = sel ? this.itemBtns[sel].getAttribute('aria-label') : '';
+    if (sel && sel !== prevSel) this.flashItemLabel();
   }
-
+  flashItemLabel() {
+    this.el.itemLabel.classList.add('show');
+    clearTimeout(this.labelTimer);
+    this.labelTimer = setTimeout(() => this.el.itemLabel.classList.remove('show'), 2600);
+  }
+  // a tool calling for attention until it's used (a new item, e.g. the journal at a world's start or the map once
+  // taken): a slow glow, and its name stays shown (beside it on touch, above the slot bar on PC while it's selected)
+  attention(btn, on) {
+    btn.classList.toggle('attn', !!on);
+    this.el.items.classList.toggle('attn', !!this.el.items.querySelector('.tool.sel.attn'));
+  }
   // a tool that just appeared glows and shows its name for a moment, so it's noticed
-  // a tool calling for attention (a slow glow, its name shown on touch) until it's used, e.g. the journal at a world's start
-  attention(btn, on) { btn.classList.toggle('attn', !!on); }
   fresh(btn) { btn.classList.remove('fresh'); void btn.offsetWidth; btn.classList.add('fresh'); }
 
   // the contextual action (e.g. "Take the map" next to the crate): { id, label, icon } or null
@@ -71,14 +97,6 @@ export class HUD {
     this.el.actLabel.textContent = a.label;
     this.el.act.setAttribute('aria-label', a.label);
     this.el.actIcon.innerHTML = ICONS[a.icon] || ICONS.hand;
-  }
-
-  // the journal button: shown while the world has a briefing to reread (the glacier, until you hold the map)
-  setJournal(on) {
-    if (this.journalOn === on) return;
-    this.journalOn = on;
-    this.el.journalBtn.classList.toggle('show', on);
-    if (on && !this.journalTaught) { this.journalTaught = true; this.fresh(this.el.journalBtn); }
   }
 
   setDrop(on) {

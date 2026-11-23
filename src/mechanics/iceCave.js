@@ -574,7 +574,6 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
         a.noiseBurst({ type: 'bandpass', freq: 2600, q: 1.1, dur: 0.35, gain: 0.12, attack: 0.01, sweepTo: 1100 });
         [784, 987.8, 1174.7, 1568].forEach((f, i) => a.tone({ freq: f, type: 'triangle', dur: 0.8, gain: 0.05, when: 0.08 + i * 0.08 }));
       }
-      if (ctx.hud) ctx.hud.toast(`You took the explorers' map! ${ctx.touch ? 'Tap the map button' : 'Press Tab'} to read it`, 4200);
       return true;
     },
 

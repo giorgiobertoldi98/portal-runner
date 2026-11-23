@@ -3,6 +3,7 @@
 // While an item is held up (the map, a journal page: `holding`), `hold` says what still works: `move` (the joystick and
 // movement keys), `look` (the camera: right side / turn pad / mouse) and `zoom` (pinching with two fingers anywhere, or
 // the mouse wheel, read with consumeZoom()). Set it with setHold().
+// With nothing held up, the mouse wheel steps through your items instead (consumeWheel(): +1 / -1 per notch).
 
 export class Input {
   constructor(canvas, joystickEl, knobEl) {
@@ -23,6 +24,8 @@ export class Input {
     this.touches = new Map();   // touch pointers down, for pinching
     this.pinchD = 0;
     this.zoomF = 1;
+    this.wheelAcc = 0;          // wheel travel not yet turned into an item step
+    this.wheelSteps = 0;
 
     addEventListener('keydown', (e) => {
       this.keys.add(e.code);
@@ -31,9 +34,15 @@ export class Input {
     addEventListener('keyup', (e) => this.keys.delete(e.code));
     addEventListener('blur', () => this.keys.clear());
     addEventListener('wheel', (e) => {
-      if (!this.holding || !this.hold.zoom) return;
-      e.preventDefault();
       const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
+      if (!this.holding) {
+        // one step per mouse notch; a trackpad's small deltas add up to one (main.js reads them only during a run)
+        this.wheelAcc += dy;
+        if (Math.abs(this.wheelAcc) >= 60) { this.wheelSteps += Math.sign(this.wheelAcc); this.wheelAcc = 0; }
+        return;
+      }
+      if (!this.hold.zoom) return;
+      e.preventDefault();
       this.zoomF *= Math.exp(-Math.max(-300, Math.min(300, dy)) * 0.0018);
     }, { passive: false });
 
@@ -96,6 +105,7 @@ export class Input {
   }
 
   consumeZoom() { const f = this.zoomF; this.zoomF = 1; return f; }
+  consumeWheel() { const s = this.wheelSteps; this.wheelSteps = 0; return s; }
 
   onMove(e) {
     const tp = this.touches.get(e.pointerId);
@@ -158,6 +168,8 @@ export class Input {
     this.touches.clear();
     this.pinchD = 0;
     this.zoomF = 1;
+    this.wheelAcc = 0;
+    this.wheelSteps = 0;
   }
 
   consumeLook() {

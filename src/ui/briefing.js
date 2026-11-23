@@ -1,8 +1,8 @@
 // A world's briefing card: a journal page with a picture and a few lines, held up almost full screen from the journal
-// tool (J). It behaves like every held item (see held.js); its own settings: no pads work while it's open (you can
-// neither walk nor turn), no zoom, and the game keeps running. The world supplies it through the optional
+// item (the journal button, or Tab while it's selected). It behaves like every held item (see held.js); its own
+// settings: no pads work while it's open (you can neither walk nor turn), no zoom, and the game keeps running. The world supplies it through the optional
 // `mechanics.briefing()` hook: { kicker, title, image (SVG markup), text } or null.
-// It closes with its close button or Esc / Enter / Space / J.
+// It closes with its close button or Esc / Enter / Space / Tab.
 import { heldControls } from './held.js';
 
 export class Briefing {
@@ -28,7 +28,7 @@ export class Briefing {
     this.q('#brief-title').textContent = data.title || '';
     this.q('.brief-image').innerHTML = data.image || '';
     this.q('.brief-text').textContent = data.text || '';
-    this.q('.brief-again').textContent = touch ? 'Reopen it with the journal button' : 'Reopen it with J or the journal button';
+    this.q('.brief-again').textContent = touch ? 'Reopen it with the journal button' : 'Reopen it from your items (Tab)';
     this.onClose = onClose;
     this.open = true;
     this.el.classList.remove('hidden');

@@ -683,21 +683,20 @@ function build({ quality }) {
     canCall: () => false,          // the gems here never answer the call: the explorers' map shows them instead
     hasMap: () => cave.hasMap,
     action: () => (cave.canTake ? { id: 'take-map', label: 'Take the map', icon: 'map' } : null),
-    // taking the map also reshuffles the storm devices (cues placed after the map's own chime and toast)
+    // taking the map also reshuffles the storm devices (cues placed after the map's own chime)
     doAction: (ctx) => {
       const took = cave.take(ctx);
-      if (took) storms.shift({ ...ctx, avoid: cave.avoid() }, { soundAt: 1.4, toastAt: 4.6 });
+      if (took) storms.shift({ ...ctx, avoid: cave.avoid() }, { soundAt: 1.4, toastAt: 1.6 });
       return took;
     },
     mapMarks: () => ({ hole: cave.marker() }),
-    // the journal page, read from the journal tool (until you hold the map): a memory of ice spikes seen somewhere
-    briefing: () => (cave.hasMap ? null : {
+    // the journal page, one of your items for the whole world: a memory of ice spikes seen somewhere
+    briefing: () => ({
       kicker: 'The Frozen Peaks',
       title: 'A page from my journal',
       image: sketch || (sketch = holeSketch()),
       text: 'I saw these ice spikes somewhere and cannot find them anymore...',
     }),
-    callLockedHint: 'The gems here don\'t answer your call. Those ice spikes from your journal... where were they?',
   };
   const trees = [...pines, ...spruces].filter((_, i) => i % 2 === 0).map((p) => ({ x: p.x, z: p.z }));
 
