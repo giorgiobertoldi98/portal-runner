@@ -188,7 +188,7 @@ class Game {
     this.itemSel = clamp(this.itemSel, 0, Math.max(0, this.items.length - 1));
     this.hud.setItems(this.items, this.items[this.itemSel] ?? null);
     // key hints follow what you play with: the mouse (click, wheel) or the keyboard alone (Enter, 1–9, Tab)
-    const mouse = this.input.usedMouse || this.input.locked;
+    const mouse = this.input.usedMouse;
     this.hud.setActionKey(mouse); this.hud.setItemKeys(mouse);
   }
   selectItem(i) {
