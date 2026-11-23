@@ -685,6 +685,7 @@ function build({ quality }) {
       note.update(t, ctx.player);
     },
     reset() { storms.reset(); cave.reset(); note.hide(); },
+    grantAll() { note.grant(); cave.grant(); },
     onGemInserted(ctx) { storms.onGemInserted({ ...ctx, avoid: cave.avoid() }); },
     // read by main.js
     canCall: () => false,          // the gems here never answer the call: the explorers' map shows them instead

@@ -27,6 +27,7 @@
 //       briefing?(touch) -> { kicker, title, image (SVG markup), text } | null,
 //                                      //   a note: one of your items while non-null (note button / Space);
 //                                      //   it calls for attention as the level opens and replaces introHint
+//       grantAll?(),                   //   debug mode: every item the world lets you find is yours from the start
 //       onRespawn?({ base, heading, player }) -> string | null,  // after being caught; the string is added to the catch toast
 //     },
 //     // optional physical hooks (glacier: the ice hole):
