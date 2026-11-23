@@ -1,8 +1,8 @@
 // A world's note: a handwritten page with a picture and one line, held up almost full screen from the note item
-// (its button, or Tab while it's selected). It behaves like every held item (see held.js): no pad works while it's
+// (its button, or Space while it's selected). It behaves like every held item (see held.js): no pad works while it's
 // open (you can neither walk nor turn), no zoom, and the game keeps running.
 // The world supplies it through the optional `mechanics.briefing()` hook: { image (SVG markup), text } or null.
-// It closes with its close button or Esc / Enter / Space / Tab.
+// It closes with its close button or Esc / Enter / Space.
 import { heldControls } from './held.js';
 
 export class Briefing {

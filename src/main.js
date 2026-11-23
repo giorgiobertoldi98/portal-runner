@@ -61,7 +61,7 @@ class Game {
       { id: 'map', btn: this.hud.el.mapBtn, has: () => this.hasMap(), isOpen: () => this.mapView.open, open: () => { if (!this.mapView.open) this.toggleMap(); } },
     ];
     this.items = [];     // ids, in the order found
-    this.itemSel = 0;    // the selected one (PC: the wheel or 1-9 picks it, Tab opens it)
+    this.itemSel = 0;    // the selected one (PC: the wheel or 1-9 picks it, Space opens it)
     this.rig = new CameraRig(this.camera);
     this.player = new Player();
     this.resonance = new Resonance();
@@ -126,19 +126,20 @@ class Game {
     muteBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMute(); });
     addEventListener('keydown', (e) => {
       const live = this.state === 'playing' || this.state === 'frozen';
-      // Tab: put away what you hold up, or hold up the selected item
-      if (e.code === 'Tab') {
+      // Space: put away what you hold up; else use the action within reach (take the note / map); else hold up the selected item
+      if (e.code === 'Space' && live) {
         e.preventDefault();
-        if (live && this.heldItem()) this.closeHeld();
-        else if (this.state === 'playing') this.useItem(this.items[this.itemSel]);
+        if (e.repeat) return;
+        if (this.heldItem()) this.closeHeld();
+        else if (this.state === 'playing') { if (this.hud.actId) this.actionQueued = true; else this.useItem(this.items[this.itemSel]); }
         return;
       }
       // 1-9 pick an item (while nothing is held up)
       const digit = /^(Digit|Numpad)([1-9])$/.exec(e.code);
       if (digit && this.state === 'playing' && !this.heldItem() && +digit[2] <= this.items.length) { this.selectItem(+digit[2] - 1); return; }
-      // the note: Esc, Enter or Space also put it away
+      // the note: Esc or Enter also put it away (Space does too, above)
       if (this.briefing.open && live) {
-        if (['Escape', 'Enter', 'Space', 'NumpadEnter'].includes(e.code)) { e.preventDefault(); this.closeBriefing(); return; }
+        if (['Escape', 'Enter', 'NumpadEnter'].includes(e.code)) { e.preventDefault(); this.closeBriefing(); return; }
       }
       // the open map: Esc puts it away (instead of pausing); + / − zoom it
       if (this.mapView.open && live) {
@@ -149,7 +150,6 @@ class Game {
       if (e.code === 'Escape' && this.state === 'menu' && !document.getElementById('screen-settings').classList.contains('hidden')) this.hud.showScreen('menu');
       if (e.code === 'KeyM') toggleMute();
       if ((e.code === 'KeyQ' || e.code === 'KeyG') && this.state === 'playing') this.dropQueued = true;
-      if (e.code === 'Space' && !e.repeat && this.state === 'playing') this.actionQueued = true;
     });
     // tapping or clicking an item holds it up straight away (and selects it)
     for (const d of this.ITEMS) d.btn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.state === 'playing') this.useItem(d.id); });
@@ -174,7 +174,7 @@ class Game {
   }
   // put away whatever is held up (the map, the note) without a sound: when caught, between levels, leaving the run
   putAway() { this.mapView.show(false); this.briefing.dismiss(); this.syncHolding(); }
-  // put away the item you hold up, by hand (Tab)
+  // put away the item you hold up, by hand (Space)
   closeHeld() { if (this.mapView.open) this.toggleMap(); else if (this.briefing.open) this.closeBriefing(); }
 
   // keep the items in step with what the world says you have: a new one joins the end, gets selected and glows
@@ -187,7 +187,7 @@ class Game {
     }
     this.itemSel = clamp(this.itemSel, 0, Math.max(0, this.items.length - 1));
     this.hud.setItems(this.items, this.items[this.itemSel] ?? null);
-    // key hints follow what you play with: the mouse (click, wheel) or the keyboard alone (Space, 1–9, Tab)
+    // key hints follow what you play with: the mouse (click, wheel) or the keyboard alone (Space, 1–9, Space)
     const mouse = this.input.usedMouse;
     this.hud.setActionKey(mouse); this.hud.setItemKeys(mouse);
   }
@@ -198,7 +198,7 @@ class Game {
     this.syncItems();
     this.hud.flashItemLabel();
   }
-  // hold up an item (Tab on the selected one, or a tap / click on its button); a held-up item is put away instead
+  // hold up an item (Space on the selected one, or a tap / click on its button); a held-up item is put away instead
   useItem(id) {
     const d = this.ITEMS.find((x) => x.id === id);
     if (!d || !this.items.includes(id)) return;
