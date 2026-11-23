@@ -563,7 +563,7 @@ class Game {
         // a held item that pauses the game: the world is frozen, the music plays on, and the camera turns if allowed
         this.audio.update(dt, {});
         const w = this.world;
-        this.rig.update(dt, this.player, this.input.consumeLook(), w.heightAt, w.colliders);
+        this.rig.update(dt, this.player, this.input.consumeLook(), w.heightAt, false, t - this.input.lastLookTime, w.colliders);
         if (w.constrainCamera) w.constrainCamera(this.camera, this.rig, this.player.position, dt);
         this.heldItem()?.zoomBy(this.input.consumeZoom());
         if (!this.heldItem()?.hold.pauses) this.state = 'playing';
@@ -583,7 +583,10 @@ class Game {
     const move = this.input.getMove();
     const moving = Math.hypot(move.x, move.y) > 0.1;
     this.player.update(dt, move, this.rig.yaw, w, null, (k) => this.audio.footstep(w.audio.footstep, k));
-    this.rig.update(dt, this.player, look, w.heightAt, w.colliders);
+    // the camera swings behind the explorer while walking, but not when walking backward (S): the explorer turns to face
+    // the camera and walks straight towards it, instead of the camera chasing round in a circle
+    const follow = moving && move.y > -0.1;
+    this.rig.update(dt, this.player, look, w.heightAt, follow, t - this.input.lastLookTime, w.colliders);
     // With the map open (you can't walk then), turning the camera (right side of the screen / mouse) also turns the
     // explorer to face where the camera looks, so the map's arrow (the explorer's heading) turns with it.
     // (Once you turn the camera, it keeps easing until it's aligned; closing the map stops it.)

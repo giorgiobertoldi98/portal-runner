@@ -1,4 +1,4 @@
-import { clamp, damp } from './utils.js';
+import { clamp, damp, dampAngle } from './utils.js';
 
 // Third-person orbit camera. yaw = angle of the camera around the player.
 export class CameraRig {
@@ -40,10 +40,11 @@ export class CameraRig {
     return best;
   }
 
-  // The camera turns only when the player asks it to (mouse, arrow keys, look pad); walking never moves it.
-  update(dt, player, look, heightAt, colliders) {
+  update(dt, player, look, heightAt, moving, idleLookSec, colliders) {
     this.yaw -= look.dx * 0.0042;
     this.pitch = clamp(this.pitch + look.dy * 0.003, CameraRig.MIN_PITCH, 1.15);
+    // Gently swing behind the player when moving and the user isn't steering the camera
+    if (moving && idleLookSec > 1.2) this.yaw = dampAngle(this.yaw, player.heading + Math.PI, 1.2, dt);
     const p = player.position;
     this.target.x = damp(this.target.x, p.x, 14, dt);
     this.target.y = damp(this.target.y, p.y, 10, dt);
