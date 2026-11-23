@@ -12,6 +12,7 @@ import { createGem, gemMapColor } from './entities/gem.js';
 import { Monster } from './entities/monster.js';
 import { Resonance } from './entities/resonance.js';
 import { HUD } from './ui/hud.js';
+import { gemIconURL } from './ui/gemIcon.js';
 import { MapView } from './ui/mapView.js';
 import { Briefing } from './ui/briefing.js';
 import { SettingsScreen } from './ui/settingsScreen.js';
@@ -364,6 +365,7 @@ class Game {
       this.resonance.setColor(def.theme.colB);
       this.player.setGemLook(def.gem);
       document.documentElement.style.setProperty('--gem', '#' + new THREE.Color(gemMapColor(def.gem)).getHexString()); // the map legend's gem colour
+      this.hud.setGemIcon(gemIconURL(this.renderer, def.gem));
       this.spawnPlayerAndMonster();
       this.insertTimer = 0;
       this.dropQueued = false; this.actionQueued = false; this.hud.setAction(null);
@@ -427,7 +429,7 @@ class Game {
 
   updateGemHud() {
     const p = this.world.portal;
-    this.hud.setWorld(this.world.def.name, this.world.def.gem?.style);
+    this.hud.setWorld(this.world.def.name);
     this.hud.setGems(p.filled, p.quota, this.carried.length, p.active);
     this.hud.setDrop(this.carried.length > 0);
     this.player.speedMul = carryFactor(this.carried.length);

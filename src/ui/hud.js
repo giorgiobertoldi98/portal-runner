@@ -9,20 +9,10 @@ const ICONS = {
   hand: '<svg viewBox="0 0 24 24" width="21" height="21"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-5.5a1.5 1.5 0 0 1 3 0V13m0-4.5a1.5 1.5 0 0 1 3 0V15a7 7 0 0 1-7 7h-1a7 7 0 0 1-5.6-2.8L3.6 15a1.6 1.6 0 0 1 2.4-2z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/></svg>',
 };
 
-// The counter's gem icon, a stylised silhouette of each world's gem (see gemDesigns.js), drawn in --gem (set at each level start)
-const GEM_ICONS = {
-  // glacier cluster: a fist of hexagonal prisms
-  cluster: '<path d="M4 21 5.2 11 8 7.5 10.8 11 11.6 21zM9.5 21 10.5 6 13 2.5 15.5 6 16.5 21zM14.5 21 15 12.5 17.5 9.5 20 12.5 20.8 21z"/><path d="M8 7.5V21M13 2.5V21M17.5 9.5V21" stroke="rgba(255,255,255,.45)" stroke-width="1" fill="none"/>',
-  // alien geode: a round stone pierced by glowing holes
-  geode: '<circle cx="12" cy="12" r="9.5" fill-opacity=".35"/><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8.5" cy="9" r="2.1"/><circle cx="15.5" cy="8.2" r="1.6"/><circle cx="12.5" cy="14" r="2.6"/><circle cx="7.5" cy="15.5" r="1.4"/><circle cx="17" cy="14.8" r="1.5"/>',
-  // desert rose: rounded petals opening from a bud
-  rose: '<g fill-opacity=".55"><ellipse cx="12" cy="7.5" rx="4" ry="6" transform="rotate(-62 12 12)"/><ellipse cx="12" cy="7.5" rx="4" ry="6" transform="rotate(62 12 12)"/><ellipse cx="12" cy="7.5" rx="4" ry="6" transform="rotate(180 12 12)"/></g><ellipse cx="12" cy="8" rx="3.6" ry="6.4" transform="rotate(-25 12 12)"/><ellipse cx="12" cy="8" rx="3.6" ry="6.4" transform="rotate(25 12 12)"/><ellipse cx="12" cy="12" rx="3" ry="5" fill="#fff" fill-opacity=".35"/>',
-};
-
 export class HUD {
   constructor() {
     this.el = {
-      hud: $('hud'), gemCount: $('gem-count'), carry: $('gem-carry'), dropN: $('drop-n'), act: $('btn-act'), actLabel: $('act-label'), actIcon: $('btn-act').querySelector('.ico'), actKey: $('act-key'), itemKeys: $('item-keys'), gemIcon: $('gem-icon'), lives: $('lives'), level: $('level'), drop: $('btn-drop'), callChip: $('call-chip'), callText: $('call-text'), callBar: $('call-bar'),
+      hud: $('hud'), gemCount: $('gem-count'), carry: $('gem-carry'), dropN: $('drop-n'), act: $('btn-act'), actLabel: $('act-label'), actIcon: $('btn-act').querySelector('.ico'), itemKeys: $('item-keys'), gemIcon: $('gem-icon'), lives: $('lives'), level: $('level'), drop: $('btn-drop'), callChip: $('call-chip'), callText: $('call-text'), callBar: $('call-bar'),
       banner: $('banner'), bannerName: $('banner-name'),
       bannerTag: $('banner-tag'), toast: $('toast'), vignette: $('vignette'), fade: $('fade'),
       menu: $('screen-menu'), settings: $('screen-settings'), pause: $('screen-pause'), end: $('screen-end'), loading: $('screen-loading'),
@@ -41,10 +31,9 @@ export class HUD {
 
   setAccent(css) { document.documentElement.style.setProperty('--accent', css); }
 
-  setWorld(name, gemStyle = 'cluster') {
-    this.el.level.textContent = name;
-    this.el.gemIcon.innerHTML = GEM_ICONS[gemStyle] || GEM_ICONS.cluster;
-  }
+  setWorld(name) { this.el.level.textContent = name; }
+  // the counter's icon: a snapshot of this world's gem (ui/gemIcon.js)
+  setGemIcon(url) { this.el.gemIcon.src = url; }
 
   // the item key guide beside the slot bar: wheel (mouse players) or 1–9 to pick, Space to open
   setItemKeys(mouse) { this.el.itemKeys.classList.toggle('mouse', !!mouse); }

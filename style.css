@@ -9,9 +9,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #05060c; col
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .hud-tl { position: absolute; top: max(10px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left)); padding: 5px 12px 6px; border-radius: 11px; }
 .gems { display: flex; align-items: center; gap: 6px; font-family: Cinzel, serif; font-weight: 700; font-size: 17px; letter-spacing: .04em; white-space: nowrap; }
-.gems .gem-icon { width: 15px; height: 15px; flex: none; }
-/* a silhouette of this world's gem, in its colour (--gem, set at each level start) */
-.gem-icon { color: var(--gem, #ff2d95); fill: var(--gem, #ff2d95); filter: drop-shadow(0 0 5px color-mix(in srgb, var(--gem, #ff2d95) 70%, transparent)); }
+.gems .gem-icon { width: 20px; height: 20px; margin: -2px 0; flex: none; }
+/* a snapshot of this world's 3D gem (ui/gemIcon.js), with a soft glow in its colour (--gem, set at each level start) */
+.gem-icon { object-fit: contain; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--gem, #ff2d95) 70%, transparent)); }
 .lvl { font-size: 9.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 1px; opacity: .95; }
 .gems .unit { font-family: Inter, sans-serif; font-size: 11px; font-weight: 500; opacity: .7; letter-spacing: 0; }
 #hud.portal-open .hud-tl { border-color: var(--accent); box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent); }
@@ -198,7 +198,7 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
   .hud-tl { top: max(14px, env(safe-area-inset-top)); left: 14px; padding: 7px 14px 8px; border-radius: 13px; }
   .lvl { font-size: 11px; margin-bottom: 2px; }
   .gems { font-size: 21px; gap: 7px; }
-  .gems .gem-icon { width: 19px; height: 19px; }
+  .gems .gem-icon { width: 25px; height: 25px; }
   .gems .unit { font-size: 12px; }
   .gems .carry { font-size: 12px; }
   #toast { top: calc(max(14px, env(safe-area-inset-top)) + 70px); font-size: 14px; }
