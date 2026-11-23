@@ -12,7 +12,7 @@ const ICONS = {
 export class HUD {
   constructor() {
     this.el = {
-      hud: $('hud'), gemCount: $('gem-count'), carry: $('gem-carry'), dropN: $('drop-n'), act: $('btn-act'), actLabel: $('act-label'), actIcon: $('btn-act').querySelector('.ico'), itemKeys: $('item-keys'), gemIcon: $('gem-icon'), lives: $('lives'), level: $('level'), drop: $('btn-drop'), callChip: $('call-chip'), callText: $('call-text'), callBar: $('call-bar'),
+      hud: $('hud'), gemCount: $('gem-count'), carry: $('gem-carry'), dropN: $('drop-n'), act: $('btn-act'), actLabel: $('act-label'), actIcon: $('btn-act').querySelector('.ico'), gemIcon: $('gem-icon'), lives: $('lives'), level: $('level'), drop: $('btn-drop'), callChip: $('call-chip'), callText: $('call-text'), callBar: $('call-bar'),
       banner: $('banner'), bannerName: $('banner-name'),
       bannerTag: $('banner-tag'), toast: $('toast'), vignette: $('vignette'), fade: $('fade'),
       menu: $('screen-menu'), settings: $('screen-settings'), pause: $('screen-pause'), end: $('screen-end'), loading: $('screen-loading'),
@@ -36,7 +36,6 @@ export class HUD {
   setGemIcon(url) { this.el.gemIcon.src = url; }
 
   // the item key guide beside the slot bar: wheel (mouse players) or 1–9 to pick, Space to open
-  setItemKeys(mouse) { this.el.itemKeys.classList.toggle('mouse', !!mouse); }
 
 
   setGems(filled, quota, carrying, open) {

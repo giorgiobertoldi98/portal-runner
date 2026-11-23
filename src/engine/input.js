@@ -19,7 +19,6 @@ export class Input {
     this.lookpadEl = document.getElementById('lookpad');
     this.enabled = false;
     this.locked = false;
-    this.mouseTravel = 0;       // how far the mouse has turned the camera (px): a real turn, not a jitter or the click that locks the pointer, marks a mouse player
     this.holding = false;
     this.hold = { move: true, look: true, zoom: false };
     this.touches = new Map();   // touch pointers down, for pinching
@@ -30,13 +29,12 @@ export class Input {
 
     addEventListener('keydown', (e) => {
       this.keys.add(e.code);
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+      if (e.code === 'Space') e.preventDefault();
     });
     addEventListener('keyup', (e) => this.keys.delete(e.code));
     addEventListener('blur', () => this.keys.clear());
     addEventListener('wheel', (e) => {
       const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
-      if (this.enabled) this.mouseTravel += 200;   // scrolling the wheel in a run is a mouse player for sure
       if (!this.holding) {
         // one step per mouse notch; a trackpad's small deltas add up to one (main.js reads them only during a run)
         this.wheelAcc += dy;
@@ -64,12 +62,7 @@ export class Input {
     this.lastLookTime = performance.now() / 1000;
   }
 
-  mouseLook(dx, dy) {
-    this.mouseTravel += Math.abs(dx) + Math.abs(dy);
-    this.addLook(dx, dy);
-  }
-  // playing with the mouse (prompts say "Click" and show the wheel) rather than the keyboard alone (Enter, 1–9)
-  get usedMouse() { return this.mouseTravel > 120; }
+  mouseLook(dx, dy) { this.addLook(dx, dy); }
 
   onDown(e) {
     if (!this.enabled) return;
@@ -181,14 +174,6 @@ export class Input {
     this.wheelSteps = 0;
   }
 
-  // While an item that lets you turn but not walk is held up (the map), ← / → turn the camera instead (keyboard
-  // players have no other way to point themselves). Called once per frame.
-  keyLook(dt) {
-    if (!this.holding || !this.hold.look || this.hold.move) return;
-    const x = (this.keys.has('ArrowRight') ? 1 : 0) - (this.keys.has('ArrowLeft') ? 1 : 0);
-    if (x) this.addLook(x * 480 * dt, 0);   // about 2 rad/s (see cameraRig)
-  }
-
   consumeLook() {
     const l = { dx: this.look.dx, dy: this.look.dy };
     this.look.dx = this.look.dy = 0;
@@ -200,10 +185,10 @@ export class Input {
     if (this.holding && !this.hold.move) { this.joystickEl.classList.remove('run'); return { x: 0, y: 0, run: false }; }
     const k = this.keys;
     let x = 0, y = 0;
-    if (k.has('KeyW') || k.has('ArrowUp')) y += 1;
-    if (k.has('KeyS') || k.has('ArrowDown')) y -= 1;
-    if (k.has('KeyD') || k.has('ArrowRight')) x += 1;
-    if (k.has('KeyA') || k.has('ArrowLeft')) x -= 1;
+    if (k.has('KeyW')) y += 1;
+    if (k.has('KeyS')) y -= 1;
+    if (k.has('KeyD')) x += 1;
+    if (k.has('KeyA')) x -= 1;
     let run = k.has('ShiftLeft') || k.has('ShiftRight');
     if (this.joy.active) {
       x += this.joy.x; y -= this.joy.y;

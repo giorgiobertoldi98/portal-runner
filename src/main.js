@@ -171,7 +171,7 @@ class Game {
   toggleMap() {
     if (!this.hasMap()) return;
     if (!this.mapView.open && this.briefing.open) this.briefing.dismiss();
-    if (!this.mapView.open) this.mapView.setHint(isTouch ? 'Drag on the right to turn' : this.input.usedMouse ? 'Drag to turn' : '← → to turn');
+    if (!this.mapView.open) this.mapView.setHint(isTouch ? 'Drag on the right to turn' : 'Drag to turn');
     this.mapView.show(!this.mapView.open);
     this.syncHolding();
     this.audio.noiseBurst({ type: 'bandpass', freq: 2200, q: 1, dur: 0.22, gain: 0.07, attack: 0.01, sweepTo: this.mapView.open ? 3200 : 1200 });
@@ -191,8 +191,6 @@ class Game {
     }
     this.itemSel = clamp(this.itemSel, 0, Math.max(0, this.items.length - 1));
     this.hud.setItems(this.items, this.items[this.itemSel] ?? null);
-    // the item guide shows the mouse wheel for mouse players, 1–9 for the keyboard alone
-    this.hud.setItemKeys(this.input.usedMouse);
   }
   selectItem(i) {
     const n = this.items.length;
@@ -590,7 +588,6 @@ class Game {
     const w = this.world;
     const P = this.player.position;
     this.time += dt;
-    this.input.keyLook(dt);
     const look = this.input.consumeLook();
     const move = this.input.getMove();
     const moving = Math.hypot(move.x, move.y) > 0.1;
