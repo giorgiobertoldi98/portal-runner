@@ -1,0 +1,28 @@
+version: '3'
+
+vars:
+  PORT: '{{default "8000" .PORT}}'
+
+tasks:
+  default:
+    desc: Serve the game and open it in the browser
+    cmds:
+      - task: run
+
+  run:
+    desc: Serve the repo root and open the game (override port with PORT=3000)
+    cmds:
+      - cmd: cmd /c start "" http://localhost:{{.PORT}}
+        platforms: [windows]
+      - cmd: open http://localhost:{{.PORT}}
+        platforms: [darwin]
+        ignore_error: true
+      - cmd: xdg-open http://localhost:{{.PORT}}
+        platforms: [linux]
+        ignore_error: true
+      - task: serve
+
+  serve:
+    desc: Serve the repo root without opening the browser
+    cmds:
+      - uv run --no-project python -m http.server {{.PORT}}

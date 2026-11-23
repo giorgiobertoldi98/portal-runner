@@ -20,7 +20,8 @@ This repo is the only home of the project: the code and `docs/NOTES.md` here are
 - Adding a world = a new file in `src/worlds/` + a registry entry; don't edit other worlds for it.
 
 ## Running it
-- ES modules don't load from `file://`. Serve the repo root: `python3 -m http.server 8000`, then open http://localhost:8000.
+- Quick start: `task` (or `task run`) serves the repo root and opens the browser; `task serve` skips the browser; `task run PORT=3000` changes the port (default 8000). Requires [Task](https://taskfile.dev) and [uv](https://docs.astral.sh/uv/) (uv provides Python; no packages are installed).
+- ES modules don't load from `file://`. Manually: `python3 -m http.server 8000`, then open http://localhost:8000.
 - To try it on a phone: same Wi-Fi, open `http://<computer-ip>:8000` (landscape).
 
 ## Non-negotiables (details in NOTES.md)
@@ -34,3 +35,4 @@ This repo is the only home of the project: the code and `docs/NOTES.md` here are
 ## Working style
 - Before a large change, state the plan briefly. Challenge design ideas when they conflict with the rules above or seem likely to make the game less fun.
 - Commit in small, descriptive commits. Run the game and check the browser console for errors before committing.
+- Never commit or merge to main. You can merge to the dev branch only if I tell you explictly. For new features / developments, branch off dev and when you think you are done, open a pr to dev which I must always approve
