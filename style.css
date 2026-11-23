@@ -84,12 +84,12 @@ body:not(.touch) #items .tool.sel.attn { box-shadow: none; }
 #item-label.show, #items.attn #item-label { opacity: 1; }
 /* PC: a quiet, always-present key guide just left of the slot bar: pick with the wheel or a number, open with Tab or a click.
    The picking half only shows once there's more than one item to choose from. */
-#item-keys { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: flex-end; gap: 3px; white-space: nowrap; pointer-events: none; font: 500 10.5px Inter, sans-serif; color: rgba(255, 255, 255, .72); text-shadow: 0 1px 4px rgba(0, 0, 0, .8); }
-#item-keys span { display: flex; align-items: center; gap: 5px; }
-#item-keys i { font-style: normal; opacity: .75; }
-#item-keys kbd { font: 700 10px Inter, sans-serif; padding: 2px 5px; border-radius: 5px; background: rgba(255, 255, 255, .14); }
-#item-keys svg { opacity: .85; }
-/* mouse players see wheel + click, keyboard-only players 1–9 + Tab */
+#item-keys { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: flex-end; gap: 6px; padding: 7px 11px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); white-space: nowrap; pointer-events: none; font: 600 12px Inter, sans-serif; color: #fff; }
+#item-keys span { display: flex; align-items: center; gap: 7px; }
+#item-keys i { font-style: normal; opacity: .8; }
+#item-keys kbd { font: 700 12px Inter, sans-serif; padding: 3px 7px; border-radius: 6px; background: rgba(255, 255, 255, .22); }
+#item-keys svg { width: 17px; height: 17px; }
+/* mouse players pick with the wheel, keyboard-only players with 1–9; everyone opens with Tab */
 #item-keys .m { display: none; }
 #item-keys.mouse .m { display: block; }
 #item-keys.mouse .k { display: none; }
