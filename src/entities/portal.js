@@ -181,7 +181,10 @@ export function createPortal({ dest, gem = undefined, destIndex, x, y, z, label:
   const sockets = new THREE.Group();
   sockets.position.z = 0.55;
   group.add(sockets);
-  const emptyMat = new THREE.MeshStandardMaterial({ color: 0x1b1a22, emissive: th.glow, emissiveIntensity: 0.15, transparent: true, opacity: 0.55, roughness: 0.4, flatShading: true });
+  // an empty socket is a hole in the shape of this world's gem: near-black, with a thin pale rim so it reads against
+  // the frame whatever the portal's colour
+  const holeMat = new THREE.MeshBasicMaterial({ color: 0x030306, side: THREE.DoubleSide });
+  const rimMat = new THREE.MeshBasicMaterial({ color: 0x9a9aa8, side: THREE.BackSide, toneMapped: false });
   const { pts: socketPath } = archPath(W, H, -0.45, 200);
   let socketMeshes = [];
   let filled = 0, quota = 0;
@@ -197,7 +200,7 @@ export function createPortal({ dest, gem = undefined, destIndex, x, y, z, label:
     get quota() { return quota; },
     // reset for a new attempt at this level
     setQuota(q) {
-      for (const m of socketMeshes) sockets.remove(m);
+      for (const m of socketMeshes) sockets.remove(m, m.userData.hole);
       socketMeshes = [];
       quota = q; filled = 0; open = 0;
       surface.visible = false;
@@ -206,11 +209,18 @@ export function createPortal({ dest, gem = undefined, destIndex, x, y, z, label:
         const f = q === 1 ? 0.5 : 0.14 + (0.72 * i) / (q - 1);
         const p = socketPath[Math.round(f * (socketPath.length - 1))];
         const m = createMiniGem(gem); // this world's gem shape, in the socket
-        m.userData.full = m.material;
-        m.material = emptyMat;
         m.scale.setScalar(1.6);
         m.position.copy(p);
-        sockets.add(m);
+        m.visible = false;            // shown (spinning) once a gem is put in
+        const hole = new THREE.Group();
+        hole.position.copy(p);
+        const cavity = new THREE.Mesh(m.geometry, holeMat), rim = new THREE.Mesh(m.geometry, rimMat);
+        cavity.scale.set(1.6, 1.6, 0.3);
+        rim.scale.set(1.9, 1.9, 0.2);
+        rim.position.z = -0.05;
+        hole.add(rim, cavity);
+        m.userData.hole = hole;
+        sockets.add(hole, m);
         socketMeshes.push(m);
       }
     },
@@ -218,7 +228,7 @@ export function createPortal({ dest, gem = undefined, destIndex, x, y, z, label:
     insert() {
       if (filled >= quota) return false;
       const m = socketMeshes[filled++];
-      m.material = m.userData.full;
+      m.visible = true; m.userData.hole.visible = false;
       m.userData.pop = 1;
       return filled >= quota;
     },

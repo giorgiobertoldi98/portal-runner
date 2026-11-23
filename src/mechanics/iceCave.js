@@ -566,16 +566,20 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
     // take the map from the crate (the "Take the map" action, while canTake)
     take(ctx = {}) {
       if (!canTake || held) return false;
-      held = true; mapState = 'held'; canTake = false;
-      item.group.visible = false;
-      light.intensity = 0;
+      api.grant();
       const a = ctx.audio;
       if (a) {
         a.noiseBurst({ type: 'bandpass', freq: 2600, q: 1.1, dur: 0.35, gain: 0.12, attack: 0.01, sweepTo: 1100 });
         [784, 987.8, 1174.7, 1568].forEach((f, i) => a.tone({ freq: f, type: 'triangle', dur: 0.8, gain: 0.05, when: 0.08 + i * 0.08 }));
       }
-      if (ctx.hud) ctx.hud.toast(`You took the explorers' map! ${ctx.touch ? 'Tap the map button' : 'Press Tab'} to read it`, 4200);
       return true;
+    },
+
+    // the map in your hands without the trip down (debug mode), the crate left empty
+    grant() {
+      held = true; mapState = 'held'; canTake = false;
+      item.group.visible = false;
+      light.intensity = 0;
     },
 
     hide() {

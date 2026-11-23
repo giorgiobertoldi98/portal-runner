@@ -1,8 +1,9 @@
 // Keyboard + mouse + touch. On touch screens a joystick sits bottom-left (it jumps to where your thumb
 // lands anywhere on the left side) and the right side of the screen drags the camera.
-// While an item is held up (the map, a journal page: `holding`), `hold` says what still works: `move` (the joystick and
+// While an item is held up (the map, a note: `holding`), `hold` says what still works: `move` (the joystick and
 // movement keys), `look` (the camera: right side / turn pad / mouse) and `zoom` (pinching with two fingers anywhere, or
 // the mouse wheel, read with consumeZoom()). Set it with setHold().
+// With nothing held up, the mouse wheel steps through your items instead (consumeWheel(): +1 / -1 per notch).
 
 export class Input {
   constructor(canvas, joystickEl, knobEl) {
@@ -23,17 +24,25 @@ export class Input {
     this.touches = new Map();   // touch pointers down, for pinching
     this.pinchD = 0;
     this.zoomF = 1;
+    this.wheelAcc = 0;          // wheel travel not yet turned into an item step
+    this.wheelSteps = 0;
 
     addEventListener('keydown', (e) => {
       this.keys.add(e.code);
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+      if (e.code === 'Space') e.preventDefault();
     });
     addEventListener('keyup', (e) => this.keys.delete(e.code));
     addEventListener('blur', () => this.keys.clear());
     addEventListener('wheel', (e) => {
-      if (!this.holding || !this.hold.zoom) return;
-      e.preventDefault();
       const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
+      if (!this.holding) {
+        // one step per mouse notch; a trackpad's small deltas add up to one (main.js reads them only during a run)
+        this.wheelAcc += dy;
+        if (Math.abs(this.wheelAcc) >= 60) { this.wheelSteps += Math.sign(this.wheelAcc); this.wheelAcc = 0; }
+        return;
+      }
+      if (!this.hold.zoom) return;
+      e.preventDefault();
       this.zoomF *= Math.exp(-Math.max(-300, Math.min(300, dy)) * 0.0018);
     }, { passive: false });
 
@@ -43,7 +52,7 @@ export class Input {
     addEventListener('pointercancel', (e) => this.onUp(e));
     document.addEventListener('pointerlockchange', () => { this.locked = document.pointerLockElement === canvas; });
     addEventListener('mousemove', (e) => {
-      if (this.locked && this.enabled) this.addLook(e.movementX, e.movementY);
+      if (this.locked && this.enabled) { this.mouseLook(e.movementX, e.movementY); }
     });
     this.canvas = canvas;
   }
@@ -52,6 +61,8 @@ export class Input {
     this.look.dx += dx; this.look.dy += dy;
     this.lastLookTime = performance.now() / 1000;
   }
+
+  mouseLook(dx, dy) { this.addLook(dx, dy); }
 
   onDown(e) {
     if (!this.enabled) return;
@@ -96,6 +107,7 @@ export class Input {
   }
 
   consumeZoom() { const f = this.zoomF; this.zoomF = 1; return f; }
+  consumeWheel() { const s = this.wheelSteps; this.wheelSteps = 0; return s; }
 
   onMove(e) {
     const tp = this.touches.get(e.pointerId);
@@ -109,7 +121,7 @@ export class Input {
       }
     }
     if (this.mouseDrag && e.pointerType === 'mouse' && !this.locked) {
-      this.addLook(e.clientX - this.mouseDrag.x, e.clientY - this.mouseDrag.y);
+      this.mouseLook(e.clientX - this.mouseDrag.x, e.clientY - this.mouseDrag.y);
       this.mouseDrag.x = e.clientX; this.mouseDrag.y = e.clientY;
     }
     if (this.joy.id === e.pointerId) {
@@ -158,6 +170,8 @@ export class Input {
     this.touches.clear();
     this.pinchD = 0;
     this.zoomF = 1;
+    this.wheelAcc = 0;
+    this.wheelSteps = 0;
   }
 
   consumeLook() {
@@ -171,10 +185,10 @@ export class Input {
     if (this.holding && !this.hold.move) { this.joystickEl.classList.remove('run'); return { x: 0, y: 0, run: false }; }
     const k = this.keys;
     let x = 0, y = 0;
-    if (k.has('KeyW') || k.has('ArrowUp')) y += 1;
-    if (k.has('KeyS') || k.has('ArrowDown')) y -= 1;
-    if (k.has('KeyD') || k.has('ArrowRight')) x += 1;
-    if (k.has('KeyA') || k.has('ArrowLeft')) x -= 1;
+    if (k.has('KeyW')) y += 1;
+    if (k.has('KeyS')) y -= 1;
+    if (k.has('KeyD')) x += 1;
+    if (k.has('KeyA')) x -= 1;
     let run = k.has('ShiftLeft') || k.has('ShiftRight');
     if (this.joy.active) {
       x += this.joy.x; y -= this.joy.y;

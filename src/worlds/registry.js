@@ -20,13 +20,14 @@
 //       onGemInserted?(ctx),           //   optional: called when a gem goes into the portal (not the last one)
 //       // optional hooks read by main.js:
 //       canCall?() -> bool,            //   false = the Resonance Call is silent (glacier: always)
-//       callLockedHint?, introHint?(touch) -> string,   // toasts: standing still while silenced / first hint of the level
-//       hasMap?() -> bool, mapMarks?() -> { hole },     //   a map you can open (Tab / map button), drawn from world.mapInfo
-//       action?() -> { id, label, icon } | null, doAction?(ctx),   // a contextual action (E / the action button),
+//       introHint?(touch) -> string,   //   a toast: the first hint of the level
+//       hasMap?() -> bool, mapMarks?() -> { hole },     //   a map among your items (true once found), drawn from world.mapInfo
+//       action?() -> { id, label, icon } | null, doAction?(ctx),   // a contextual action (Space / the action button),
 //                                      //   e.g. taking the glacier's map from its crate
 //       briefing?(touch) -> { kicker, title, image (SVG markup), text } | null,
-//                                      //   a journal page shown as the level opens (the game is frozen until it's closed;
-//                                      //   it replaces introHint) and again from the journal button / J while non-null
+//                                      //   a note: one of your items while non-null (note button / Space);
+//                                      //   it calls for attention as the level opens and replaces introHint
+//       grantAll?(),                   //   debug mode: every item the world lets you find is yours from the start
 //       onRespawn?({ base, heading, player }) -> string | null,  // after being caught; the string is added to the catch toast
 //     },
 //     // optional physical hooks (glacier: the ice hole):

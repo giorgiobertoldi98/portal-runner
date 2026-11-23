@@ -618,7 +618,7 @@ const MUSIC = {
 export default {
   id: 'alien',
   name: 'Xenoterra',
-  tagline: 'Under a ringed sky, something drifts toward the light.',
+  tagline: 'A ringed sky. Glowing, quiet ground.',
   monsterName: 'the Void Jelly',
   theme,
   // the gems here: geodes, dark rock outside with a pink crystal lining seen through small holes all around

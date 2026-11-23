@@ -803,7 +803,7 @@ const MUSIC = {
 export default {
   id: 'desert',
   name: 'Sands of the Pharaohs',
-  tagline: 'The pyramids keep their secrets. The sand keeps its hunter.',
+  tagline: 'Old stone, endless sand.',
   monsterName: 'the Giant Scarab',
   theme,
   // the gems here: crystal desert roses, amber once revealed (softer glow so the petals keep their shading)
