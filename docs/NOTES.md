@@ -47,7 +47,7 @@ General principles that guide every decision. New ones are added here as they co
 
 ## Controls
 - **Touch**: the left thumb moves with a joystick (it jumps to where the thumb lands anywhere on the left side); directions are relative to the camera, the explorer turns to face the way it walks, and pushing to the edge runs. The right side of the screen moves the camera (drag sideways to look around, up and down to tilt).
-- **PC**: WASD or the arrow keys move (relative to the camera), Shift runs, the mouse moves the camera (drag, or move once the pointer is locked by a click). Q drops a gem, Space (or a click, for anyone using the mouse) takes things when something is within reach and otherwise holds up the selected item, the mouse wheel (or 1–9) picks one of your items and Space (or a click, for mouse players) holds it up (again puts it away; it takes things first when something is within reach); a click that ends a drag to look doesn't count, Esc / P pause, M mute. On touch, tapping an item's button holds it up.
+- **PC**: WASD or the arrow keys move (relative to the camera), Shift runs, the mouse moves the camera (drag, or move once the pointer is locked by a click). Q drops a gem, Space (or a click, for anyone using the mouse) takes things when something is within reach and otherwise holds up the selected item, the mouse wheel (or 1–9) picks one of your items and Space (or a click, for mouse players) holds it up (again puts it away; it takes things first when something is within reach); a click puts away the held item too; a click that ends a drag to look doesn't count, Esc / P pause, M mute. On touch, tapping an item's button holds it up.
 - **Holding an item up** (the map, the note; see Held items): each item decides which controls still work. The map: camera only (you can't walk or run), and pinch (two fingers anywhere), the mouse wheel or + / − zoom it. The note: neither walking nor the camera.
 - **With the map open**, turning the camera (mouse, arrow keys, right side of the screen) also turns the explorer to face where the camera looks (it eases round and keeps going until aligned), so the map's arrow turns with it and you can point yourself. With the map closed the camera never turns the explorer. Nothing tells you this: you find out by turning.
 - Standing still (letting go of the joystick, or no movement key held) is what sends the Resonance Call in worlds that allow it.
@@ -70,7 +70,7 @@ General principles that guide every decision. New ones are added here as they co
   - **Map**: pads 'right' (turn the camera only), zoom yes, the game keeps running.
   - **Note**: pads 'none', no zoom, the game keeps running.
 - Controls in the top-right corner: a round close button, then, on items that zoom, zoom in (+) and zoom out (−), which grey out at their limits. On those items, pinching with two fingers anywhere, the mouse wheel and the + / − keys zoom too.
-- Closing: the close button on both, or Space; the map also with Esc; the note also with Esc / Enter / Space. Opening one item puts the other away; being caught or leaving the world puts both away (they stay among your items).
+- Closing: the close button on both, a click anywhere on PC, or Space; the map also with Esc; the note also with Esc / Enter / Space. Opening one item puts the other away; being caught or leaving the world puts both away (they stay among your items).
 
 ## Toasts
 Every toast in the game (see Design principles: anything that can be shown instead isn't a toast):
