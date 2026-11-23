@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Portal Runner</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700&family=Caveat:wght@500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="vignette"></div>
+
+<div id="hud" class="hidden">
+  <div class="hud-tl panel">
+    <div id="level" class="lvl"></div>
+    <div class="gems">
+      <svg viewBox="0 0 24 24" width="22" height="22" class="gem-icon"><path d="M12 2 4 9l8 13 8-13z"/><path d="M4 9h16M12 2 9 9l3 13 3-13z" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1"/></svg>
+      <span id="gem-count">0 / 0</span><span class="unit">in the portal</span><span id="gem-carry" class="carry" title="Gems you are carrying"></span>
+    </div>
+  </div>
+  <div class="hud-tr">
+    <div id="lives"></div>
+    <button id="btn-mute" class="icon-btn" aria-label="Sound">
+      <svg class="on" viewBox="0 0 24 24" width="20" height="20"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <svg class="off" viewBox="0 0 24 24" width="20" height="20"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="m16 9 6 6m0-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <button id="btn-pause" class="icon-btn" aria-label="Pause">
+      <svg viewBox="0 0 24 24" width="20" height="20"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+    </button>
+  </div>
+  <div id="banner"><div id="banner-name"></div><div id="banner-tag"></div></div>
+  <div id="toast"></div>
+  <div id="call-chip"><span id="call-text">Calling</span><div class="bar"><i id="call-bar"></i></div></div>
+  <!-- the explorer's tools: everything you can do with what you hold or what's in reach, in one group -->
+  <div id="tools">
+    <button id="btn-journal" class="tool" aria-label="Journal" title="Journal (J)">
+      <svg viewBox="0 0 24 24" width="21" height="21"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 7.5h6M9 10.5h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".7"/></svg>
+      <span class="tl">Journal</span><kbd>J</kbd>
+    </button>
+    <button id="btn-map" class="tool" aria-label="Map" title="Map (Tab)">
+      <svg viewBox="0 0 24 24" width="21" height="21"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 4v13.5M15 6.5V20" stroke="currentColor" stroke-width="1.5" opacity=".7"/></svg>
+      <span class="tl">Map</span><kbd>Tab</kbd>
+    </button>
+    <button id="btn-drop" class="tool" aria-label="Drop a gem" title="Drop a gem (Q)">
+      <svg viewBox="0 0 24 24" width="21" height="21"><path d="M12 3 6 9l6 9 6-9z"/><path d="M12 20v2M8 21h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span class="tl">Drop gem</span><kbd>Q</kbd><b class="n" id="drop-n"></b>
+    </button>
+    <button id="btn-act" class="tool act" aria-label="Action" title="(E)">
+      <span class="ico"></span><span class="tl" id="act-label"></span><kbd>E</kbd>
+    </button>
+  </div>
+  <div id="joystick">
+    <svg class="joy-arrows" viewBox="0 0 100 100"><path d="M50 9 43 18h14zM50 91l-7-9h14zM9 50l9-7v14zM91 50l-9-7v14z"/></svg>
+    <div id="joy-knob"></div>
+    
+  </div>
+  <div id="lookpad">
+    <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="9"/><path d="M50 14 43 24h14zM50 86l-7-10h14zM14 50l10-7v14zM86 50l-10-7v14z"/></svg>
+    
+  </div>
+</div>
+<div id="fade"></div>
+
+<div id="screen-loading" class="screen">
+  <div class="loader"><div class="spinner"></div><div>Shaping worlds…</div></div>
+</div>
+
+<div id="screen-menu" class="screen landing hidden">
+  <div class="landing-copy">
+    <h1 class="title">Portal Runner</h1>
+    <p class="lead">Every portal opens onto a world no one has mapped. Each hides dark gems, and something lives there that won't let you take them easily.</p>
+    <ul class="loop" aria-label="How a world works">
+      <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".6"/></svg>Hunt the dark gems hidden in every world.</li>
+      <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 6 10l6 11 6-11z"/></svg>Carry them to the portal. Each one slows you down.</li>
+      <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V10a6 6 0 0 1 12 0v11" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 21v-9a3 3 0 0 1 6 0v9z" opacity=".55"/></svg>Fill the portal and step through to the next world.</li>
+    </ul>
+    <div class="actions">
+      <button class="primary" id="btn-start">Begin the expedition</button>
+      <button class="ghost" id="btn-settings">Settings</button>
+    </div>
+    <div class="controls">
+      <div class="desk"><b>WASD</b> or arrows to move, <b>Shift</b> to run, drag to look, <b>Q</b> to drop a gem, <b>E</b> to take things, <b>Tab</b> opens a found map, <b>Esc</b> to pause</div>
+      <div class="mob">Left thumb moves (push to the edge to run), right thumb looks, the tool buttons above the right thumb drop a gem, take things and open a found map</div>
+    </div>
+  </div>
+</div>
+
+<div id="screen-settings" class="screen hidden">
+  <div class="card settings">
+    <h2>Settings</h2>
+    <div class="seg tabs" id="set-tabs"><button data-t="general">General</button><button data-t="levels">Worlds</button></div>
+    <div class="seg" id="set-levels"></div>
+    <div id="set-general">
+      <div class="setting"><span>Footstep sounds</span><button class="switch opt-steps" role="switch" aria-checked="true" aria-label="Footstep sounds"><i></i></button></div>
+    </div>
+    <div id="set-list"></div>
+    <p class="hint">Changes apply from the next run.</p>
+    <button class="primary" id="set-done">Done</button>
+    <button class="ghost" id="set-reset">Reset to defaults</button>
+  </div>
+</div>
+
+<div id="screen-pause" class="screen hidden">
+  <div class="card small">
+    <h2>Paused</h2>
+    <div class="setting"><span>Footstep sounds</span><button class="switch opt-steps" role="switch" aria-checked="true" aria-label="Footstep sounds"><i></i></button></div>
+    <button class="primary" id="btn-resume">Resume</button>
+    <button class="ghost" id="btn-quit">Quit to menu</button>
+  </div>
+</div>
+
+<div id="screen-end" class="screen hidden">
+  <div class="card small">
+    <h2 id="end-title"></h2>
+    <p class="lead" id="end-text"></p>
+    <div class="stats" id="end-stats"></div>
+    <button class="primary" id="btn-again">Play again</button>
+    <button class="ghost" id="btn-menu">Menu</button>
+  </div>
+</div>
+
+<!-- the game is landscape only: on a screen taller than it is wide this covers everything and the run pauses -->
+<div id="rotate" role="alert" aria-live="assertive">
+  <div class="rot-box">
+    <svg class="rot-phone" viewBox="0 0 64 64" aria-hidden="true"><rect x="20" y="8" width="24" height="44" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="32" cy="46" r="2"/></svg>
+    <h2>Portal Runner plays sideways</h2>
+    <p class="mob">Turn your device to landscape. If it doesn't rotate, switch off rotation lock.</p>
+    <p class="desk">Make the window wider than it is tall.</p>
+  </div>
+</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,695 @@
+import * as THREE from 'three';
+import { GAME, PORTAL, GEMS, PLAYER, CALL, AUDIO, carryFactor } from './config.js';
+import { WORLDS } from './worlds/registry.js';
+import { Input } from './engine/input.js';
+import { AudioEngine } from './engine/audio.js';
+import { CameraRig } from './engine/cameraRig.js';
+import { mulberry32 } from './engine/noise.js';
+import { findSpot, dist2D, clamp, dampAngle, insideColliders } from './engine/utils.js';
+import { Player } from './entities/player.js';
+import { createPortal } from './entities/portal.js';
+import { createGem, gemMapColor } from './entities/gem.js';
+import { Monster } from './entities/monster.js';
+import { Resonance } from './entities/resonance.js';
+import { HUD } from './ui/hud.js';
+import { MapView } from './ui/mapView.js';
+import { Briefing } from './ui/briefing.js';
+import { SettingsScreen } from './ui/settingsScreen.js';
+import { createMenuScene } from './ui/menuScene.js';
+import { MENU_AUDIO } from './ui/menuAudio.js';
+import { load as loadSettings } from './settings.js';
+
+loadSettings(); // saved settings override the defaults in config.js
+
+const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+const QUALITY = isTouch
+  ? { pixelRatio: Math.min(devicePixelRatio, 1.5), shadowMap: 1024, density: 0.6, terrainSegments: 150 }
+  : { pixelRatio: Math.min(devicePixelRatio, 2), shadowMap: 2048, density: 1, terrainSegments: 200 };
+
+const CALL_HINT = () => (isTouch ? 'Let go of the stick to send a Resonance Call' : 'Stand still to send a Resonance Call');
+const ZOOM_KEYS = { Equal: 1.6, NumpadAdd: 1.6, Minus: 1 / 1.6, NumpadSubtract: 1 / 1.6 }; // + / − zoom a held item
+const MENU_ACCENT = '#e6defc'; // starlight: the landing view belongs to no single world
+// The game is landscape only. Browsers don't let a page lock the orientation (outside fullscreen), so a screen taller
+// than it is wide shows the #rotate notice (CSS), a run in progress pauses and nothing is rendered behind it.
+const PORTRAIT = matchMedia('(orientation: portrait)');
+
+class Game {
+  constructor() {
+    const canvas = document.getElementById('game');
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    this.renderer.setPixelRatio(QUALITY.pixelRatio);
+    this.renderer.setSize(innerWidth, innerHeight);
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    this.camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 3000);
+    this.input = new Input(canvas, document.getElementById('joystick'), document.getElementById('joy-knob'));
+    this.audio = new AudioEngine();
+    this.hud = new HUD();
+    this.hud.setTouch(isTouch);
+    this.mapView = new MapView();
+    this.mapView.onClose = () => { if (this.mapView.open) this.toggleMap(); };
+    this.holding = false;
+    this.briefing = new Briefing();
+    this.rig = new CameraRig(this.camera);
+    this.player = new Player();
+    this.resonance = new Resonance();
+    this.carried = [];
+    this.worlds = new Map();
+    this.state = 'loading';
+    this.time = 0;
+    this.gameId = 0;
+    this.clock = new THREE.Clock();
+
+    this.bindUI();
+    this.onResize();
+    addEventListener('resize', () => this.onResize());
+    document.addEventListener('visibilitychange', () => { if (document.hidden && this.state === 'playing') this.pause(); });
+    this.renderer.setAnimationLoop(() => this.frame());
+
+    // every world lends its colour to the landing view (title, sky, portals)
+    WORLDS.forEach((def, i) => document.documentElement.style.setProperty(`--w${i}`, def.theme.css));
+    document.documentElement.style.setProperty('--worlds', WORLDS.map((d) => d.theme.css).concat(WORLDS[0].theme.css).join(', '));
+
+    // build the landing view and the first world behind the loading screen, then show the menu
+    setTimeout(() => {
+      this.menu = createMenuScene({ worlds: WORLDS, quality: QUALITY });
+      this.menu.update(0.016, 0, this.camera);
+      this.renderer.compile(this.menu.scene, this.camera);
+      this.getWorld(0);
+      this.showMenu();
+    }, 50);
+  }
+
+  // ---------- UI ----------
+
+  bindUI() {
+    this.settings = new SettingsScreen({ onSound: () => { this.audio.init(); this.audio.click(); }, onBack: () => this.hud.showScreen('menu') });
+    document.getElementById('btn-settings').addEventListener('click', () => { this.audio.init(); this.audio.click(); this.settings.open(); this.hud.showScreen('settings'); });
+
+    const start = () => { this.audio.init(); this.audio.click(); this.startGame(); };
+    document.getElementById('btn-start').addEventListener('click', start);
+    document.getElementById('btn-again').addEventListener('click', start);
+    document.getElementById('btn-resume').addEventListener('click', () => this.resume());
+    const toMenu = () => { this.briefing.dismiss(); this.closeMap(); this.world?.mechanics?.reset(); this.resonance.reset(); this.hud.setDrop(false); this.hud.setAction(null); this.hud.setCall(false); this.audio.init(); this.audio.click(); this.showMenu(); this.input.releaseLock(); this.syncHolding(); };
+    document.getElementById('btn-quit').addEventListener('click', toMenu);
+    document.getElementById('btn-menu').addEventListener('click', toMenu);
+    document.getElementById('btn-pause').addEventListener('click', (e) => { e.stopPropagation(); if (this.state === 'playing') this.pause(); else if (this.state === 'paused') this.resume(); });
+    // settings: footstep sounds on/off (remembered in this browser when storage is available)
+    let stepsOn = true;
+    try { stepsOn = localStorage.getItem('pr-footsteps') !== 'off'; } catch (_) {}
+    const stepBtns = document.querySelectorAll('.opt-steps');
+    const applySteps = () => { this.audio.footstepsOn = stepsOn; stepBtns.forEach((b) => b.setAttribute('aria-checked', String(stepsOn))); };
+    stepBtns.forEach((b) => b.addEventListener('click', () => {
+      stepsOn = !stepsOn; applySteps(); this.audio.init(); this.audio.click();
+      try { localStorage.setItem('pr-footsteps', stepsOn ? 'on' : 'off'); } catch (_) {}
+    }));
+    applySteps();
+
+    // menu track: browsers only allow sound after a gesture, so it starts on the first touch, click or key at the menu
+    const wake = () => { if (this.state === 'menu') { this.audio.init(); this.menuAudio(); } };
+    ['pointerdown', 'touchend', 'keydown'].forEach((ev) => addEventListener(ev, wake, { capture: true, passive: true }));
+
+    const muteBtn = document.getElementById('btn-mute');
+    const toggleMute = () => { this.audio.init(); this.audio.setMuted(!this.audio.muted); muteBtn.classList.toggle('muted', this.audio.muted); };
+    muteBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMute(); });
+    addEventListener('keydown', (e) => {
+      // the journal page: J toggles it; Esc, Enter or Space closes it
+      if (this.briefing.open && (this.state === 'playing' || this.state === 'frozen')) {
+        if (['Escape', 'Enter', 'Space', 'KeyJ', 'NumpadEnter'].includes(e.code)) { e.preventDefault(); this.closeBriefing(); return; }
+      }
+      // the open map: Esc puts it away (instead of pausing); + / − zoom it
+      if (this.mapView.open && (this.state === 'playing' || this.state === 'frozen')) {
+        if (e.code === 'Escape') { e.preventDefault(); this.toggleMap(); return; }
+        if (ZOOM_KEYS[e.code] && this.mapView.hold.zoom) { e.preventDefault(); this.mapView.zoomBy(ZOOM_KEYS[e.code]); return; }
+      }
+      if (e.code === 'KeyJ' && this.state === 'playing') { this.openBriefing(); return; }
+      if (e.code === 'Escape' || e.code === 'KeyP') { if (this.state === 'playing') this.pause(); else if (this.state === 'paused') this.resume(); }
+      if (e.code === 'Escape' && this.state === 'menu' && !document.getElementById('screen-settings').classList.contains('hidden')) this.hud.showScreen('menu');
+      if (e.code === 'KeyM') toggleMute();
+      if ((e.code === 'KeyQ' || e.code === 'KeyG') && this.state === 'playing') this.dropQueued = true;
+      if (e.code === 'KeyE' && this.state === 'playing') this.actionQueued = true;
+      if (e.code === 'Tab' && (this.state === 'playing' || this.state === 'paused')) { e.preventDefault(); if (this.state === 'playing') this.toggleMap(); }
+    });
+    document.getElementById('btn-journal').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.state === 'playing') this.openBriefing(); });
+    document.getElementById('btn-map').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.state === 'playing') this.toggleMap(); });
+    const dropBtn = document.getElementById('btn-drop');
+    dropBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.state === 'playing') this.dropQueued = true; });
+    document.getElementById('btn-act').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.state === 'playing') this.actionQueued = true; });
+    document.getElementById('game').addEventListener('click', () => {
+      if (this.state === 'playing' && !isTouch && !this.holding) this.input.requestLock();
+    });
+  }
+
+  // the world's map, once you hold it (e.g. the glacier's explorers' map)
+  hasMap() { return !!(this.world?.mechanics?.hasMap && this.world.mechanics.hasMap()); }
+  toggleMap() {
+    if (!this.hasMap()) return;
+    if (!this.mapView.open && this.briefing.open) this.briefing.dismiss();
+    this.mapView.show(!this.mapView.open);
+    this.syncHolding();
+    if (this.mapView.open && !this.mapTurnTaught) {   // once per game: the camera turns you while the map is open
+      this.mapTurnTaught = true;
+      this.hud.toast(isTouch ? 'Drag on the right to turn and point your arrow' : 'Move the mouse to turn and point your arrow', 3800);
+    }
+    this.audio.noiseBurst({ type: 'bandpass', freq: 2200, q: 1, dur: 0.22, gain: 0.07, attack: 0.01, sweepTo: this.mapView.open ? 3200 : 1200 });
+  }
+  // put away whatever is held up (the map, the journal page): when caught, between levels, leaving the run
+  closeMap() { this.mapView.show(false); this.hud.setMap(false); this.briefing.dismiss(); this.syncHolding(); }
+
+  // Holding an item up (the map, the journal page): it covers almost the whole screen and the HUD steps aside
+  // (style.css, body.holding). Each item's `hold` says which pads still work ('both', 'right' or 'none'), whether it
+  // zooms and whether the game pauses while it's open (see held.js).
+  heldItem() { return this.mapView.open ? this.mapView : this.briefing.open ? this.briefing : null; }
+  syncHolding() {
+    const item = this.heldItem();
+    if (item === this.heldNow) return;
+    this.heldNow = item;
+    this.holding = !!item;
+    const h = item?.hold, move = h?.pads === 'both', look = h?.pads === 'both' || h?.pads === 'right';
+    document.body.classList.toggle('holding', !!item);
+    document.body.classList.toggle('hold-move', !!item && move);
+    document.body.classList.toggle('hold-look', !!item && look);
+    this.input.reset();
+    this.input.setHold(item ? { move, look, zoom: !!h.zoom } : null);
+    if (item) this.input.releaseLock();
+  }
+
+  // the world's briefing card (the glacier: a journal page with a sketch), opened from the journal tool or J
+  briefingData() { return this.world?.mechanics?.briefing?.(isTouch) || null; }
+  openBriefing() {
+    const data = this.briefingData();
+    if (!data || this.state !== 'playing' || this.briefing.open) return false;
+    this.closeMap();
+    this.hud.attention(this.hud.el.journalBtn, false);   // read at last: the journal tool stops calling for attention
+    this.audio.noiseBurst({ type: 'bandpass', freq: 2400, q: 1, dur: 0.25, gain: 0.07, attack: 0.01, sweepTo: 3400 });
+    this.briefing.show(data, { touch: isTouch, onClose: () => {
+      this.audio.noiseBurst({ type: 'bandpass', freq: 2400, q: 1, dur: 0.2, gain: 0.06, attack: 0.01, sweepTo: 1300 });
+      this.syncHolding();
+    } });
+    this.syncHolding();
+    return true;
+  }
+  closeBriefing() { this.briefing.close(); }
+
+  showMenu() {
+    this.state = 'menu';
+    this.hud.setAccent(MENU_ACCENT);
+    this.hud.showScreen('menu');
+    document.body.classList.add('at-menu');
+    if (this.audio.ready) this.menuAudio();
+  }
+
+  // the one background track for the main menu and settings (crossfades from whatever was playing)
+  menuAudio() {
+    this.audio.quiet();
+    this.audio.setLevel(AUDIO.menuLevel);
+    this.audio.setAmbient(MENU_AUDIO.ambient, MENU_AUDIO.music);
+  }
+
+  onResize() {
+    this.camera.aspect = innerWidth / innerHeight;
+    this.camera.fov = 62;
+    this.rig.distance = 7.5;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(innerWidth, innerHeight);
+  }
+
+  pause() {
+    this.state = 'paused';
+    this.input.releaseLock();
+    this.input.reset();
+    this.hud.showScreen('pause');
+    if (this.audio.ctx) this.audio.ctx.suspend();
+  }
+
+  resume() {
+    this.audio.init();
+    this.state = 'playing';
+    this.hud.showScreen(null);
+    this.clock.getDelta();
+  }
+
+  // ---------- Worlds ----------
+
+  getWorld(idx) {
+    if (this.worlds.has(idx)) return this.worlds.get(idx);
+    const def = WORLDS[idx];
+    const w = def.build({ quality: QUALITY });
+    w.def = def;
+    w.index = idx;
+    // one portal per level: it leads to the next level, or home from the last one
+    const last = idx === WORLDS.length - 1;
+    const dest = last ? def : WORLDS[idx + 1];
+    const spot = w.portalSpots[0];
+    w.portal = createPortal({ dest, gem: def.gem, destIndex: last ? -1 : idx + 1, x: spot.x, y: w.heightAt(spot.x, spot.z), z: spot.z, label: last ? 'The Way Home' : null, heightAt: w.heightAt });
+    w.scene.add(w.portal.group);
+    w.colliders.push(...w.portal.colliders);
+    w.gems = [];
+    w.monster = new Monster(w.createMonsterBody(), w.createMonsterBrain ? w.createMonsterBrain() : undefined);
+    w.monster.object.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    w.monster.object.visible = false;
+    w.scene.add(w.monster.object);
+    this.renderer.compile(w.scene, this.camera);
+    this.worlds.set(idx, w);
+    return w;
+  }
+
+  // fresh gems + empty portal for this level
+  setupLevel(w) {
+    for (const g of w.gems) w.scene.remove(g.group);
+    w.gems = [];
+    this.carried = [];
+    this.player.setCarried(0);
+    this.quota = GAME.quotas[Math.min(w.index, GAME.quotas.length - 1)];
+    w.portal.setQuota(this.quota);
+    const count = this.quota + GEMS.extraPerLevel;
+    const pp = w.portal.position;
+    for (let i = 0; i < count; i++) {
+      const avoid = [{ x: pp.x, z: pp.z, d: 30 }, ...w.gems.map((g) => ({ x: g.group.position.x, z: g.group.position.z, d: 40 }))];
+      const s = findSpot(this.rng, w, { avoid });
+      const gem = createGem(w.def.gem);
+      gem.group.position.set(s.x, w.heightAt(s.x, s.z) + 1.3, s.z);
+      w.scene.add(gem.group);
+      w.gems.push(gem);
+    }
+    this.base = this.baseSpot();
+    if (w.mechanics) w.mechanics.setup({ world: w, rng: this.rng, portal: { x: pp.x, z: pp.z }, base: this.base, gems: this.groundGemSpots() });
+  }
+
+  groundGemSpots() {
+    return this.world.gems.filter((g) => g.state === 'ground').map((g) => ({ x: g.group.position.x, z: g.group.position.z }));
+  }
+
+  // ---------- Game flow ----------
+
+  startGame() {
+    document.body.classList.remove('at-menu');
+    this.gameId++;
+    this.rng = mulberry32((Date.now() ^ (Math.random() * 1e9)) >>> 0);
+    this.lives = GAME.lives;
+    this.time = 0;
+    this.delivered = 0;
+    this.catches = 0;
+    this.level = 0;
+    this.callTaught = false;
+    this.toldNoCall = false;
+    this.hud.setLives(this.lives, GAME.lives);
+    this.hud.showScreen(null);
+    this.input.enabled = true;
+    this.enterLevel(0, true);
+  }
+
+  enterLevel(idx, fromMenu = false) {
+    this.state = 'transition';
+    const def = WORLDS[idx];
+    this.hud.fade(true, fromMenu ? '#05060c' : def.theme.css);
+    if (!fromMenu) this.audio.whoosh();
+    setTimeout(() => {
+      const w = this.getWorld(idx);
+      if (this.world && this.world !== w) { this.world.monster.active = false; this.world.mechanics?.reset(); }
+      this.world = w;
+      this.level = idx;
+      this.setupLevel(w);
+      w.scene.add(this.player.object);
+      w.scene.add(this.resonance.group);
+      this.resonance.reset();
+      this.resonance.setColor(def.theme.colB);
+      this.player.setGemLook(def.gem);
+      document.documentElement.style.setProperty('--gem', '#' + new THREE.Color(gemMapColor(def.gem)).getHexString()); // the map legend's gem colour
+      this.spawnPlayerAndMonster();
+      this.insertTimer = 0;
+      this.dropQueued = false; this.actionQueued = false; this.hud.setAction(null);
+      this.closeMap();
+      this.stillTime = 0;
+      this.audio.setLevel(AUDIO.runLevel);
+      this.audio.setAmbient(w.audio.ambient, w.audio.music);
+      this.hud.setAccent(def.theme.css);
+      this.hud.setJournal(false);
+      this.hud.attention(this.hud.el.journalBtn, false);
+      this.updateGemHud();
+      w.update(0.016, this.time, this.camera, this.player.position);
+      this.renderer.compile(w.scene, this.camera);
+      setTimeout(() => {
+        this.hud.fade(false);
+        this.state = 'playing';
+        this.clock.getDelta();
+        const gameId = this.gameId;
+        const banner = () => this.hud.showBanner(def.name, def.tagline);
+        banner();
+        // a world with a briefing (the glacier's journal page): the journal tool glows until you read it, and a
+        // prompt invites you to. It replaces the world's first hint.
+        if (w.mechanics?.briefing?.(isTouch)) {
+          this.hud.setJournal(true);
+          this.hud.attention(this.hud.el.journalBtn, true);
+          setTimeout(() => {
+            if (this.gameId === gameId && this.world === w && this.state === 'playing' && !this.briefing.open && this.hud.el.journalBtn.classList.contains('attn'))
+              this.hud.toast(isTouch ? 'Something in your journal… tap the journal button to read it' : 'Something in your journal… press J to read it', 5200);
+          }, 3200);
+          return;
+        }
+        // the first hint of a run: the world's own (e.g. the glacier's silent call), otherwise how to send a Resonance Call
+        const intro = w.mechanics?.introHint?.(isTouch);
+        if (intro) setTimeout(() => this.state === 'playing' && this.hud.toast(intro, 5200), 3800);
+        else if (!this.callTaught) { this.callTaught = true; setTimeout(() => this.state === 'playing' && this.hud.toast(CALL_HINT(), 4200), 3800); }
+      }, 120);
+    }, fromMenu ? 250 : 600);
+  }
+
+  // in front of the portal, facing the middle of the world, just inside the edge of the safe zone (its ring)
+  // so the first step out is the first step into danger. If the straight-ahead spot isn't walkable, swing around
+  // the portal at the same distance; then try a little closer.
+  baseSpot() {
+    const w = this.world, pp = w.portal.position;
+    const R = PORTAL.safeRadius;
+    const edge = R > 0 ? Math.max(6, R - 1.5) : 9;   // never on the portal platform (~5.5 m)
+    const ahead = Math.atan2(-pp.z, -pp.x);             // direction from the portal to the world centre
+    for (const d of [edge, Math.max(6, edge - 1.5)]) {
+      for (const da of [0, 0.35, -0.35, 0.7, -0.7, 1.05, -1.05, 1.4, -1.4]) {
+        const x = pp.x + Math.cos(ahead + da) * d, z = pp.z + Math.sin(ahead + da) * d;
+        if (w.isValidSpot(x, z)) return { x, z };
+      }
+    }
+    return findSpot(this.rng, w, { avoid: [] });
+  }
+
+  spawnPlayerAndMonster() {
+    const w = this.world;
+    const s = this.baseSpot();
+    this.player.place(s.x, s.z, w.heightAt(s.x, s.z), Math.atan2(-s.x, -s.z));
+    this.respawnNote = w.mechanics?.onRespawn ? w.mechanics.onRespawn({ base: s, heading: Math.atan2(-s.x, -s.z), player: this.player.position }) : null;
+    this.rig.snap(this.player);
+    // the monster appears at random, but never closer than the minimum distance
+    const m = findSpot(this.rng, w, { avoid: [{ x: s.x, z: s.z, d: GAME.monsterSpawnMinDist }] });
+    w.monster.reset(m.x, m.z, w, Math.atan2(s.x - m.x, s.z - m.z), this.rng);
+    this.growlTimer = 2;
+    this.resonance.reset();
+  }
+
+  updateGemHud() {
+    const p = this.world.portal;
+    this.hud.setWorld(this.world.def.name);
+    this.hud.setGems(p.filled, p.quota, this.carried.length, p.active);
+    this.hud.setDrop(this.carried.length > 0);
+    this.player.speedMul = carryFactor(this.carried.length);
+  }
+
+  // place a carried gem back on the ground
+  putDown(gem, x, z) {
+    const w = this.world;
+    gem.state = 'ground';
+    gem.marked = true;
+    gem.blockPickup = true;
+    gem.lit = 0; gem.litTarget = 0;
+    gem.group.position.set(x, w.heightAt(x, z) + 1.3, z);
+    w.scene.add(gem.group);
+  }
+
+  // somewhere near you to set a gem down that you can walk back to: about `dist` metres away in direction `angle`
+  // (swinging around, then closer), never inside a prop, off the map, or down/up a wall (the ice hole, cliffs).
+  // Falls back to the spot you stand on, which is always reachable.
+  dropSpot(angle, dist) {
+    const w = this.world, p = this.player.position;
+    for (const d of [dist, dist * 0.6]) {
+      for (const da of [0, 0.5, -0.5, 1, -1, 1.6, -1.6, Math.PI]) {
+        const x = p.x + Math.sin(angle + da) * d, z = p.z + Math.cos(angle + da) * d;
+        if (Math.hypot(x, z) > w.radius - 4) continue;
+        if (insideColliders(x, z, 0.6, w.colliders)) continue;
+        if (Math.abs(w.heightAt(x, z) - p.y) > 1) continue;
+        return { x, z };
+      }
+    }
+    return { x: p.x, z: p.z };
+  }
+
+  dropGem() {
+    if (!this.carried.length || this.state !== 'playing') return;
+    const gem = this.carried.pop();
+    const s = this.dropSpot(this.player.heading + Math.PI, 1.0);
+    this.putDown(gem, s.x, s.z);
+    this.player.setCarried(this.carried.length);
+    this.audio.drop();
+    this.updateGemHud();
+  }
+
+  caught() {
+    this.hud.setCall(false);
+    this.closeMap();
+    this.lives--;
+    this.catches++;
+    this.hud.setLives(this.lives, GAME.lives);
+    this.audio.hurt();
+    // carried gems fall around where you were caught, each on ground you can walk back to (they stay faintly lit;
+    // on the map a pile shows its count)
+    this.carried.forEach((g, i, arr) => {
+      const s = this.dropSpot((i / arr.length) * Math.PI * 2, 2.5);
+      this.putDown(g, s.x, s.z);
+      g.blockPickup = false;
+    });
+    const lost = this.carried.length;
+    this.carried = [];
+    this.player.setCarried(0);
+    this.updateGemHud();
+    if (this.lives <= 0) {
+      this.world.mechanics?.reset();
+      this.hud.setMap(false);
+      this.state = 'over';
+      this.input.releaseLock();
+      this.audio.lose();
+      this.audio.stopMusic(1.5);
+      this.hud.setDanger(0);
+      this.hud.setDrop(false); this.hud.setAction(null);
+      setTimeout(() => this.hud.showEnd(false, `${this.world.def.monsterName[0].toUpperCase() + this.world.def.monsterName.slice(1)} got you in ${this.world.def.name}.`, this.stats()), 700);
+      return;
+    }
+    this.state = 'transition';
+    this.hud.fade(true, '#7a0010');
+    setTimeout(() => {
+      this.spawnPlayerAndMonster();
+      this.hud.toast(`${this.world.def.monsterName} caught you — ${this.lives} ${this.lives === 1 ? 'life' : 'lives'} left${lost ? ` · ${lost} gem${lost === 1 ? '' : 's'} dropped` : ''}${this.respawnNote ? ` · ${this.respawnNote}` : ''}`, 3600);
+      this.hud.fade(false);
+      this.state = 'playing';
+      this.clock.getDelta();
+    }, 650);
+  }
+
+  win() {
+    this.hud.setCall(false);
+    this.closeMap();
+    this.state = 'over';
+    this.input.releaseLock();
+    this.audio.win();
+    this.audio.stopMusic(2.5);
+    this.hud.setDanger(0);
+    this.hud.setDrop(false); this.hud.setAction(null);
+    setTimeout(() => this.hud.showEnd(true, 'Three worlds crossed. The way home closes behind you.', this.stats(true)), 900);
+  }
+
+  stats(win = false) {
+    const m = Math.floor(this.time / 60), s = Math.floor(this.time % 60);
+    return [
+      ['Time', `${m}:${String(s).padStart(2, '0')}`],
+      win ? ['Lives left', this.lives ?? '—'] : ['World', this.world ? this.world.def.name : '—'],
+      ['Gems delivered', this.delivered],
+      ['Caught', this.catches],
+    ];
+  }
+
+  // ---------- Loop ----------
+
+  // the landing copy's right edge, as a fraction of the screen width, so the menu scene can frame the portals beside it.
+  // Re-measured a few times a second: fonts loading or the device's text size can change it after startup.
+  trackMenuCopy(t) {
+    if (t - (this._copyT || 0) < 0.25) return;
+    this._copyT = t;
+    const el = document.querySelector('#screen-menu .landing-copy');
+    if (!el || !el.offsetParent) return; // hidden (e.g. Settings is open): keep the last framing
+    this.menu.setCopyRect(el.getBoundingClientRect().right / innerWidth);
+  }
+
+  frame() {
+    const dt = Math.min(this.clock.getDelta(), 0.05);
+    const t = performance.now() / 1000;
+    // held upright (or a window taller than wide): the rotate notice covers the screen, so pause and draw nothing
+    if (PORTRAIT.matches) { if (this.state === 'playing') this.pause(); return; }
+    if (this.state === 'menu' && this.menu) {
+      this.trackMenuCopy(t);
+      this.menu.update(dt, t, this.camera);
+      this.renderer.render(this.menu.scene, this.camera);
+      return;
+    }
+    if (this.menu && (this.camera.zoom !== 1 || (this.camera.view && this.camera.view.enabled))) this.menu.release(this.camera);
+    if (!this.world) return;
+    if (this.state === 'playing' && this.heldItem()?.hold.pauses) { this.state = 'frozen'; this.clock.getDelta(); }
+    if (this.state === 'playing') this.update(dt, t);
+    else if (this.state === 'transition' || this.state === 'over' || this.state === 'frozen') {
+      if (this.state === 'frozen') {
+        // a held item that pauses the game: the world is frozen, the music plays on, and the camera turns if allowed
+        this.audio.update(dt, {});
+        const w = this.world;
+        this.rig.update(dt, this.player, this.input.consumeLook(), w.heightAt, false, t - this.input.lastLookTime, w.colliders);
+        if (w.constrainCamera) w.constrainCamera(this.camera, this.rig, this.player.position, dt);
+        this.heldItem()?.zoomBy(this.input.consumeZoom());
+        if (!this.heldItem()?.hold.pauses) this.state = 'playing';
+      }
+      this.world.update(dt, t, this.camera, this.player.position);
+      this.world.portal.update(dt, t);
+      for (const g of this.world.gems) if (g.state === 'ground') g.update(dt, t);
+    }
+    this.renderer.render(this.world.scene, this.camera);
+  }
+
+  update(dt, t) {
+    const w = this.world;
+    const P = this.player.position;
+    this.time += dt;
+    const look = this.input.consumeLook();
+    const move = this.input.getMove();
+    const moving = Math.hypot(move.x, move.y) > 0.1;
+    this.player.update(dt, move, this.rig.yaw, w, null, (k) => this.audio.footstep(w.audio.footstep, k));
+    this.rig.update(dt, this.player, look, w.heightAt, moving, t - this.input.lastLookTime, w.colliders);
+    // With the map open (you can't walk then), turning the camera (right side of the screen / mouse) also turns the
+    // explorer to face where the camera looks, so the map's arrow (the explorer's heading) turns with it.
+    // (Once you turn the camera, it keeps easing until it's aligned; closing the map stops it.)
+    if (!this.mapView.open || moving) this.mapAlign = false;
+    else if (t - this.input.lastLookTime < 0.1) this.mapAlign = true;
+    if (this.mapAlign) {
+      const want = this.rig.yaw + Math.PI;
+      this.player.heading = dampAngle(this.player.heading, want, 16, dt);
+      this.player.object.rotation.y = this.player.heading;
+      if (Math.abs(Math.atan2(Math.sin(want - this.player.heading), Math.cos(want - this.player.heading))) < 0.003) this.mapAlign = false;
+    }
+    if (w.constrainCamera) w.constrainCamera(this.camera, this.rig, P, dt); // e.g. keep it inside the ice hole's cave
+
+    // world mechanics (e.g. snow storms), then the hunter, whose brain reads the mechanics' signals
+    if (w.mechanics) {
+      const mctx = {
+        player: P, camera: this.camera, audio: this.audio, hud: this.hud, growl: w.audio.growl, touch: isTouch,
+        enabled: !w.portal.active, gems: this.groundGemSpots(), portal: { x: w.portal.position.x, z: w.portal.position.z }, base: this.base,
+      };
+      w.mechanics.update(dt, t, mctx);
+      // a contextual action within reach (the glacier: take the map from its crate), used with E or the action button
+      const act = w.mechanics.action ? w.mechanics.action() : null;
+      if (this.actionQueued) { this.actionQueued = false; if (act && w.mechanics.doAction) w.mechanics.doAction(mctx); }
+      this.hud.setAction(w.mechanics.action ? w.mechanics.action() : null);
+    } else this.hud.setAction(null);
+    const d = w.monster.update(dt, { player: this.player, world: w, rng: this.rng, signals: w.mechanics ? w.mechanics.signals : null, portal: { x: w.portal.position.x, z: w.portal.position.z } });
+    const danger = w.monster.danger(d);
+    this.hud.setDanger(danger);
+    this.growlTimer -= dt;
+    if (this.growlTimer <= 0) {
+      this.audio.growl(w.audio.growl, Math.pow(clamp(1 - d / 140, 0, 1), 1.4));
+      this.growlTimer = 2.5 + Math.random() * 3 + (d / 40);
+    }
+    if (d < w.monster.body.radius + PLAYER.radius + 0.35) { this.caught(); return; }
+
+    // drop (Q key or the touch button)
+    if (this.dropQueued) { this.dropQueued = false; this.dropGem(); }
+
+    // Resonance Call
+    const ground = w.gems.filter((g) => g.state === 'ground');
+    // portal open: no call at all (no ring, no trail) until the next world.
+    // holding the last needed gem: the ring still appears, but it lights no gems and shows no direction.
+    let inRing = 0;
+    // some worlds silence the call until you've found something (the glacier: the explorers' map)
+    const callOk = !w.mechanics?.canCall || w.mechanics.canCall();
+    const stillNow = !moving && this.player.speed < 0.4;
+    this.stillTime = stillNow ? (this.stillTime || 0) + dt : 0;
+    if (!callOk && !this.hasMap() && !w.portal.active && this.stillTime > 1.5 && this.time > 12 && !this.toldNoCall && w.mechanics.callLockedHint) { this.toldNoCall = true; this.hud.toast(w.mechanics.callLockedHint, 4200); }
+    if (callOk && !this.callTaught && !w.portal.active) { this.callTaught = true; setTimeout(() => this.state === 'playing' && this.hud.toast(CALL_HINT(), 4200), 4600); }
+    if (w.portal.active || !callOk) {
+      if (this.resonance.radius > 0 || this.resonance.trailTarget) this.resonance.reset();
+      for (const g of ground) g.litTarget = 0;
+      this.hud.setCall(false);
+    } else {
+      const noneNeeded = w.portal.filled + this.carried.length >= w.portal.quota;
+      const still = !moving && this.player.speed < 0.4;
+      if (noneNeeded) {
+        this.resonance.trailTarget = null;
+        for (const g of ground) g.litTarget = 0;
+      }
+      inRing = this.resonance.update(dt, t, still, this.player, w, noneNeeded ? [] : ground);
+      this.hud.setCall(this.resonance.charging, this.resonance.radius, this.resonance.radius / CALL.maxRadius, inRing, !!this.resonance.trailTarget);
+    }
+
+    // gems on the ground: proximity hum, pickup. Until you have a way to find gems (the call, or the world's map)
+    // they only hum from right next to them
+    const humR = callOk || this.hasMap() ? GEMS.humRadius : GEMS.humRadiusBlind;
+    let near = 0;
+    for (const g of ground) {
+      const gp = g.group.position;
+      const gd = Math.hypot(gp.x - P.x, gp.z - P.z);
+      g.near = clamp(1 - gd / humR, 0, 1);
+      near = Math.max(near, g.near);
+      if (g.blockPickup && gd > GEMS.pickupRadius + 1.5) g.blockPickup = false;
+      if (!g.blockPickup && gd < GEMS.pickupRadius && Math.abs(gp.y - P.y - 1) < 2.5) {
+        g.state = 'carried';
+        g.marked = false;
+        w.scene.remove(g.group);
+        this.carried.push(g);
+        this.player.setCarried(this.carried.length);
+        this.audio.pickup();
+        this.updateGemHud();
+        if (this.delivered === 0 && this.carried.length === 1 && this.level === 0) this.hud.toast('Bring it to the portal — every gem you carry slows you down', 3600);
+      }
+      g.update(dt, t);
+    }
+
+    // portal: feed carried gems, then step through
+    const portal = w.portal;
+    portal.update(dt, t);
+    const pd = dist2D(portal.position, P);
+    if (pd < PORTAL.insertRadius && this.carried.length && portal.filled < portal.quota) {
+      this.insertTimer -= dt;
+      if (this.insertTimer <= 0) {
+        this.insertTimer = PORTAL.insertInterval;
+        const g = this.carried.pop();
+        g.state = 'socketed';
+        this.delivered++;
+        this.player.setCarried(this.carried.length);
+        this.audio.insert(portal.filled);
+        const done = portal.insert();
+        if (!done && w.mechanics?.onGemInserted) w.mechanics.onGemInserted({ player: P, audio: this.audio, hud: this.hud, gems: this.groundGemSpots(), portal: { x: portal.position.x, z: portal.position.z }, base: this.base });
+        if (done) {
+          portal.activate();
+          // the hunter vanishes: you are free to roam until you choose to step through
+          w.monster.active = false;
+          w.monster.object.visible = false;
+          this.hud.setDanger(0);
+          this.audio.activate();
+          this.hud.toast(this.level === WORLDS.length - 1 ? 'The way home is open — step through!' : 'The portal is open — step through!', 3200);
+        }
+        this.updateGemHud();
+      }
+    } else this.insertTimer = 0.15;
+    if (portal.active && portal.contains(P)) {
+      this.hud.setCall(false);
+      if (this.level === WORLDS.length - 1) { this.win(); return; }
+      this.enterLevel(this.level + 1);
+      return;
+    }
+
+    w.update(dt, t, this.camera, P);
+    const held = this.hasMap();
+    this.hud.setMap(held);
+    this.hud.setJournal(!!this.briefingData());
+    if (!held && this.mapView.open) this.closeMap();
+    if (this.mapView.open) {
+      this.mapView.zoomBy(this.input.consumeZoom());
+      this.mapView.draw(w, {
+        player: P, heading: this.player.heading, gems: this.groundGemSpots(), t,
+        portal: { x: portal.position.x, z: portal.position.z }, ...(w.mechanics?.mapMarks ? w.mechanics.mapMarks() : {}),
+      });
+    }
+    this.audio.update(dt, {
+      danger, intensity: Math.pow(clamp(1 - d / 130, 0, 1), 1.15),
+      portalProximity: clamp(1 - pd / 35, 0, 1), portalFreq: portal.dest.theme.hum,
+      gemNear: near, call: this.resonance.radius / CALL.maxRadius, charging: this.resonance.charging,
+    });
+  }
+}
+
+window.__game = new Game();

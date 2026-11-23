@@ -1,0 +1,294 @@
+// The explorers' map: a hand-drawn chart of the current world, held up almost full screen over the game (which keeps
+// running; see held.js for what all held items share). The chart is square, so it sits on an unrolled scroll that
+// takes the screen's proportions: wooden rods at both ends, the world's name, the legend and a compass on the parchment
+// beside the chart, the close and zoom controls in the top-right corner.
+// It shows you (an arrow pointing the way the explorer faces, with a faint view cone), the portal, the ice hole and every
+// gem lying on the ground. Gems lying close together (e.g. the ones you lose when caught) share one diamond with a
+// count, so a pile never reads as a single gem. Zoomed in, the chart centres on you (stopping at the map's edge),
+// and anything out of view gets a small pointer at the chart's edge.
+// The world supplies what's drawn through `world.mapInfo`:
+//   { kind(x, z) -> 'lake' | 'rock' | 'ground', landmarks: [{ x, z, label }], trees: [{ x, z }], title }
+// The world is sampled once into a grid; the chart (paper, lakes, cliffs, contour lines, trees, landmarks) is drawn
+// from it for the current view and size, and redrawn only when the view changes (zooming, resizing); the marks are
+// drawn on top every frame. Marks keep a fixed size on screen whatever the zoom.
+import * as THREE from 'three';
+import { gemMapColor } from '../entities/gem.js';
+import { Zoom, heldControls } from './held.js';
+
+const MARK = 1.15;     // size of the marks, in CSS px per unit of their original drawing
+const GRID = 256;      // world samples per side
+const PAPER = '#e6eef4';
+
+const COMPASS = '<svg class="map-compass" viewBox="-30 -36 60 66" aria-hidden="true"><circle r="22" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".75"/>'
+  + '<circle r="17" fill="none" stroke="currentColor" stroke-width=".8" opacity=".45"/>'
+  + '<path d="M0-20 6 0 0 20-6 0z" fill="currentColor" opacity=".25"/><path d="M0-20 6 0H-6z" fill="currentColor"/>'
+  + '<path d="M-20 0h-5M20 0h5M0 20v5" stroke="currentColor" stroke-width="1.4"/>'
+  + '<text y="-26" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-weight="700" font-size="11" fill="currentColor">N</text></svg>';
+
+export class MapView {
+  constructor() {
+    this.el = document.createElement('div');
+    this.el.id = 'map-view';
+    this.el.className = 'held-item';
+    this.el.innerHTML = '<div class="scroll"><i class="rod"></i><div class="sheet">'
+      + '<div class="map-side map-side-l"><div class="map-title"></div><i class="map-rule"></i>'
+      + '<ul class="map-legend"><li class="lg-you">You</li><li class="lg-gem">Gems</li><li class="lg-portal">Portal</li><li class="lg-hole">Ice hole</li></ul></div>'
+      + '<div class="map-chart"><canvas></canvas></div>'
+      + '<div class="map-side map-side-r">' + COMPASS + '</div>'
+      + '</div><i class="rod"></i></div>';
+    document.getElementById('hud').appendChild(this.el);
+    this.sheet = this.el.querySelector('.sheet');
+    this.canvas = this.el.querySelector('canvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.hold = { pads: 'right', zoom: true, pauses: false };   // turn the camera to point your arrow; zoom; the game runs on
+    this.zoom = new Zoom(1, 4);
+    this.onClose = null;
+    this.ctl = heldControls({ label: 'map', zoom: this.zoom, onClose: () => this.onClose && this.onClose() });
+    this.sheet.appendChild(this.ctl.el);
+    this.open = false;
+    this.grids = new Map();
+    this.rendered = null;
+    this.cs = 0; this.dpr = 1;
+    this.lastT = null;
+    addEventListener('resize', () => { if (this.open) this.layout(); });
+  }
+
+  show(on) {
+    this.open = on;
+    this.el.classList.toggle('show', on);
+    if (on) { this.layout(); this.lastT = null; }
+  }
+
+  zoomBy(f) { if (f !== 1) { this.zoom.by(f); this.ctl.refresh(); } }
+
+  // fit the square chart into the scroll: as tall as the sheet allows, keeping room beside it for the legend and compass
+  layout() {
+    const w = this.sheet.clientWidth, h = this.sheet.clientHeight;
+    if (!w || !h) return;
+    const pad = Math.round(Math.min(26, Math.max(10, h * 0.035)));
+    const side = w < 900 ? 118 : 150;
+    const cs = Math.max(120, Math.floor(Math.min(h - 2 * pad, w - 2 * side)));
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    this.sheet.style.setProperty('--chart', cs + 'px');
+    if (cs !== this.cs || dpr !== this.dpr) {
+      this.cs = cs; this.dpr = dpr;
+      this.canvas.width = this.canvas.height = Math.round(cs * dpr);
+      this.rendered = null;
+    }
+  }
+
+  // the world sampled once: ground height, and lake / cliff weights (blended, so their edges stay smooth when zoomed)
+  grid(world) {
+    if (this.grids.has(world)) return this.grids.get(world);
+    const S = world.radius + 8, N = GRID, info = world.mapInfo;
+    const hs = new Float32Array(N * N), lake = new Float32Array(N * N), rock = new Float32Array(N * N);
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      const x = -S + i * (2 * S / (N - 1)), z = -S + j * (2 * S / (N - 1));
+      hs[j * N + i] = world.groundAt ? world.groundAt(x, z) : world.heightAt(x, z);
+      const kd = info.kind(x, z);
+      lake[j * N + i] = kd === 'lake' ? 1 : 0;
+      rock[j * N + i] = kd === 'rock' ? 1 : 0;
+    }
+    const gr = { S, N, hs, lake, rock };
+    this.grids.set(world, gr);
+    return gr;
+  }
+
+  // draw the chart for a view (centre cx, cz and half-width, in metres) at the canvas's resolution
+  render(world, view) {
+    const { S, N, hs, lake, rock } = this.grid(world);
+    const info = world.mapInfo;
+    const P = this.canvas.width, dpr = this.dpr, cs = this.cs;
+    const c = document.createElement('canvas'); c.width = c.height = P;
+    const g = c.getContext('2d');
+    const img = g.createImageData(P, P), d = img.data;
+    const H = new Float32Array(P * P);
+    const R = new Uint8Array(P * P);   // cliff pixels (contours drawn lighter over their hatching)
+    const m = (2 * view.half) / P, x0 = view.cx - view.half, z0 = view.cz - view.half;
+    const toG = (N - 1) / (2 * S);
+    const paper = [232, 238, 242], lakeC = [158, 202, 230], rockC = [168, 178, 192];
+    const hatch = Math.max(1, Math.round(dpr)), hatchEvery = 5 * hatch;
+    for (let y = 0; y < P; y++) {
+      let gz = ((z0 + (y + 0.5) * m) + S) * toG; gz = Math.min(N - 1.001, Math.max(0, gz));
+      const j = Math.floor(gz), tz = gz - j;
+      for (let x = 0; x < P; x++) {
+        let gx = ((x0 + (x + 0.5) * m) + S) * toG; gx = Math.min(N - 1.001, Math.max(0, gx));
+        const i = Math.floor(gx), tx = gx - i, a = j * N + i;
+        const w00 = (1 - tx) * (1 - tz), w10 = tx * (1 - tz), w01 = (1 - tx) * tz, w11 = tx * tz;
+        const p = y * P + x;
+        H[p] = hs[a] * w00 + hs[a + 1] * w10 + hs[a + N] * w01 + hs[a + N + 1] * w11;
+        const lk = lake[a] * w00 + lake[a + 1] * w10 + lake[a + N] * w01 + lake[a + N + 1] * w11;
+        const rk = rock[a] * w00 + rock[a + 1] * w10 + rock[a + N] * w01 + rock[a + N + 1] * w11;
+        const kd = lk > 0.5 ? 1 : rk > 0.5 ? 2 : 0;
+        if (kd === 2) R[p] = 1;
+        const col = kd === 1 ? lakeC : kd === 2 ? rockC : paper;
+        const shade = kd === 2 && ((x + y) % hatchEvery < hatch) ? -34 : 0;   // hatching on cliffs
+        const n = ((x * 73856093) ^ (y * 19349663)) & 15;                      // paper grain
+        const o = p * 4;
+        d[o] = col[0] + shade - n * 0.6; d[o + 1] = col[1] + shade - n * 0.6; d[o + 2] = col[2] + shade - n * 0.4; d[o + 3] = 255;
+      }
+    }
+    // contour lines every 3 m (every 5th one heavier), drawn where the 3 m band changes between neighbouring pixels
+    const thin = Math.max(1, Math.round(dpr * 0.75)), thick = thin * 2;
+    for (let y = 0; y < P - thick; y++) for (let x = 0; x < P - thick; x++) {
+      const p = y * P + x, a = Math.floor(H[p] / 3);
+      const r1 = Math.floor(H[p + thin] / 3), d1 = Math.floor(H[p + thin * P] / 3);
+      let line = 0;
+      if (r1 !== a || d1 !== a) line = Math.max(a, r1, d1) % 5 === 0 ? 2 : 1;
+      else {
+        const r2 = Math.floor(H[p + thick] / 3), d2 = Math.floor(H[p + thick * P] / 3);
+        if ((r2 !== a || d2 !== a) && Math.max(a, r2, d2) % 5 === 0) line = 2;
+      }
+      if (!line) continue;
+      const k = (line === 2 ? 70 : 42) * (R[p] ? 0.4 : 1), o = p * 4;
+      d[o] -= k * 0.9; d[o + 1] -= k * 0.7; d[o + 2] -= k * 0.45;
+    }
+    g.putImageData(img, 0, 0);
+    g.scale(dpr, dpr);
+    const sx = (x) => (x - view.cx) / view.half * cs / 2 + cs / 2;
+    const sz = (z) => (z - view.cz) / view.half * cs / 2 + cs / 2;
+    const zoom = S / view.half;
+    // trees
+    g.fillStyle = 'rgba(40, 86, 74, 0.55)';
+    const tr = 1.2 * Math.min(2.2, Math.sqrt(zoom));
+    for (const t of info.trees || []) {
+      const x = sx(t.x), y = sz(t.z);
+      if (x < -4 || y < -4 || x > cs + 4 || y > cs + 4) continue;
+      g.beginPath(); g.arc(x, y, tr, 0, 7); g.fill();
+    }
+    // the playable edge
+    g.strokeStyle = 'rgba(52, 38, 28, 0.55)'; g.lineWidth = 1.6; g.setLineDash([6, 5]);
+    g.beginPath(); g.arc(sx(0), sz(0), (world.radius - 10) * cs / (2 * view.half), 0, 7); g.stroke(); g.setLineDash([]);
+    // landmarks
+    const fs = Math.round(Math.min(16, Math.max(12, cs * 0.024)));
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    for (const l of info.landmarks || []) {
+      const x = sx(l.x), y = sz(l.z);
+      if (x < -60 || y < -20 || x > cs + 60 || y > cs + 20) continue;
+      g.fillStyle = 'rgba(52, 38, 28, 0.9)';
+      g.beginPath(); g.moveTo(x, y - 5); g.lineTo(x + 4.5, y + 3); g.lineTo(x - 4.5, y + 3); g.closePath(); g.fill();
+      g.font = `700 ${fs}px Cinzel, Georgia, serif`;
+      g.lineWidth = 4; g.strokeStyle = 'rgba(230, 238, 244, 0.9)'; g.strokeText(l.label, x, y + 6);
+      g.fillStyle = 'rgba(52, 38, 28, 0.9)'; g.fillText(l.label, x, y + 6);
+    }
+    // a soft edge, as on old paper
+    const vg = g.createRadialGradient(cs / 2, cs / 2, cs * 0.3, cs / 2, cs / 2, cs * 0.72);
+    vg.addColorStop(0, 'rgba(90, 70, 40, 0)'); vg.addColorStop(1, 'rgba(90, 70, 40, 0.24)');
+    g.fillStyle = vg; g.fillRect(0, 0, cs, cs);
+    this.rendered = { img: c, world, cx: view.cx, cz: view.cz, half: view.half, size: P };
+  }
+
+  // state = { player: {x, z}, heading (the explorer's facing, radians), gems: [{x, z}], portal: {x, z}, hole: {x, z} | null, t }
+  draw(world, state) {
+    if (!this.open || !world.mapInfo) return;
+    if (!this.cs) this.layout();
+    if (!this.cs) return;
+    const t = state.t;
+    const dt = this.lastT === null ? 0 : Math.min(0.1, Math.max(0, t - this.lastT));
+    this.lastT = t;
+    this.zoom.update(dt);
+    const title = world.mapInfo.title || world.def?.name || '';
+    if (this.title !== title) {
+      this.title = title;
+      this.el.querySelector('.map-title').textContent = title;
+    }
+    this.el.querySelector('.lg-hole').style.display = state.hole ? '' : 'none';
+    // the view: the whole map at 1×; zoomed in, centred on you but never past the map's edge
+    const S = this.grid(world).S, half = S / this.zoom.v, lim = S - half;
+    const view = { half, cx: Math.max(-lim, Math.min(lim, state.player.x)), cz: Math.max(-lim, Math.min(lim, state.player.z)) };
+    const r = this.rendered, cs = this.cs;
+    const fresh = r && r.world === world && r.size === this.canvas.width;
+    const same = fresh && Math.abs(r.half - view.half) < 1e-3 * S && Math.hypot(r.cx - view.cx, r.cz - view.cz) * cs / (2 * half) < 0.5;
+    if (!same && (!fresh || !this.zoom.moving)) this.render(world, view);
+    const g = this.ctx;
+    g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    g.fillStyle = PAPER; g.fillRect(0, 0, cs, cs);
+    const k = cs / (2 * view.half);
+    {
+      // while zooming, the last drawn chart is stretched to the current view until the zoom settles
+      const R = this.rendered;
+      g.drawImage(R.img, (R.cx - R.half - view.cx) * k + cs / 2, (R.cz - R.half - view.cz) * k + cs / 2, 2 * R.half * k, 2 * R.half * k);
+    }
+    const px = (x) => (x - view.cx) * k + cs / 2, pz = (z) => (z - view.cz) * k + cs / 2;
+    const M = MARK;
+    g.save();
+    g.beginPath(); g.rect(0, 0, cs, cs); g.clip();
+    const off = [];   // marks out of view, pointed at from the chart's edge
+    const inView = (x, y) => x > 0 && y > 0 && x < cs && y < cs;
+    // the ice hole
+    if (state.hole) {
+      const x = px(state.hole.x), y = pz(state.hole.z);
+      if (!inView(x, y)) off.push({ x, y, color: 'rgba(30, 90, 140, 0.95)' });
+      g.strokeStyle = 'rgba(30, 90, 140, 0.95)'; g.lineWidth = 2.2;
+      g.beginPath();
+      for (let a = 0; a < 12.6; a += 0.2) { const rr = (1 + a * 0.7) * M; g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+      g.stroke();
+      g.font = `700 ${Math.round(14 * M)}px Cinzel, Georgia, serif`; g.textAlign = 'center'; g.textBaseline = 'top';
+      g.lineWidth = 4; g.strokeStyle = 'rgba(230, 238, 244, 0.9)'; g.strokeText('Ice hole', x, y + 12 * M);
+      g.fillStyle = 'rgba(30, 90, 140, 0.95)'; g.fillText('Ice hole', x, y + 12 * M);
+    }
+    // the portal
+    {
+      const x = px(state.portal.x), y = pz(state.portal.z);
+      if (!inView(x, y)) off.push({ x, y, color: '#1890c8' });
+      const pulse = 1 + 0.12 * Math.sin(t * 3);
+      g.fillStyle = 'rgba(40, 170, 230, 0.25)';
+      g.beginPath(); g.arc(x, y, 13 * M * pulse, 0, 7); g.fill();
+      g.strokeStyle = '#1890c8'; g.lineWidth = 3;
+      g.beginPath(); g.ellipse(x, y, 6 * M, 8.5 * M, 0, 0, 7); g.stroke();
+    }
+    // gems: bright, pulsing diamonds. Gems closer than a diamond's width on the chart are drawn as one, with a count.
+    const piles = [];
+    for (const gm of state.gems) {
+      const x = px(gm.x), y = pz(gm.z);
+      const pile = piles.find((p) => Math.hypot(p.x - x, p.y - y) < 12 * M);
+      if (pile) { pile.n++; pile.x += (x - pile.x) / pile.n; pile.y += (y - pile.y) / pile.n; }
+      else piles.push({ x, y, n: 1, seed: gm.x });
+    }
+    // gems in this world's own colour (its gem's revealed colour, see worlds/*.js `gem`)
+    const gc = new THREE.Color(gemMapColor(world.def?.gem)), gHex = '#' + gc.getHexString();
+    const gRgb = `${Math.round(gc.r * 255)}, ${Math.round(gc.g * 255)}, ${Math.round(gc.b * 255)}`;
+    for (const { x, y, n, seed } of piles) {
+      if (!inView(x, y)) off.push({ x, y, color: gHex });
+      const p = 0.5 + 0.5 * Math.sin(t * 4 + seed * 0.1);
+      const glow = g.createRadialGradient(x, y, 0, x, y, 16 * M);
+      glow.addColorStop(0, `rgba(${gRgb}, ${0.55 + 0.3 * p})`); glow.addColorStop(1, `rgba(${gRgb}, 0)`);
+      g.fillStyle = glow; g.beginPath(); g.arc(x, y, 16 * M, 0, 7); g.fill();
+      g.fillStyle = gHex; g.strokeStyle = '#fff'; g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(x, y - 7 * M); g.lineTo(x + 5 * M, y); g.lineTo(x, y + 7 * M); g.lineTo(x - 5 * M, y); g.closePath(); g.fill(); g.stroke();
+      if (n > 1) {
+        const bx = x + 12 * M, by = y - 10 * M;
+        g.fillStyle = gHex; g.strokeStyle = '#fff'; g.lineWidth = 2;
+        g.beginPath(); g.arc(bx, by, 8.5 * M, 0, 7); g.fill(); g.stroke();
+        g.fillStyle = '#fff'; g.font = `800 ${Math.round(12 * M)}px Inter, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(String(n), bx, by + 0.5);
+      }
+    }
+    // you: an arrow pointing the way the explorer faces, with a faint view cone
+    {
+      const x = px(state.player.x), y = pz(state.player.z);
+      const a = Math.atan2(Math.cos(state.heading), Math.sin(state.heading));
+      const cr = 70 * M;
+      const cone = g.createRadialGradient(x, y, 0, x, y, cr);
+      cone.addColorStop(0, 'rgba(255, 140, 40, 0.38)'); cone.addColorStop(1, 'rgba(255, 140, 40, 0)');
+      g.fillStyle = cone;
+      g.beginPath(); g.moveTo(x, y); g.arc(x, y, cr, a - 0.5, a + 0.5); g.closePath(); g.fill();
+      g.save(); g.translate(x, y); g.rotate(a); g.scale(M, M);
+      g.fillStyle = '#ff7a1a'; g.strokeStyle = '#fff'; g.lineWidth = 2 / M;
+      g.beginPath(); g.moveTo(13, 0); g.lineTo(-8, 8); g.lineTo(-3.5, 0); g.lineTo(-8, -8); g.closePath(); g.fill(); g.stroke();
+      g.restore();
+    }
+    // pointers at the chart's edge toward what's out of view
+    const e = 13;
+    for (const o of off) {
+      const dx = o.x - cs / 2, dy = o.y - cs / 2;
+      const s = Math.min((cs / 2 - e) / Math.max(1e-6, Math.abs(dx)), (cs / 2 - e) / Math.max(1e-6, Math.abs(dy)));
+      const x = cs / 2 + dx * s, y = cs / 2 + dy * s;
+      g.save(); g.translate(x, y); g.rotate(Math.atan2(dy, dx));
+      g.fillStyle = o.color; g.strokeStyle = '#fff'; g.lineWidth = 1.6;
+      g.beginPath(); g.moveTo(8, 0); g.lineTo(-5, 6.5); g.lineTo(-2, 0); g.lineTo(-5, -6.5); g.closePath(); g.fill(); g.stroke();
+      g.restore();
+    }
+    g.restore();
+  }
+}
