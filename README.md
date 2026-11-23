@@ -9,7 +9,7 @@ No build step. From the repo root:
 python3 -m http.server 8000
 ```
 
-Open http://localhost:8000 in landscape. Controls: WASD / arrows to move, Shift to run, mouse to look, Q drop gem, E take, J journal, Tab map, Esc pause, M mute. On touch: left thumb joystick, right side to look.
+Open http://localhost:8000 in landscape. Controls: WASD / arrows to move, Shift to run, mouse to look, Q drop gem, Space or click to take, wheel / 1–9 to pick an item and Space to open it, Esc pause, M mute. On touch: left thumb joystick, right side to look.
 
 ## Docs
 - [`docs/NOTES.md`](docs/NOTES.md) — full design and technical reference (current state).
