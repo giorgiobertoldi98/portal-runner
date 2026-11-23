@@ -25,7 +25,7 @@
 //       action?() -> { id, label, icon } | null, doAction?(ctx),   // a contextual action (E / the action button),
 //                                      //   e.g. taking the glacier's map from its crate
 //       briefing?(touch) -> { kicker, title, image (SVG markup), text } | null,
-//                                      //   a journal page: one of your items while non-null (journal button / Tab);
+//                                      //   a note: one of your items while non-null (note button / Tab);
 //                                      //   it calls for attention as the level opens and replaces introHint
 //       onRespawn?({ base, heading, player }) -> string | null,  // after being caught; the string is added to the catch toast
 //     },

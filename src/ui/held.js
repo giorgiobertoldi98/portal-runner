@@ -1,7 +1,7 @@
-// Things you hold up to read (the explorers' map, a journal page) share one behaviour:
+// Things you hold up to read (the explorers' map, a note) share one behaviour:
 // - they open almost full screen, inset by a thin border (--held-m in style.css) where the world stays visible, so
 //   their proportions follow the screen's; each one fills its own shape with its own background (the map sits on
-//   a scroll, the sketch on a journal page);
+//   a scroll, the sketch on a note);
 // - each item says what still works while it's open (its `hold` settings, read by main.js):
 //     pads: 'both' (walk and turn), 'right' (turn the camera only) or 'none' (neither);
 //     zoom: whether it zooms (pinch, the mouse wheel, + / − and its zoom buttons);

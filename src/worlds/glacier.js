@@ -14,6 +14,7 @@ import { GLACIER, carryText } from '../config.js';
 import { createSnowStorms } from '../mechanics/snowStorms.js';
 import { createIceCave, pickCaveSites, terrainHole, SITE_CLEAR } from '../mechanics/iceCave.js';
 import { holeSketch } from '../mechanics/iceCaveSketch.js';
+import { createNotePickup } from '../mechanics/notePickup.js';
 import { extendMaterial, swayMat, canvasTexture, glowPoints, createPlume, createFire, createLayout, flagLine, tickShared } from '../engine/props.js';
 
 const TERRAIN_SIZE = 1100; // metres across the ground mesh (also used by gridHeight)
@@ -660,6 +661,7 @@ function build({ quality }) {
   const cave = createIceCave({ scene, groundAt: heightAt, sites: caveSites, holeUniform, colliders, density });
   // the ground everything stands on: the ice hole where it is open, the terrain everywhere else
   const worldHeight = (x, z) => cave.heightAt(x, z) ?? heightAt(x, z);
+  const note = createNotePickup({ scene, heightAt: worldHeight });
   const storms = createSnowStorms({ scene, heightAt: worldHeight, createParticles, density });
   const inSite = (x, z) => caveSites.some((c) => Math.abs(x - c.x) < SITE_CLEAR && Math.abs(z - c.z) < SITE_CLEAR && Math.hypot(x - c.x, z - c.z) < SITE_CLEAR);
   let sketch = null;
@@ -668,7 +670,11 @@ function build({ quality }) {
     signals: storms.signals,
     get storm() { return storms.storm; },
     get devices() { return storms.devices; },
-    setup(ctx) { cave.setup(ctx); storms.setup({ ...ctx, avoid: cave.avoid() }); },
+    setup(ctx) {
+      cave.setup(ctx);
+      note.setup({ base: ctx.base, isValidSpot: ctx.world.isValidSpot });
+      storms.setup({ ...ctx, avoid: cave.avoid() });
+    },
     update(dt, t, ctx) {
       // down in the ice hole (the pit or the cave) you're hidden: any storm dies at once and none can start, so the
       // Yeti, which already loses you there, has no storm to find you again by when you climb out
@@ -676,27 +682,28 @@ function build({ quality }) {
       if (hidden) storms.calm(ctx.audio);
       storms.update(dt, t, hidden ? { ...ctx, enabled: false } : ctx);
       cave.update(dt, t, ctx);
+      note.update(t, ctx.player);
     },
-    reset() { storms.reset(); cave.reset(); },
+    reset() { storms.reset(); cave.reset(); note.hide(); },
     onGemInserted(ctx) { storms.onGemInserted({ ...ctx, avoid: cave.avoid() }); },
     // read by main.js
     canCall: () => false,          // the gems here never answer the call: the explorers' map shows them instead
     hasMap: () => cave.hasMap,
-    action: () => (cave.canTake ? { id: 'take-map', label: 'Take the map', icon: 'map' } : null),
+    action: () => (note.canTake ? { id: 'take-note', label: 'Take the note', icon: 'note' }
+      : cave.canTake ? { id: 'take-map', label: 'Take the map', icon: 'map' } : null),
     // taking the map also reshuffles the storm devices (cues placed after the map's own chime)
     doAction: (ctx) => {
+      if (note.canTake) return note.take(ctx);
       const took = cave.take(ctx);
       if (took) storms.shift({ ...ctx, avoid: cave.avoid() }, { soundAt: 1.4, toastAt: 1.6 });
       return took;
     },
     mapMarks: () => ({ hole: cave.marker() }),
-    // the journal page, one of your items for the whole world: a memory of ice spikes seen somewhere
-    briefing: () => ({
-      kicker: 'The Frozen Peaks',
-      title: 'A page from my journal',
+    // the note found near the start, one of your items for the whole world once taken
+    briefing: () => (note.held ? {
       image: sketch || (sketch = holeSketch()),
-      text: 'I saw these ice spikes somewhere and cannot find them anymore...',
-    }),
+      text: 'Thought I saw ice spikes in a circle somewhere...',
+    } : null),
   };
   const trees = [...pines, ...spruces].filter((_, i) => i % 2 === 0).map((p) => ({ x: p.x, z: p.z }));
 

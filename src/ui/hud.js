@@ -5,6 +5,7 @@ const HEART = '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 21s-
 
 const ICONS = {
   map: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 6h12v12H6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><ellipse cx="6" cy="12" rx="2.2" ry="6" fill="none" stroke="currentColor" stroke-width="1.8"/><ellipse cx="18" cy="12" rx="2.2" ry="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M11 6v12" stroke="#ff6a4d" stroke-width="2.2"/></svg>',
+  note: '<svg viewBox="0 0 24 24" width="21" height="21"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 7.5h6M9 10.5h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".7"/></svg>',
   hand: '<svg viewBox="0 0 24 24" width="21" height="21"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-5.5a1.5 1.5 0 0 1 3 0V13m0-4.5a1.5 1.5 0 0 1 3 0V15a7 7 0 0 1-7 7h-1a7 7 0 0 1-5.6-2.8L3.6 15a1.6 1.6 0 0 1 2.4-2z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/></svg>',
 };
 
@@ -16,9 +17,9 @@ export class HUD {
       bannerTag: $('banner-tag'), toast: $('toast'), vignette: $('vignette'), fade: $('fade'),
       menu: $('screen-menu'), settings: $('screen-settings'), pause: $('screen-pause'), end: $('screen-end'), loading: $('screen-loading'),
       items: $('items'), itemLabel: $('item-label'), itemName: $('item-name'),
-      mapBtn: $('btn-map'), journalBtn: $('btn-journal'), endTitle: $('end-title'), endText: $('end-text'), endStats: $('end-stats'), joystick: $('joystick'),
+      mapBtn: $('btn-map'), noteBtn: $('btn-note'), endTitle: $('end-title'), endText: $('end-text'), endStats: $('end-stats'), joystick: $('joystick'),
     };
-    this.itemBtns = { journal: this.el.journalBtn, map: this.el.mapBtn };   // item id -> its button
+    this.itemBtns = { note: this.el.noteBtn, map: this.el.mapBtn };   // item id -> its button
     this.bannerTimer = null;
     this.toastTimer = null;
   }
@@ -50,7 +51,7 @@ export class HUD {
     this.el.callBar.style.width = `${Math.round(k * 100)}%`;
   }
 
-  // Your items (things you hold up to read: the journal page, the map), in the order you found them, and the selected
+  // Your items (things you hold up to read: the note, the map), in the order you found them, and the selected
   // one. PC: a slot bar; the label above it names the selected item for a moment after the selection changes (and
   // while that item calls for attention). Touch: buttons that fill a column of up to --max-rows, then wrap leftwards.
   setItems(ids, sel) {
@@ -78,7 +79,7 @@ export class HUD {
     clearTimeout(this.labelTimer);
     this.labelTimer = setTimeout(() => this.el.itemLabel.classList.remove('show'), 2600);
   }
-  // a tool calling for attention until it's used (a new item, e.g. the journal at a world's start or the map once
+  // a tool calling for attention until it's used (a new item, e.g. the note at a world's start or the map once
   // taken): a slow glow, and its name stays shown (beside it on touch, above the slot bar on PC while it's selected)
   attention(btn, on) {
     btn.classList.toggle('attn', !!on);

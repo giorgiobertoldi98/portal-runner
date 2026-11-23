@@ -1,5 +1,5 @@
-// The journal sketch at the start of the Frozen Peaks (the journal item): a quick field drawing, in ink and
-// blue wash, of a ring of ice spikes the explorer once saw somewhere in the snow. It is drawn from almost ground level,
+// The note's sketch at the start of the Frozen Peaks (the note item): a quick drawing, in ink and
+// blue wash, of a ring of ice spikes seen somewhere in the snow. It is drawn from almost ground level,
 // so the ring reads as a cluster of spikes standing on a snowy rise: no opening, no way in, no hint of what lies
 // inside. It matches the look of the hole's crown in iceCave.js (outward-leaning blue-ice shards, four spires a little
 // above the rest) so the player can recognise it, but it never shows where it is or what it is.
@@ -25,16 +25,6 @@ export function holeSketch() {
   };
   const back = shards.filter((s) => Math.sin(s[0]) < 0).sort((p, q) => Math.sin(p[0]) - Math.sin(q[0]));
   const front = shards.filter((s) => Math.sin(s[0]) >= 0).sort((p, q) => Math.sin(p[0]) - Math.sin(q[0]));
-
-  // ── a small figure for scale (≈ 1.8 m) ──
-  const ex = 398, ey = 232;
-  const explorer = `<g transform="translate(${ex} ${ey})" stroke="${INK}" stroke-width=".8">`
-    + `<ellipse cx="2" cy="1" rx="9" ry="2.2" fill="#9fb6c9" stroke="none" opacity=".6"/>`
-    + `<rect x="-3.6" y="-9" width="3" height="9" fill="#3b4a66"/><rect x="0.6" y="-9" width="3" height="9" fill="#3b4a66"/>`
-    + `<rect x="-4.6" y="-17.5" width="9.2" height="9" rx="1.5" fill="#f3efe6"/>`
-    + `<rect x="-6.4" y="-17" width="2.2" height="7" rx="1" fill="#f3efe6"/><rect x="4.2" y="-17" width="2.2" height="7" rx="1" fill="#f3efe6"/>`
-    + `<circle cx="0" cy="-21.5" r="4" fill="#f3efe6"/><path d="M-3 -21.5 h6" stroke="#1c2433" stroke-width="2"/>`
-    + `<path d="M0 -25.5 v2" stroke="#e8752a" stroke-width="1.6"/></g>`;
 
   // ── snow drifted against the foot of the front spikes, so they stand in the snow ──
   let drifts = '';
@@ -63,7 +53,5 @@ ${back.map(shard).join('')}
 <ellipse cx="${cx}" cy="${cy}" rx="${rx - 4}" ry="${ry - 1}" fill="#f4f6f5" stroke="none"/>
 ${front.map(shard).join('')}
 ${drifts}
-${explorer}
-<text x="22" y="292" font-family="Caveat, 'Segoe Print', 'Bradley Hand', cursive" font-size="18" fill="${INK}" opacity=".8">…but where?</text>
 </svg>`;
 }

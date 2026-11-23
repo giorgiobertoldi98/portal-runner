@@ -1,15 +1,20 @@
 // Keyboard + mouse + touch. On touch screens a joystick sits bottom-left (it jumps to where your thumb
 // lands anywhere on the left side) and the right side of the screen drags the camera.
-// While an item is held up (the map, a journal page: `holding`), `hold` says what still works: `move` (the joystick and
+// While an item is held up (the map, a note: `holding`), `hold` says what still works: `move` (the joystick and
 // movement keys), `look` (the camera: right side / turn pad / mouse) and `zoom` (pinching with two fingers anywhere, or
 // the mouse wheel, read with consumeZoom()). Set it with setHold().
 // With nothing held up, the mouse wheel steps through your items instead (consumeWheel(): +1 / -1 per notch).
+
+// How fast the arrow keys turn the camera, in the same "mouse pixels" per second that dragging produces
+const ARROW_TURN = 520;
+const ARROW_TILT = 330;
 
 export class Input {
   constructor(canvas, joystickEl, knobEl) {
     this.keys = new Set();
     this.look = { dx: 0, dy: 0 };
     this.lastLookTime = -10;
+    this.lastPoll = performance.now() / 1000;
     this.joy = { id: null, ox: 0, oy: 0, x: 0, y: 0, active: false };
     this.lookPointer = null;
     this.mouseDrag = null;
@@ -172,7 +177,18 @@ export class Input {
     this.wheelSteps = 0;
   }
 
+  // Everything the camera should turn by since the last call: mouse / touch drags, plus the arrow keys held down
+  // (the keyboard twin of the mouse: left / right turn the camera, up / down tilt it).
   consumeLook() {
+    const now = performance.now() / 1000;
+    const dt = Math.min(0.1, now - this.lastPoll);
+    this.lastPoll = now;
+    if (!this.holding || this.hold.look) {
+      const k = this.keys;
+      const turn = (k.has('ArrowRight') ? 1 : 0) - (k.has('ArrowLeft') ? 1 : 0);
+      const tilt = (k.has('ArrowDown') ? 1 : 0) - (k.has('ArrowUp') ? 1 : 0);
+      if (turn || tilt) this.addLook(turn * ARROW_TURN * dt, tilt * ARROW_TILT * dt);
+    }
     const l = { dx: this.look.dx, dy: this.look.dy };
     this.look.dx = this.look.dy = 0;
     return l;
@@ -183,10 +199,10 @@ export class Input {
     if (this.holding && !this.hold.move) { this.joystickEl.classList.remove('run'); return { x: 0, y: 0, run: false }; }
     const k = this.keys;
     let x = 0, y = 0;
-    if (k.has('KeyW') || k.has('ArrowUp')) y += 1;
-    if (k.has('KeyS') || k.has('ArrowDown')) y -= 1;
-    if (k.has('KeyD') || k.has('ArrowRight')) x += 1;
-    if (k.has('KeyA') || k.has('ArrowLeft')) x -= 1;
+    if (k.has('KeyW')) y += 1;
+    if (k.has('KeyS')) y -= 1;
+    if (k.has('KeyD')) x += 1;
+    if (k.has('KeyA')) x -= 1;
     let run = k.has('ShiftLeft') || k.has('ShiftRight');
     if (this.joy.active) {
       x += this.joy.x; y -= this.joy.y;

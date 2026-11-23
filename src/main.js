@@ -57,7 +57,7 @@ class Game {
     // Your items: things you hold up to read, gathered as you find them in a world (in that order) and kept until you
     // leave it, whatever happens meanwhile. Each world decides what exists through its hooks (briefing(), hasMap()).
     this.ITEMS = [
-      { id: 'journal', btn: this.hud.el.journalBtn, has: () => !!this.briefingData(), isOpen: () => this.briefing.open, open: () => this.openBriefing() },
+      { id: 'note', btn: this.hud.el.noteBtn, has: () => !!this.briefingData(), isOpen: () => this.briefing.open, open: () => this.openBriefing() },
       { id: 'map', btn: this.hud.el.mapBtn, has: () => this.hasMap(), isOpen: () => this.mapView.open, open: () => { if (!this.mapView.open) this.toggleMap(); } },
     ];
     this.items = [];     // ids, in the order found
@@ -136,7 +136,7 @@ class Game {
       // 1-9 pick an item (while nothing is held up)
       const digit = /^(Digit|Numpad)([1-9])$/.exec(e.code);
       if (digit && this.state === 'playing' && !this.heldItem() && +digit[2] <= this.items.length) { this.selectItem(+digit[2] - 1); return; }
-      // the journal page: Esc, Enter or Space also put it away
+      // the note: Esc, Enter or Space also put it away
       if (this.briefing.open && live) {
         if (['Escape', 'Enter', 'Space', 'NumpadEnter'].includes(e.code)) { e.preventDefault(); this.closeBriefing(); return; }
       }
@@ -170,7 +170,7 @@ class Game {
     this.syncHolding();
     this.audio.noiseBurst({ type: 'bandpass', freq: 2200, q: 1, dur: 0.22, gain: 0.07, attack: 0.01, sweepTo: this.mapView.open ? 3200 : 1200 });
   }
-  // put away whatever is held up (the map, the journal page) without a sound: when caught, between levels, leaving the run
+  // put away whatever is held up (the map, the note) without a sound: when caught, between levels, leaving the run
   putAway() { this.mapView.show(false); this.briefing.dismiss(); this.syncHolding(); }
   // put away the item you hold up, by hand (Tab)
   closeHeld() { if (this.mapView.open) this.toggleMap(); else if (this.briefing.open) this.closeBriefing(); }
@@ -203,7 +203,7 @@ class Game {
     this.syncItems();
   }
 
-  // Holding an item up (the map, the journal page): it covers almost the whole screen and the HUD steps aside
+  // Holding an item up (the map, the note): it covers almost the whole screen and the HUD steps aside
   // (style.css, body.holding). Each item's `hold` says which pads still work ('both', 'right' or 'none'), whether it
   // zooms and whether the game pauses while it's open (see held.js).
   heldItem() { return this.mapView.open ? this.mapView : this.briefing.open ? this.briefing : null; }
@@ -221,7 +221,7 @@ class Game {
     if (item) this.input.releaseLock();
   }
 
-  // the world's briefing card (the glacier: a journal page with a sketch), one of your items (see ITEMS)
+  // the world's briefing card (the glacier: a note with a sketch), one of your items (see ITEMS)
   briefingData() { return this.world?.mechanics?.briefing?.(isTouch) || null; }
   openBriefing() {
     const data = this.briefingData();
@@ -381,14 +381,13 @@ class Game {
         this.state = 'playing';
         this.clock.getDelta();
         this.hud.showBanner(def.name, def.tagline);
-        // a world with a briefing (the glacier's journal page): the journal joins your items and glows until you read
-        // it. That is the world's first hint.
         this.syncItems();
-        if (w.mechanics?.briefing?.(isTouch)) return;
         // the first hint of a run: the world's own (introHint), otherwise how to send a Resonance Call
+        // (never in a world where the call is silent)
         const intro = w.mechanics?.introHint?.(isTouch);
+        const callSilent = w.mechanics?.canCall && !w.mechanics.canCall();
         if (intro) setTimeout(() => this.state === 'playing' && this.hud.toast(intro, 5200), 3800);
-        else if (!this.callTaught) { this.callTaught = true; setTimeout(() => this.state === 'playing' && this.hud.toast(CALL_HINT(), 4200), 3800); }
+        else if (!this.callTaught && !callSilent) { this.callTaught = true; setTimeout(() => this.state === 'playing' && this.hud.toast(CALL_HINT(), 4200), 3800); }
       }, 120);
     }, fromMenu ? 250 : 600);
   }
@@ -564,7 +563,7 @@ class Game {
         // a held item that pauses the game: the world is frozen, the music plays on, and the camera turns if allowed
         this.audio.update(dt, {});
         const w = this.world;
-        this.rig.update(dt, this.player, this.input.consumeLook(), w.heightAt, false, t - this.input.lastLookTime, w.colliders);
+        this.rig.update(dt, this.player, this.input.consumeLook(), w.heightAt, w.colliders);
         if (w.constrainCamera) w.constrainCamera(this.camera, this.rig, this.player.position, dt);
         this.heldItem()?.zoomBy(this.input.consumeZoom());
         if (!this.heldItem()?.hold.pauses) this.state = 'playing';
@@ -584,7 +583,7 @@ class Game {
     const move = this.input.getMove();
     const moving = Math.hypot(move.x, move.y) > 0.1;
     this.player.update(dt, move, this.rig.yaw, w, null, (k) => this.audio.footstep(w.audio.footstep, k));
-    this.rig.update(dt, this.player, look, w.heightAt, moving, t - this.input.lastLookTime, w.colliders);
+    this.rig.update(dt, this.player, look, w.heightAt, w.colliders);
     // With the map open (you can't walk then), turning the camera (right side of the screen / mouse) also turns the
     // explorer to face where the camera looks, so the map's arrow (the explorer's heading) turns with it.
     // (Once you turn the camera, it keeps easing until it's aligned; closing the map stops it.)
