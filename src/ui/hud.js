@@ -49,8 +49,8 @@ export class HUD {
   // the item key guide beside the slot bar: wheel + click for mouse players, 1–9 + Tab otherwise
   setItemKeys(mouse) { this.el.itemKeys.classList.toggle('mouse', !!mouse); }
 
-  // the key that uses the contextual action on PC: Enter, or a click for anyone playing with the mouse
-  setActionKey(mouse) { this.el.actKey.textContent = mouse ? 'Click' : 'Enter'; }
+  // the key that uses the contextual action on PC: Space, or a click for anyone playing with the mouse
+  setActionKey(mouse) { this.el.actKey.textContent = mouse ? 'Click' : 'Space'; }
 
   setGems(filled, quota, carrying, open) {
     this.el.gemCount.textContent = `${filled} / ${quota}`;

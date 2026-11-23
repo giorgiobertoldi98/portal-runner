@@ -149,7 +149,7 @@ class Game {
       if (e.code === 'Escape' && this.state === 'menu' && !document.getElementById('screen-settings').classList.contains('hidden')) this.hud.showScreen('menu');
       if (e.code === 'KeyM') toggleMute();
       if ((e.code === 'KeyQ' || e.code === 'KeyG') && this.state === 'playing') this.dropQueued = true;
-      if ((e.code === 'Enter' || e.code === 'NumpadEnter') && this.state === 'playing') this.actionQueued = true;
+      if (e.code === 'Space' && !e.repeat && this.state === 'playing') this.actionQueued = true;
     });
     // tapping or clicking an item holds it up straight away (and selects it)
     for (const d of this.ITEMS) d.btn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.state === 'playing') this.useItem(d.id); });
@@ -187,7 +187,7 @@ class Game {
     }
     this.itemSel = clamp(this.itemSel, 0, Math.max(0, this.items.length - 1));
     this.hud.setItems(this.items, this.items[this.itemSel] ?? null);
-    // key hints follow what you play with: the mouse (click, wheel) or the keyboard alone (Enter, 1–9, Tab)
+    // key hints follow what you play with: the mouse (click, wheel) or the keyboard alone (Space, 1–9, Tab)
     const mouse = this.input.usedMouse;
     this.hud.setActionKey(mouse); this.hud.setItemKeys(mouse);
   }
@@ -615,7 +615,7 @@ class Game {
         enabled: !w.portal.active, gems: this.groundGemSpots(), portal: { x: w.portal.position.x, z: w.portal.position.z }, base: this.base,
       };
       w.mechanics.update(dt, t, mctx);
-      // a contextual action within reach (the glacier: take the map from its crate), used with Enter, a click or the action button
+      // a contextual action within reach (the glacier: take the map from its crate), used with Space, a click or the action button
       const act = w.mechanics.action ? w.mechanics.action() : null;
       if (this.actionQueued) { this.actionQueued = false; if (act && w.mechanics.doAction) w.mechanics.doAction(mctx); }
       this.hud.setAction(w.mechanics.action ? w.mechanics.action() : null);
