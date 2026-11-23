@@ -82,13 +82,14 @@ body:not(.touch) #items .tool.sel.attn { box-shadow: none; }
 #item-label .wheel { display: none; opacity: .7; }
 #items.many #item-label .wheel { display: block; }
 #item-label.show, #items.attn #item-label { opacity: 1; }
-/* PC: a quiet, always-present key guide just left of the slot bar: pick with the wheel or a number, open with Tab or a click.
-   The picking half only shows once there's more than one item to choose from. */
-#item-keys { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: flex-end; gap: 6px; padding: 7px 11px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); white-space: nowrap; pointer-events: none; font: 600 12px Inter, sans-serif; color: #fff; }
-#item-keys span { display: flex; align-items: center; gap: 7px; }
-#item-keys i { font-style: normal; opacity: .8; }
-#item-keys kbd { font: 700 12px Inter, sans-serif; padding: 3px 7px; border-radius: 6px; background: rgba(255, 255, 255, .22); }
-#item-keys svg { width: 17px; height: 17px; }
+/* PC: a quiet, always-present key guide just left of the slot bar, on one line: "[wheel] pick · [Tab] open" (1–9 instead of
+   the wheel for keyboard-only players). The picking half only shows once there's more than one item to choose from.
+   A soft dark pill with no border, so it reads over snow or sand without competing with the slots. */
+#item-keys { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 9px; padding: 4px 10px 4px 7px; border-radius: 99px; background: rgba(8, 10, 20, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); white-space: nowrap; pointer-events: none; font: 500 11px Inter, sans-serif; color: rgba(255, 255, 255, .78); }
+#item-keys span { display: flex; align-items: center; gap: 5px; }
+#items.many #item-keys .open::before { content: '·'; margin-right: 4px; opacity: .5; }
+#item-keys kbd { font: 700 10px Inter, sans-serif; color: #fff; padding: 2px 5px; border-radius: 5px; background: rgba(255, 255, 255, .15); }
+#item-keys svg { opacity: .9; }
 /* mouse players pick with the wheel, keyboard-only players with 1–9; everyone opens with Tab */
 #item-keys .m { display: none; }
 #item-keys.mouse .m { display: block; }
