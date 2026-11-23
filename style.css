@@ -82,6 +82,16 @@ body:not(.touch) #items .tool.sel.attn { box-shadow: none; }
 #item-label .wheel { display: none; opacity: .7; }
 #items.many #item-label .wheel { display: block; }
 #item-label.show, #items.attn #item-label { opacity: 1; }
+/* PC: a quiet, always-present key guide just left of the slot bar: pick with the wheel or a number, open with Tab or a click.
+   The picking half only shows once there's more than one item to choose from. */
+#item-keys { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: flex-end; gap: 3px; white-space: nowrap; pointer-events: none; font: 500 10.5px Inter, sans-serif; color: rgba(255, 255, 255, .72); text-shadow: 0 1px 4px rgba(0, 0, 0, .8); }
+#item-keys span { display: flex; align-items: center; gap: 5px; }
+#item-keys i { font-style: normal; opacity: .75; }
+#item-keys kbd { font: 700 10px Inter, sans-serif; padding: 2px 5px; border-radius: 5px; background: rgba(255, 255, 255, .14); }
+#item-keys svg { opacity: .85; }
+#item-keys .pick { display: none; }
+#items.many #item-keys .pick { display: flex; }
+body.touch #item-keys { display: none; }
 /* touch: one right-hand gutter (--edge) shared with the sound / pause buttons and the turn pad, so the tools sit in a
    column right above the pad, the same size and shape as the buttons at the top */
 body.touch #hud { --edge: calc(14px + env(safe-area-inset-right)); }

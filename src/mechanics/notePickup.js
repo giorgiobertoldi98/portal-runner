@@ -13,7 +13,7 @@ export function createNotePickup({ scene, heightAt }) {
   // white, with a glow around it
   const group = new THREE.Group();
   const paper = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.014, 0.82), flatMat({ color: 0xf2a33a, emissive: 0xc2661a, emissiveIntensity: 0.7 }));
-  paper.castShadow = true;
+  // no shadow: it floats, and a dark patch moving over the snow beneath it is distracting
   const bob = new THREE.Group();   // the paper and its glow float together
   bob.add(paper);
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTexture(), color: 0xffa844, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
