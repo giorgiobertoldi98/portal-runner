@@ -1,6 +1,6 @@
 // The handwritten note lying in the snow near where you start the Frozen Peaks. It glows softly; within reach a
 // "Take the note" action appears, and taking it makes the note one of your items (see main.js ITEMS).
-// Same shape as the map in iceCave.js: `canTake` (read by the world's `action` hook), `take(ctx)`, `held`.
+// Same shape as the map in iceCave.js: `canTake` (read by the world's `action` hook), `take(ctx)`, `grant()`, `held`.
 import * as THREE from 'three';
 import { softTexture, flatMat } from '../engine/utils.js';
 
@@ -54,12 +54,14 @@ export function createNotePickup({ scene, heightAt }) {
 
     take(ctx = {}) {
       if (!canTake || held) return false;
-      held = true; canTake = false;
-      group.visible = false;
+      this.grant();
       const a = ctx.audio;
       if (a) a.noiseBurst({ type: 'bandpass', freq: 3000, q: 1, dur: 0.22, gain: 0.08, attack: 0.01, sweepTo: 1600 });
       return true;
     },
+
+    // the note in your hands without picking it up (debug mode)
+    grant() { held = true; canTake = false; group.visible = false; },
 
     hide() { group.visible = false; canTake = false; },
   };

@@ -107,16 +107,20 @@ class Game {
     document.getElementById('btn-quit').addEventListener('click', toMenu);
     document.getElementById('btn-menu').addEventListener('click', toMenu);
     document.getElementById('btn-pause').addEventListener('click', (e) => { e.stopPropagation(); if (this.state === 'playing') this.pause(); else if (this.state === 'paused') this.resume(); });
-    // settings: footstep sounds on/off (remembered in this browser when storage is available)
-    let stepsOn = true;
-    try { stepsOn = localStorage.getItem('pr-footsteps') !== 'off'; } catch (_) {}
-    const stepBtns = document.querySelectorAll('.opt-steps');
-    const applySteps = () => { this.audio.footstepsOn = stepsOn; stepBtns.forEach((b) => b.setAttribute('aria-checked', String(stepsOn))); };
-    stepBtns.forEach((b) => b.addEventListener('click', () => {
-      stepsOn = !stepsOn; applySteps(); this.audio.init(); this.audio.click();
-      try { localStorage.setItem('pr-footsteps', stepsOn ? 'on' : 'off'); } catch (_) {}
-    }));
-    applySteps();
+    // settings switches, remembered in this browser when storage is available: footstep sounds (on by default) and
+    // debug mode (off by default; read at each level start)
+    const bindSwitch = (cls, key, on, apply) => {
+      try { const v = localStorage.getItem(key); if (v) on = v === 'on'; } catch (_) {}
+      const btns = document.querySelectorAll(cls);
+      const show = () => { apply(on); btns.forEach((b) => b.setAttribute('aria-checked', String(on))); };
+      btns.forEach((b) => b.addEventListener('click', () => {
+        on = !on; show(); this.audio.init(); this.audio.click();
+        try { localStorage.setItem(key, on ? 'on' : 'off'); } catch (_) {}
+      }));
+      show();
+    };
+    bindSwitch('.opt-steps', 'pr-footsteps', true, (on) => { this.audio.footstepsOn = on; });
+    bindSwitch('.opt-debug', 'pr-debug', false, (on) => { this.debug = on; });
 
     // menu track: browsers only allow sound after a gesture, so it starts on the first touch, click or key at the menu
     const wake = () => { if (this.state === 'menu') { this.audio.init(); this.menuAudio(); } };
@@ -325,6 +329,7 @@ class Game {
     }
     this.base = this.baseSpot();
     if (w.mechanics) w.mechanics.setup({ world: w, rng: this.rng, portal: { x: pp.x, z: pp.z }, base: this.base, gems: this.groundGemSpots() });
+    if (this.debug) w.mechanics?.grantAll?.();   // debug mode: start out holding everything this world lets you find
   }
 
   groundGemSpots() {
