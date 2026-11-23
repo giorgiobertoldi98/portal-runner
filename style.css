@@ -89,6 +89,10 @@ body:not(.touch) #items .tool.sel.attn { box-shadow: none; }
 #item-keys i { font-style: normal; opacity: .75; }
 #item-keys kbd { font: 700 10px Inter, sans-serif; padding: 2px 5px; border-radius: 5px; background: rgba(255, 255, 255, .14); }
 #item-keys svg { opacity: .85; }
+/* mouse players see wheel + click, keyboard-only players 1–9 + Tab */
+#item-keys .m { display: none; }
+#item-keys.mouse .m { display: block; }
+#item-keys.mouse .k { display: none; }
 #item-keys .pick { display: none; }
 #items.many #item-keys .pick { display: flex; }
 body.touch #item-keys { display: none; }

@@ -36,6 +36,7 @@ export class Input {
     addEventListener('blur', () => this.keys.clear());
     addEventListener('wheel', (e) => {
       const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
+      this.usedMouse = true;
       if (!this.holding) {
         // one step per mouse notch; a trackpad's small deltas add up to one (main.js reads them only during a run)
         this.wheelAcc += dy;

@@ -187,6 +187,9 @@ class Game {
     }
     this.itemSel = clamp(this.itemSel, 0, Math.max(0, this.items.length - 1));
     this.hud.setItems(this.items, this.items[this.itemSel] ?? null);
+    // key hints follow what you play with: the mouse (click, wheel) or the keyboard alone (Enter, 1–9, Tab)
+    const mouse = this.input.usedMouse || this.input.locked;
+    this.hud.setActionKey(mouse); this.hud.setItemKeys(mouse);
   }
   selectItem(i) {
     const n = this.items.length;
@@ -616,7 +619,6 @@ class Game {
       const act = w.mechanics.action ? w.mechanics.action() : null;
       if (this.actionQueued) { this.actionQueued = false; if (act && w.mechanics.doAction) w.mechanics.doAction(mctx); }
       this.hud.setAction(w.mechanics.action ? w.mechanics.action() : null);
-      this.hud.setActionKey(this.input.usedMouse || this.input.locked);
     } else this.hud.setAction(null);
     const d = w.monster.update(dt, { player: this.player, world: w, rng: this.rng, signals: w.mechanics ? w.mechanics.signals : null, portal: { x: w.portal.position.x, z: w.portal.position.z } });
     const danger = w.monster.danger(d);

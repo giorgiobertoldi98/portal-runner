@@ -22,7 +22,7 @@ const GEM_ICONS = {
 export class HUD {
   constructor() {
     this.el = {
-      hud: $('hud'), gemCount: $('gem-count'), carry: $('gem-carry'), dropN: $('drop-n'), act: $('btn-act'), actLabel: $('act-label'), actIcon: $('btn-act').querySelector('.ico'), actKey: $('act-key'), gemIcon: $('gem-icon'), lives: $('lives'), level: $('level'), drop: $('btn-drop'), callChip: $('call-chip'), callText: $('call-text'), callBar: $('call-bar'),
+      hud: $('hud'), gemCount: $('gem-count'), carry: $('gem-carry'), dropN: $('drop-n'), act: $('btn-act'), actLabel: $('act-label'), actIcon: $('btn-act').querySelector('.ico'), actKey: $('act-key'), itemKeys: $('item-keys'), gemIcon: $('gem-icon'), lives: $('lives'), level: $('level'), drop: $('btn-drop'), callChip: $('call-chip'), callText: $('call-text'), callBar: $('call-bar'),
       banner: $('banner'), bannerName: $('banner-name'),
       bannerTag: $('banner-tag'), toast: $('toast'), vignette: $('vignette'), fade: $('fade'),
       menu: $('screen-menu'), settings: $('screen-settings'), pause: $('screen-pause'), end: $('screen-end'), loading: $('screen-loading'),
@@ -45,6 +45,9 @@ export class HUD {
     this.el.level.textContent = name;
     this.el.gemIcon.innerHTML = GEM_ICONS[gemStyle] || GEM_ICONS.cluster;
   }
+
+  // the item key guide beside the slot bar: wheel + click for mouse players, 1–9 + Tab otherwise
+  setItemKeys(mouse) { this.el.itemKeys.classList.toggle('mouse', !!mouse); }
 
   // the key that uses the contextual action on PC: Enter, or a click for anyone playing with the mouse
   setActionKey(mouse) { this.el.actKey.textContent = mouse ? 'Click' : 'Enter'; }
