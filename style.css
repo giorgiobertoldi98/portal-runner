@@ -82,11 +82,12 @@ body:not(.touch) #items .tool.sel.attn { box-shadow: none; }
 #item-label .wheel { display: none; opacity: .7; }
 #items.many #item-label .wheel { display: block; }
 #item-label.show, #items.attn #item-label { opacity: 1; }
-/* PC: a quiet, always-present key guide just left of the slot bar, on one line: "[wheel] pick · [Tab] open" (1–9 instead of
+/* PC: a quiet, always-present key guide just below the slot bar, on one line: "[wheel] pick · [Tab] open" (1–9 instead of
    the wheel for keyboard-only players). The picking half only shows once there's more than one item to choose from.
-   A soft dark pill with no border, so it reads over snow or sand without competing with the slots. */
-#item-keys { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 9px; padding: 4px 10px 4px 7px; border-radius: 99px; background: rgba(8, 10, 20, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); white-space: nowrap; pointer-events: none; font: 500 11px Inter, sans-serif; color: rgba(255, 255, 255, .78); }
-#item-keys span { display: flex; align-items: center; gap: 5px; }
+   Plain text, no container: a soft dark shadow keeps it legible over snow or sand. */
+#item-keys { position: absolute; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); display: flex; align-items: center; gap: 9px; white-space: nowrap; pointer-events: none; font: 500 11px Inter, sans-serif; color: rgba(255, 255, 255, .85); text-shadow: 0 0 6px rgba(0, 0, 0, .75), 0 1px 2px rgba(0, 0, 0, .6); filter: drop-shadow(0 0 4px rgba(0, 0, 0, .35)); }
+#item-keys .pick, #item-keys .open { display: flex; align-items: center; gap: 5px; }
+body:not(.touch) #tools { bottom: calc(34px + env(safe-area-inset-bottom)); }   /* room for the key guide below the bar */
 #items.many #item-keys .open::before { content: '·'; margin-right: 4px; opacity: .5; }
 #item-keys kbd { font: 700 10px Inter, sans-serif; color: #fff; padding: 2px 5px; border-radius: 5px; background: rgba(255, 255, 255, .15); }
 #item-keys svg { opacity: .9; }
