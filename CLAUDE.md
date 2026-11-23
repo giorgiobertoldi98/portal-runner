@@ -2,6 +2,8 @@
 
 Portal Runner is Giorgio's personal 3D browser game (Three.js): gem hunting across worlds connected by portals.
 
+This repo is the only home of the project: the code and `docs/NOTES.md` here are the source of truth. There is no claude.ai Project or artifact to keep in sync. Work may happen from Claude Code in VS Code or from the Claude app, so always commit and push finished work, and pull before starting.
+
 ## Read first, every session
 - `docs/NOTES.md` is the living design + technical reference. Read it before working on anything.
 - Keep it updated in the same commit as any change to behaviour, tuning, layout or architecture.

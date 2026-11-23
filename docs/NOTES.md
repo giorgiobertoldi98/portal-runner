@@ -3,7 +3,7 @@
 > Living reference for the game. Always read before working on the project. Update it whenever something changes, and keep it a description of the current state only, with no history or references to past implementations.
 
 ## Concept
-Portal Runner is a personal 3D game built with Three.js, played in the browser from a published link. It has polished graphics and sound. It must be fun but not impossible.
+Portal Runner is a personal 3D game built with Three.js, played in the browser. It has polished graphics and sound. It must be fun but not impossible.
 
 ## Screens and orientation
 - **Landscape only**, on mobile and on PC. Every screen (menu, Settings, the run, the journal page, the map, pause and end screens) is designed for a screen wider than it is tall.
@@ -193,5 +193,5 @@ Why these values:
 - **Loudness**: every sound bus (effects, ambient, music) goes through one shared level stage, set with `audio.setLevel()` and smoothed: `AUDIO.menuLevel` (1) at the menu and Settings, `AUDIO.runLevel` (0.4) from the start of each level. The menu track is written quiet while the worlds' sounds are written louder, so the run level brings them close together without touching each world's own mix. If the game still sounds louder than the menu, lower `runLevel`; if too faint, raise it. The mute button works separately on the master gain.
 - The safe zone is enforced for every hunter in `src/entities/monster.js`: it tells the brain `ctx.safe` (plus `ctx.portal`), keeps the hunter out of the zone and switches its danger cues off. `ctx.safe` is also true while `world.isSheltered` says you're hidden. A new brain only has to decide what to do while `ctx.safe` is true. The ring is drawn by `src/entities/portal.js` (only when the world's `heightAt` is passed in) and rebuilt at each level start if the radius changed.
 - A world mechanic can react to gem deliveries through an optional `onGemInserted(ctx)` hook (see `src/worlds/registry.js`). In the glacier, `src/mechanics/snowStorms.js` exposes `shift(ctx, { soundAt, toastAt })` (moves every device, plays the chime and shows "Winds are changing…"), used by `onGemInserted` (unless a shift happened in the last 10 s) and when the map is taken. The glacier's mechanics update calls `storms.calm()` whenever `cave.sheltered(player)` is true and keeps storms disabled there.
-- The source lives in the `portal-runner` GitHub repo: plain static files with no build step (Three.js 0.160 comes from the jsDelivr CDN through the importmap in `index.html`). It runs from any static server (ES modules don't load from `file://`), and can also be published as an artifact and opened from its link.
+- The `portal-runner` GitHub repo is the single source of truth for the code and these notes. Plain static files with no build step (Three.js 0.160 comes from the jsDelivr CDN through the importmap in `index.html`). It runs from any static server (ES modules don't load from `file://`); see `CLAUDE.md` for how to run it on PC and on a phone.
 - Every build is tested on mobile and must also work on PC.
