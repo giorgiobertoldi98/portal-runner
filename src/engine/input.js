@@ -19,6 +19,7 @@ export class Input {
     this.lookpadEl = document.getElementById('lookpad');
     this.enabled = false;
     this.locked = false;
+    this.usedMouse = false;     // the mouse has turned the camera (a keyboard-only player uses Enter for actions, the rest click)
     this.holding = false;
     this.hold = { move: true, look: true, zoom: false };
     this.touches = new Map();   // touch pointers down, for pinching
@@ -52,7 +53,7 @@ export class Input {
     addEventListener('pointercancel', (e) => this.onUp(e));
     document.addEventListener('pointerlockchange', () => { this.locked = document.pointerLockElement === canvas; });
     addEventListener('mousemove', (e) => {
-      if (this.locked && this.enabled) this.addLook(e.movementX, e.movementY);
+      if (this.locked && this.enabled) { this.usedMouse = true; this.addLook(e.movementX, e.movementY); }
     });
     this.canvas = canvas;
   }
@@ -119,6 +120,7 @@ export class Input {
       }
     }
     if (this.mouseDrag && e.pointerType === 'mouse' && !this.locked) {
+      this.usedMouse = true;
       this.addLook(e.clientX - this.mouseDrag.x, e.clientY - this.mouseDrag.y);
       this.mouseDrag.x = e.clientX; this.mouseDrag.y = e.clientY;
     }

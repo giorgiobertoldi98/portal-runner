@@ -149,7 +149,7 @@ class Game {
       if (e.code === 'Escape' && this.state === 'menu' && !document.getElementById('screen-settings').classList.contains('hidden')) this.hud.showScreen('menu');
       if (e.code === 'KeyM') toggleMute();
       if ((e.code === 'KeyQ' || e.code === 'KeyG') && this.state === 'playing') this.dropQueued = true;
-      if (e.code === 'KeyE' && this.state === 'playing') this.actionQueued = true;
+      if ((e.code === 'Enter' || e.code === 'NumpadEnter') && this.state === 'playing') this.actionQueued = true;
     });
     // tapping or clicking an item holds it up straight away (and selects it)
     for (const d of this.ITEMS) d.btn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.state === 'playing') this.useItem(d.id); });
@@ -157,7 +157,9 @@ class Game {
     dropBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.state === 'playing') this.dropQueued = true; });
     document.getElementById('btn-act').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.state === 'playing') this.actionQueued = true; });
     document.getElementById('game').addEventListener('click', () => {
-      if (this.state === 'playing' && !isTouch && !this.holding) this.input.requestLock();
+      if (this.state !== 'playing' || isTouch || this.holding) return;
+      if (this.hud.actId) this.actionQueued = true;   // a click uses the action within reach (only when one is shown)
+      this.input.requestLock();
     });
   }
 
@@ -424,7 +426,7 @@ class Game {
 
   updateGemHud() {
     const p = this.world.portal;
-    this.hud.setWorld(this.world.def.name);
+    this.hud.setWorld(this.world.def.name, this.world.def.gem?.style);
     this.hud.setGems(p.filled, p.quota, this.carried.length, p.active);
     this.hud.setDrop(this.carried.length > 0);
     this.player.speedMul = carryFactor(this.carried.length);
@@ -610,10 +612,11 @@ class Game {
         enabled: !w.portal.active, gems: this.groundGemSpots(), portal: { x: w.portal.position.x, z: w.portal.position.z }, base: this.base,
       };
       w.mechanics.update(dt, t, mctx);
-      // a contextual action within reach (the glacier: take the map from its crate), used with E or the action button
+      // a contextual action within reach (the glacier: take the map from its crate), used with Enter, a click or the action button
       const act = w.mechanics.action ? w.mechanics.action() : null;
       if (this.actionQueued) { this.actionQueued = false; if (act && w.mechanics.doAction) w.mechanics.doAction(mctx); }
       this.hud.setAction(w.mechanics.action ? w.mechanics.action() : null);
+      this.hud.setActionKey(this.input.usedMouse || this.input.locked);
     } else this.hud.setAction(null);
     const d = w.monster.update(dt, { player: this.player, world: w, rng: this.rng, signals: w.mechanics ? w.mechanics.signals : null, portal: { x: w.portal.position.x, z: w.portal.position.z } });
     const danger = w.monster.danger(d);

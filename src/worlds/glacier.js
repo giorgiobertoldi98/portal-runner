@@ -777,7 +777,7 @@ const MUSIC = {
 export default {
   id: 'glacier',
   name: 'The Frozen Peaks',
-  tagline: 'Wind, ice, and something that hunts in the snow.',
+  tagline: 'Wind, ice, white silence.',
   monsterName: 'the Yeti',
   theme,
   // the gems here: a cluster of ice prisms, dark grey while hidden, clear blue once revealed (entities/gemDesigns.js)

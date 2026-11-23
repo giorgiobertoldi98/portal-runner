@@ -10,8 +10,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #05060c; col
 .hud-tl { position: absolute; top: max(10px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left)); padding: 5px 12px 6px; border-radius: 11px; }
 .gems { display: flex; align-items: center; gap: 6px; font-family: Cinzel, serif; font-weight: 700; font-size: 17px; letter-spacing: .04em; white-space: nowrap; }
 .gems .gem-icon { width: 15px; height: 15px; flex: none; }
-.gem-icon { fill: #ff3fa4; filter: drop-shadow(0 0 6px #ff3fa4); animation: hue 6s linear infinite; }
-@keyframes hue { to { filter: drop-shadow(0 0 6px #ff3fa4) hue-rotate(360deg); } }
+/* a silhouette of this world's gem, in its colour (--gem, set at each level start) */
+.gem-icon { color: var(--gem, #ff2d95); fill: var(--gem, #ff2d95); filter: drop-shadow(0 0 5px color-mix(in srgb, var(--gem, #ff2d95) 70%, transparent)); }
 .lvl { font-size: 9.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 1px; opacity: .95; }
 .gems .unit { font-family: Inter, sans-serif; font-size: 11px; font-weight: 500; opacity: .7; letter-spacing: 0; }
 #hud.portal-open .hud-tl { border-color: var(--accent); box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent); }
@@ -45,7 +45,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #05060c; col
 /* the explorer's tools: your items (note, map, ...), drop a gem, and the contextual action (e.g. take the map).
    PC: a slot bar of items, then labelled pills, at the bottom centre. Touch: buttons in the right-hand gutter, above
    the look pad: the action at the bottom, then drop, then the items, which wrap into new columns to the left. */
-#tools { position: absolute; z-index: 4; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; align-items: center; gap: 10px; pointer-events: none; }
+#tools { position: absolute; z-index: 4; left: 0; right: 0; justify-content: center; bottom: calc(20px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 10px; pointer-events: none; }
+/* PC: the action prompt (Enter / click) sits in the upper half of the screen, where it's seen the first time you reach something */
+body:not(.touch) .tool.act { position: fixed; left: 50%; top: 32%; translate: -50% 0; }
 .tool { display: none; position: relative; pointer-events: auto; align-items: center; justify-content: center; gap: 8px; padding: 9px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: #fff; font: 600 14px Inter, sans-serif; cursor: pointer; touch-action: none; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .tool.show { display: flex; animation: toolin .22s ease-out; }
 @keyframes toolin { from { opacity: 0; transform: scale(.85); } }
@@ -83,7 +85,7 @@ body:not(.touch) #items .tool.sel.attn { box-shadow: none; }
 /* touch: one right-hand gutter (--edge) shared with the sound / pause buttons and the turn pad, so the tools sit in a
    column right above the pad, the same size and shape as the buttons at the top */
 body.touch #hud { --edge: calc(14px + env(safe-area-inset-right)); }
-body.touch #tools { left: auto; transform: none; right: var(--edge); bottom: calc(150px + env(safe-area-inset-bottom)); flex-direction: column; align-items: flex-end; gap: 8px; }
+body.touch #tools { left: auto; justify-content: normal; right: var(--edge); bottom: calc(150px + env(safe-area-inset-bottom)); flex-direction: column; align-items: flex-end; gap: 8px; }
 body.touch .tool { width: 40px; height: 40px; padding: 0; border-radius: 12px; }
 body.touch .tool kbd { display: none; }
 /* on touch the name sits beside the button, shown for a moment when a tool first appears */
