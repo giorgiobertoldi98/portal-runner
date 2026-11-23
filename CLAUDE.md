@@ -8,6 +8,7 @@ This repo is the only home of the project: the code and `docs/NOTES.md` here are
 - `docs/NOTES.md` is the living design + technical reference. Read it before working on anything.
 - Keep it updated in the same commit as any change to behaviour, tuning, layout or architecture.
 - It describes **the current state only**: no history, no "previously", no references to past implementations. Git history is the changelog.
+- Its **Design principles** section collects the general principles behind the game. Whenever a general principle comes up (stated by Giorgio, or implied by feedback that goes beyond one feature), add it there in the same commit, and follow every principle listed when designing anything new.
 
 @docs/NOTES.md
 
@@ -31,6 +32,8 @@ This repo is the only home of the project: the code and `docs/NOTES.md` here are
 - One game mode, no difficulty levels, no stamina, no speed ramps over time; speeds are fractions of V.
 - Never show level numbers to the player; worlds are named only.
 - Fun but not impossible.
+
+- Prompt visually rather than with toasts; keep toasts few, short and suggestive (see Design principles in NOTES.md).
 
 ## Working style
 - Before a large change, state the plan briefly. Challenge design ideas when they conflict with the rules above or seem likely to make the game less fun.
