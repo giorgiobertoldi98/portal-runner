@@ -65,7 +65,7 @@ General principles that guide every decision. New ones are added here as they co
 
 ## Held items (the map, the note)
 - Things you hold up to read share one behaviour. They open **almost full screen**, inset by a thin border (`--held-m`: 2.8% of the shorter screen side, 10–28 px, plus safe areas) where the world stays visible, so their proportions always follow the screen's. Each fills its own shape with its own background: the map's square chart sits on an unrolled scroll, the note's sketch on a handwritten page.
-- While one is open, the HUD steps aside (world chip, hearts, sound / pause, tools, Resonance Call chip and arrival banner are hidden). On PC the pointer is released so the cursor can reach the controls.
+- While one is open, the HUD steps aside (world chip, hearts, sound / pause, tools, Resonance Call chip and arrival banner are hidden). On PC the pointer is released so the cursor can reach the controls, and taken back as soon as the item is put away (if it was locked before), so the mouse looks again with no extra click.
 - **Each item has its own settings** (`hold` in its module): which pads still work (`pads`: 'both' = walk and turn, 'right' = turn the camera only, 'none' = neither; a pad that doesn't work is hidden, and on PC the movement keys / mouse follow the same rule), whether it zooms (`zoom`), and whether the game pauses while it's open (`pauses`).
   - **Map**: pads 'right' (turn the camera only), zoom yes, the game keeps running.
   - **Note**: pads 'none', no zoom, the game keeps running.

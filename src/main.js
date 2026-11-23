@@ -171,7 +171,7 @@ class Game {
     this.audio.noiseBurst({ type: 'bandpass', freq: 2200, q: 1, dur: 0.22, gain: 0.07, attack: 0.01, sweepTo: this.mapView.open ? 3200 : 1200 });
   }
   // put away whatever is held up (the map, the note) without a sound: when caught, between levels, leaving the run
-  putAway() { this.mapView.show(false); this.briefing.dismiss(); this.syncHolding(); }
+  putAway() { this.relock = false; this.mapView.show(false); this.briefing.dismiss(); this.syncHolding(); }
   // put away the item you hold up, by hand (Space)
   closeHeld() { if (this.mapView.open) this.toggleMap(); else if (this.briefing.open) this.closeBriefing(); }
 
@@ -220,7 +220,8 @@ class Game {
     document.body.classList.toggle('hold-look', !!item && look);
     this.input.reset();
     this.input.setHold(item ? { move, look, zoom: !!h.zoom } : null);
-    if (item) this.input.releaseLock();
+    if (item) { this.relock = this.input.locked || this.relock; this.input.releaseLock(); }
+    else if (this.relock) { this.relock = false; if (!isTouch && (this.state === 'playing' || this.state === 'frozen')) this.input.requestLock(); }   // put it away and the mouse looks again, no extra click
   }
 
   // the world's briefing card (the glacier: a note with a sketch), one of your items (see ITEMS)
