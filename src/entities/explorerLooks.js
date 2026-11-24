@@ -228,21 +228,28 @@ function trench(p, kit, S) {
   if (piping) T.add('glow', G.box(0.012, 0.24, 0.012), null, 0.112, 0.5, 0.15, -0.08, 0, -0.32).add('glow', G.box(0.012, 0.24, 0.012), null, -0.112, 0.5, 0.15, -0.08, 0, 0.32);
   // raised stand collar, open at the front
   T.add('coat', G.cyl(0.16, 0.135, 0.14, 10, true, 0.55, Math.PI * 2 - 1.1), C.coatDark, 0, 0.68, -0.01);
-  // compact pack with straps, a bedroll under it, the light column and the gem emitter on top
+  // shoulder straps, then a compact pack with a bedroll under it, the light column and the gem emitter on top.
+  // The pack is built around its top-front edge and scaled from there (S.packScale), so it stays on the back.
   T.add('cloth', G.box(0.045, 0.045, 0.34), C.strap, 0.14, 0.6, -0.04)
     .add('cloth', G.box(0.045, 0.045, 0.34), C.strap, -0.14, 0.6, -0.04)
-    .add('cloth', G.box(0.3, 0.38, 0.13), C.pack, 0, 0.39, -0.22)
-    .add('cloth', G.box(0.26, 0.12, 0.03), C.packDark, 0, 0.29, -0.29)
-    .add('hard', G.box(0.05, 0.02, 0.03), C.buckle, 0.07, 0.34, -0.3)
-    .add('hard', G.box(0.05, 0.02, 0.03), C.buckle, -0.07, 0.34, -0.3)
-    .add('cloth', G.box(0.1, 0.2, 0.025), C.packDark, 0, 0.47, -0.293)
-    .add('glow', G.box(0.03, 0.16, 0.012), null, 0, 0.47, -0.307)
-    .add('cloth', G.cyl(0.07, 0.07, 0.36, 8), C.bedroll, 0, 0.15, -0.23, 0, 0, Math.PI / 2)
-    .add('cloth', G.cyl(0.074, 0.074, 0.02, 8), C.strap, 0.1, 0.15, -0.23, 0, 0, Math.PI / 2)
-    .add('cloth', G.cyl(0.074, 0.074, 0.02, 8), C.strap, -0.1, 0.15, -0.23, 0, 0, Math.PI / 2)
-    .add('hard', G.cyl(0.07, 0.085, 0.045, 8), C.packDark, 0, 0.6, -0.22)
-    .add('glow', G.cyl(0.046, 0.046, 0.012, 8), null, 0, 0.626, -0.22)
     .done();
+  const k = S.packScale ?? 1, anchor = new THREE.Vector3(0, 0.6, -0.155);
+  const pack = new THREE.Group(); pack.position.copy(anchor); pack.scale.setScalar(k); p.torso.add(pack);
+  kit(pack)
+    .add('cloth', G.box(0.3, 0.38, 0.13), C.pack, 0, -0.21, -0.065)
+    .add('cloth', G.box(0.26, 0.12, 0.03), C.packDark, 0, -0.31, -0.135)
+    .add('hard', G.box(0.05, 0.02, 0.03), C.buckle, 0.07, -0.26, -0.145)
+    .add('hard', G.box(0.05, 0.02, 0.03), C.buckle, -0.07, -0.26, -0.145)
+    .add('cloth', G.box(0.1, 0.2, 0.025), C.packDark, 0, -0.13, -0.138)
+    .add('glow', G.box(0.03, 0.16, 0.012), null, 0, -0.13, -0.152)
+    .add('cloth', G.cyl(0.07, 0.07, 0.36, 8), C.bedroll, 0, -0.45, -0.075, 0, 0, Math.PI / 2)
+    .add('cloth', G.cyl(0.074, 0.074, 0.02, 8), C.strap, 0.1, -0.45, -0.075, 0, 0, Math.PI / 2)
+    .add('cloth', G.cyl(0.074, 0.074, 0.02, 8), C.strap, -0.1, -0.45, -0.075, 0, 0, Math.PI / 2)
+    .add('hard', G.cyl(0.07, 0.085, 0.045, 8), C.packDark, 0, 0, -0.065)
+    .add('glow', G.cyl(0.046, 0.046, 0.012, 8), null, 0, 0.026, -0.065)
+    .done();
+  // the antenna stands on the pack's top corner wherever the pack's size puts it
+  p.antenna.position.set(0.12 * k, 0.6 - 0.01 * k, -0.155 - 0.115 * k);
 
   if (S.antenna) {
     kit(p.antenna)
@@ -320,6 +327,12 @@ export function animateCoat(p, runK, walkK, t) {
   }
 }
 
+const SCOUT = {
+  coatLength: 0.52, coatFlare: 0.25, glow: 0x5cf4ff, lensTint: 0x0a2a33, buckleGlow: true, piping: true, antenna: true, soleGlow: true,
+  head: 'hood', packScale: 0.8,
+};
+const SCOUT_COAT = { coat: 0x2f5741, coatDark: 0x22402f, skin: 0xb98060, hair: 0x18120e };
+
 const BASE = {
   trousers: 0x2a2c30, belt: 0x3a2a1d, buckle: 0xb89548, buckleInner: 0x6b5328, buttons: 0x22201c,
   under: 0x1f2226, strap: 0x3b2c20, pack: 0x30332f, packDark: 0x1d1f22, bedroll: 0xb39a6c,
@@ -329,28 +342,38 @@ const BASE = {
 // The selectable looks. 'armoured' is the original explorer; the trench looks share one builder.
 export const LOOKS = {
   armoured: { name: 'Armoured (current)', build: armoured },
-  ranger: {
-    name: 'Ranger', build: trench,
-    // classic olive field coat, leather belt and boots, dark gaiter, short hair; cyan lights kept small
-    style: {
-      coatLength: 0.5, coatFlare: 0.255, glow: 0x5cf4ff, lensTint: 0x10161c, buckleGlow: false, piping: false, antenna: false, soleGlow: false, head: 'hair',
-      colors: { ...BASE, coat: 0x56703c, coatDark: 0x3f5530, skin: 0xc48a66, hair: 0x2a1d15, mask: 0x2b2e31, boots: 0x5a3b26, bootTrim: 0x3e2919 },
-    },
-  },
   scout: {
-    name: 'Neon Scout', build: trench,
-    // darker forest-green techwear: hood up, cyan piping on the coat's edges, glowing soles and the antenna
+    name: 'Neon Scout (round 1)', build: trench,
+    style: { ...SCOUT, packScale: 1, colors: { ...BASE, ...SCOUT_COAT, mask: 0x1c1e21, boots: 0x1c1d20, bootTrim: 0x2c2e33, pack: 0x23262a } },
+  },
+  // The Neon Scout in three palettes: the same forest-green coat, hood, cyan piping and smaller pack,
+  // with lighter or warmer trousers, boots, pack and face covering so the figure reads against the dark coat
+  // and the black goggles stand out.
+  stone: {
+    name: 'Scout · Stone', build: trench,
+    // warm-white pack and boots and stone-grey trousers, echoing the armoured explorer's plates
     style: {
-      coatLength: 0.52, coatFlare: 0.25, glow: 0x5cf4ff, lensTint: 0x0a2a33, buckleGlow: true, piping: true, antenna: true, soleGlow: true, head: 'hood',
-      colors: { ...BASE, coat: 0x2f5741, coatDark: 0x22402f, skin: 0xb98060, hair: 0x18120e, mask: 0x1c1e21, boots: 0x1c1d20, bootTrim: 0x2c2e33, pack: 0x23262a },
+      ...SCOUT,
+      colors: { ...BASE, ...SCOUT_COAT, trousers: 0x8e9399, mask: 0x5d636b, gloves: 0x3a3e44, boots: 0xdcd6cb, bootTrim: 0xa9a49a,
+        pack: 0xdcd6cb, packDark: 0x4a4f56, strap: 0x4a4f56, belt: 0x4a4f56, bedroll: 0x8e9399 },
     },
   },
-  wayfarer: {
-    name: 'Wayfarer', build: trench,
-    // lighter moss coat, burnt-orange scarf with a tail (keeps the figure readable on any ground), tan boots
+  sand: {
+    name: 'Scout · Sand', build: trench,
+    // khaki trousers and cognac leather: an earthier explorer
     style: {
-      coatLength: 0.48, coatFlare: 0.26, glow: 0x5cf4ff, lensTint: 0x24120a, buckleGlow: false, piping: false, antenna: false, soleGlow: false, head: 'hair', scarfTail: true,
-      colors: { ...BASE, coat: 0x6b7b45, coatDark: 0x515f33, skin: 0xd09a74, hair: 0x4a2f1c, mask: 0xd2592a, boots: 0x8a6440, bootTrim: 0x5e4129, belt: 0x5a3b26, strap: 0x5a3b26 },
+      ...SCOUT,
+      colors: { ...BASE, ...SCOUT_COAT, trousers: 0xb59b72, mask: 0x7a5a3e, gloves: 0x5a3b26, boots: 0x7c4f2c, bootTrim: 0x5a3b26,
+        pack: 0x8f6a44, packDark: 0x4d3523, strap: 0x5a3b26, belt: 0x5a3b26, bedroll: 0xd3c29f },
+    },
+  },
+  ember: {
+    name: 'Scout · Ember', build: trench,
+    // graphite with the armoured explorer's orange: scarf, boot trims, pack details and emitter
+    style: {
+      ...SCOUT,
+      colors: { ...BASE, ...SCOUT_COAT, trousers: 0x5d6269, mask: 0xe0622a, gloves: 0x2a2d32, boots: 0x30333a, bootTrim: 0xff6b24,
+        pack: 0x3c4048, packDark: 0xff6b24, strap: 0x2a2d32, belt: 0x2a2d32, bedroll: 0x9aa0a8 },
     },
   },
 };

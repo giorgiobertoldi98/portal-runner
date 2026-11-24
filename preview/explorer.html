@@ -73,7 +73,7 @@ const WORLDS = {
   desert: { sky: 0xf4d3a2, ground: 0xe2b77c, hemi: [0xfff0d8, 0x9a6a3c], sun: 0xffd79a },
 };
 
-const ids = Object.keys(LOOKS);
+const ids = Object.keys(LOOKS).filter((id) => id !== 'armoured');   // the current look is the game's default; compare the candidates
 const gap = 2.2;
 const explorers = ids.map((id, i) => {
   const p = new Player(id);
@@ -123,7 +123,7 @@ function focus(i) {
 }
 const focusBar = document.getElementById('focus');
 ids.forEach((id, i) => {
-  const b = document.createElement('button'); b.dataset.v = i; b.textContent = LOOKS[id].name.replace(' (current)', '');
+  const b = document.createElement('button'); b.dataset.v = i; b.textContent = LOOKS[id].name.replace(' (round 1)', '').replace('Scout · ', '');
   focusBar.append(b);
 });
 document.querySelectorAll('.group').forEach((g) => g.addEventListener('click', (e) => {
