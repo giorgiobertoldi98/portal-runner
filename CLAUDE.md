@@ -58,6 +58,7 @@ Each kind of knowledge has one home, so no file grows into a dump and each note 
 ## Working style
 - Before a large change, state the plan briefly. Challenge design ideas when they conflict with the rules above or seem likely to make the game less fun.
 - Commit in small, descriptive commits. Run the game and check the browser console for errors before committing.
+- Always keep local and remote aligned: push every commit, and after a merge on GitHub pull it into the local branch, so nothing is left unpushed or behind when a piece of work ends.
 - Never commit or merge to main. You can merge to the dev branch only if I tell you explictly. For new features / developments, branch off dev and open a PR to dev (which I must always approve) only once I've said I'm satisfied with the result: until then, push to the branch and let me test
 - When something can't be done or checked because access or a tool is missing (a blocked host, an unavailable tool, a missing credential or permission), say so in a clearly marked note: what was blocked, what it prevented, and what access would fix it, so I can decide whether to grant it. Do what you can without it, but never skip it silently or work around it unannounced.
 - Every PR description has a **Docs:** line naming the docs it updated, or "none" and why.
