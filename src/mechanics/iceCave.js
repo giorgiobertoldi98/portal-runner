@@ -480,6 +480,8 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
   const api = {
     sites,
     sheltered,
+    // the chamber is too small to run in: while its fixed shot is on, you walk whatever you push
+    walkOnly: () => !!room,
     keepOut,
     get site() { return site; },
     get hasMap() { return held; },

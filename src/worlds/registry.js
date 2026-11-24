@@ -34,6 +34,7 @@
 //     groundAt?(x, z),                 // the terrain alone (heightAt includes holes)
 //     constrainMove?(pos, prevX, prevZ), constrainCamera?(camera, rig, playerPos, dt),
 //     hunterKeepOut?: [{ x, z, r }], isSheltered?(pos),   // places hunters can't enter / where they lose you
+//     walkOnly?(pos),                  // true where you can only walk (running input just walks), e.g. a small room
 //     mapInfo?: { title, kind(x, z), landmarks: [{ x, z, label }], trees: [{ x, z }] },
 //     audio: { ambient, footstep, growl },
 //     update(dt, t, camera, playerPos),
