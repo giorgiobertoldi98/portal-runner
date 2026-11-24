@@ -11,13 +11,13 @@ export class CameraRig {
     this.pos = { x: 0, y: 5, z: 8 };
     this.lookLift = 0;
     this.sinceLook = Infinity;   // seconds since the player last turned the camera
-    this.fixedView = false;      // set by a world while the camera stands still and only turns (e.g. the ice cave's chamber)
+    this.fixedView = false;      // set by a world while it holds the camera on a fixed view (e.g. the ice cave's chamber)
     this.held = null;            // the walking direction being held (see moveYaw)
   }
 
-  // The heading the controls move you relative to. While the camera stands still and only turns, the heading is held
-  // from the moment you start moving until you let go, clearly change direction or turn the camera yourself, so
-  // the camera turning (or swinging round as you leave) never bends your path. A hold started there carries on
+  // The heading the controls move you relative to. While the camera holds a fixed view, the heading is held from the
+  // moment you start moving until you let go, clearly change direction or turn the camera yourself, so the camera
+  // taking over (or swinging round as you leave) never bends your path. A hold started there carries on
   // after the camera goes back to following you, until one of those happens.
   moveYaw(move) {
     if (Math.hypot(move.x, move.y) < 0.1 || this.sinceLook === 0) { this.held = null; return this.yaw; }
