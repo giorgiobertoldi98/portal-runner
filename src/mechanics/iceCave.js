@@ -37,6 +37,9 @@ const MOAN_RANGE = 50;  // the hollow wind out of the hole can be heard within t
 export const SITE_CLEAR = 24; // metres around each candidate site kept free of props, gems and hunter waypoints
 
 const TWO_PI = Math.PI * 2;
+const DOOR_U = LC - RC + 0.5; // where the camera waits: just past the doorway, so the tunnel's side walls never fill the view
+const ROOM_IN = DOOR_U + 1.2, ROOM_OUT = DOOR_U + 0.8; // how far into the chamber you switch to its camera, and back (apart, so it never flickers)
+const PULL_IN = 6;         // m/s: the fastest the camera comes in when rock cuts between it and you
 const STEER = [0.2, 0.4, 0.6, 0.85, 1.1, 1.35, 1.6]; // camera turns tried each way when rock blocks it in the hole (radians)
 const SLIDE = [0.2, -0.2, 0.4, -0.4, 0.6, -0.6, 0.8, -0.8, 1.05, -1.05, 1.3, -1.3]; // turns tried when a step hits a wall
 const wrap = (a) => ((a % TWO_PI) + TWO_PI) % TWO_PI;
@@ -131,7 +134,8 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
   let site = null;          // { x, z, y0, rot, c, s }
   let H = new Float32Array(NU * NV), walk = new Uint8Array((NU - 1) * (NV - 1));
   let mapState = 'none';    // 'cave' (on the crate) | 'held'
-  let toldNoCall = false, dripTimer = 2, moanTimer = 1, camBlend = 0, boom = 1, steerSide = 0, lastCamT = 0, hint = null, held = false, canTake = false;
+  let toldNoCall = false, dripTimer = 2, moanTimer = 1, camBlend = 0, boom = 1, steerSide = 0, lastCamT = 0,
+    room = null, roomRamp = 0, roomBlend = 0, lastP = null, lastCam = null, hint = null, held = false, canTake = false;
   const keepOut = [];
 
   const toLocal = (x, z) => { const dx = x - site.x, dz = z - site.z; return { u: dx * site.c + dz * site.s, v: -dx * site.s + dz * site.c }; };
@@ -435,7 +439,54 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
     held = false; canTake = false;
     item.group.visible = false;
     light.intensity = 0;
-    camBlend = 0; steerSide = 0;
+    camBlend = 0; steerSide = 0; roomRamp = roomBlend = 0; room = null; lastP = null; lastCam = null;
+  }
+
+  // ── the chamber's camera ──
+  // In the chamber the camera stands just inside the doorway, a little raised, and only turns to follow you, sliding a short
+  // way along the room's middle so you never get small at the far wall. Dragging looks around (within limits) and
+  // eases back to you once you let go. While it's there it sets the camera's heading to the way it looks, so the
+  // controls always move you relative to the screen (the rig holds your direction while you keep moving).
+  function enterRoom(rig) {
+    room = { pitch: rig.pitch, yawOff: 0, pitchOff: 0, slide: DOOR_U, setYaw: rig.yaw };
+  }
+  // leaving: if you're walking out, the camera swings round behind you, in line with the tunnel (not with your exact
+  // path, which would put the doorway's corner between you), so it faces the way out
+  function leaveRoom(rig, swing, moved) {
+    if (!room) return;
+    rig.pitch = room.pitch;
+    if (swing && moved && Math.hypot(moved.x, moved.z) > 0.005) {
+      const { u } = toLocal(site.x + moved.x, site.z + moved.z);
+      if (u < -0.5 * Math.hypot(moved.x, moved.z)) rig.yaw = Math.atan2(site.c, site.s);
+    }
+    room = null;
+  }
+  function roomView(cam, gaze, rig, L, dt) {
+    const floor = site.y0 - D;
+    if (room) {
+      // dragging since last frame turns the view (within limits) instead of orbiting; letting go eases it back
+      if (rig.sinceLook === 0) {
+        room.yawOff = Math.max(-0.7, Math.min(0.7, room.yawOff + Math.atan2(Math.sin(rig.yaw - room.setYaw), Math.cos(rig.yaw - room.setYaw))));
+        room.pitchOff = Math.max(-0.3, Math.min(0.35, room.pitchOff + rig.pitch - room.pitch));
+      } else if (rig.sinceLook > 0.8) {
+        room.yawOff = damp(room.yawOff, 0, 2, dt);
+        room.pitchOff = damp(room.pitchOff, 0, 2, dt);
+      }
+      rig.pitch = room.pitch;
+      room.slide = damp(room.slide, Math.max(DOOR_U, Math.min(DOOR_U + 1.4, L.u - 6)), 2, dt);
+    }
+    const slide = room ? room.slide : DOOR_U;
+    const a = toWorld(slide, 0), k = roomBlend;
+    cam.set(cam.x + (a.x - cam.x) * k, cam.y + (floor + 3.3 - cam.y) * k, cam.z + (a.z - cam.z) * k);
+    // look at the explorer, turned by the drag offsets
+    const t = rig.target, hx = t.x - cam.x, hy = t.y + 1.3 - cam.y, hz = t.z - cam.z, h = Math.hypot(hx, hz);
+    const yaw = Math.atan2(hx, hz) + (room ? room.yawOff : 0), elev = Math.atan2(hy, h) - (room ? room.pitchOff : 0);
+    const r = Math.hypot(h, hy);
+    const fixedGaze = { x: cam.x + Math.sin(yaw) * Math.cos(elev) * r, y: cam.y + Math.sin(elev) * r, z: cam.z + Math.cos(yaw) * Math.cos(elev) * r };
+    const g = { x: gaze.x + (fixedGaze.x - gaze.x) * k, y: gaze.y + (fixedGaze.y - gaze.y) * k, z: gaze.z + (fixedGaze.z - gaze.z) * k };
+    // the controls follow the screen: the rig's heading is set to where the camera looks
+    if (room) { rig.yaw = Math.atan2(-(g.x - cam.x), -(g.z - cam.z)); room.setYaw = rig.yaw; }
+    return g;
   }
 
   const api = {
@@ -467,10 +518,13 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
     constrainCamera(camera, rig, P, frameDt) {
       const now = performance.now() / 1000, dt = Math.min(0.1, frameDt ?? (lastCamT ? now - lastCamT : 1 / 60));
       lastCamT = now;
-      if (!site || !near(P.x, P.z, 40)) { camBlend = 0; boom = 1; steerSide = 0; return; }
+      if (!site || !near(P.x, P.z, 40)) { camBlend = 0; boom = 1; steerSide = 0; roomRamp = roomBlend = 0; lastCam = null; leaveRoom(rig, false); rig.fixedView = false; return; }
       const look = { x: rig.target.x, y: rig.target.y + 1.5, z: rig.target.z };
       let lift = rig.lookLift || 0;   // looking up: the gaze tilts above the explorer's head
-      camBlend = damp(camBlend, caveWeight(P), 5, dt);
+      // the cave framing holds while either you or the camera is in the tunnel, so walking out into the shaft
+      // doesn't lift a camera that is still under the vault into its ceiling
+      const camIn = lastCam ? caveWeight({ x: lastCam.x, y: P.y, z: lastCam.z }) : 0;
+      camBlend = damp(camBlend, Math.max(caveWeight(P), camIn), 5, dt);
       const cam = camera.position;
       // in the cave the camera comes lower and closer than its usual orbit
       const p = Math.max(-0.08, Math.min(rig.pitch, 0.26)), d = Math.min(rig.curDist ?? rig.distance, 5.2);
@@ -485,7 +539,7 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
       // It gives way while you turn the camera yourself (then only the boom shortens) and eases in once you let go.
       const yieldTo = Math.min(1, Math.max(0, (rig.sinceLook - 0.25) / 0.35));
       const ideal = spot(rig.yaw), full = Math.hypot(ideal.x - look.x, ideal.y - look.y, ideal.z - look.z);
-      const here = sheltered(P) && yieldTo > 0 ? clearance(look, ideal) : full;
+      const here = sheltered(P) && yieldTo > 0 && !room ? clearance(look, ideal) : full;
       if (here < full * 0.92) {
         let best = 0, bestScore = here;
         for (const a of STEER) {
@@ -506,26 +560,38 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
         cam.set(cam.x + (c.x - cam.x) * camBlend, cam.y + (c.y - cam.y) * camBlend, cam.z + (c.z - cam.z) * camBlend);
         lift = lift * (1 - camBlend) + Math.tan(Math.max(0, p - rig.pitch)) * Math.cos(p) * d * camBlend;
       }
-      if (!air(look.x, look.y, look.z)) return;
+      let gaze = { x: look.x, y: look.y + lift, z: look.z };
       const dx = cam.x - look.x, dy = cam.y - look.y, dz = cam.z - look.z, len = Math.hypot(dx, dy, dz);
-      if (len < 0.01) return;
-      const free = clearance(look, cam);
-      // the boom eases in over a fraction of a second and out more slowly, so rock coming between you and the
-      // camera never makes it jump. If the eased spot would sit inside rock, it comes in only as far as it must:
-      // to the nearest open point towards you
-      const want = free / len;
-      const inRock = (k) => !air(look.x + dx * k, look.y + dy * k, look.z + dz * k);
-      boom = want < boom ? damp(boom, want, 9, dt) : damp(boom, want, 4, dt);
-      if (boom > 0.999) boom = 1;
-      let f = boom;
-      if (f < 1 && inRock(f)) {
-        while (f > 0.07 && inRock(f)) f -= 0.01;
-        boom = f;
+      if (air(look.x, look.y, look.z) && len > 0.01) {
+        const free = clearance(look, cam);
+        // the boom eases in (no faster than PULL_IN) and out more slowly, so rock coming between you and the camera
+        // never makes it lurch: a corner may hide you for a moment while it comes in. Only if the eased spot would
+        // sit inside rock does it come in at once, and only as far as it must: to the nearest open point towards you
+        const want = free / len;
+        const inRock = (k) => !air(look.x + dx * k, look.y + dy * k, look.z + dz * k);
+        boom = want < boom ? Math.max(damp(boom, want, 9, dt), boom - PULL_IN * dt / len) : damp(boom, want, 4, dt);
+        if (boom > 0.999) boom = 1;
+        let f = boom;
+        if (f < 1 && inRock(f)) {
+          while (f > 0.07 && inRock(f)) f -= 0.01;
+          boom = f;
+        }
+        if (f < 1) { cam.set(look.x + dx * f, look.y + dy * f, look.z + dz * f); gaze.y = look.y + lift * f; }
       }
-      if (f < 1) {
-        cam.set(look.x + dx * f, look.y + dy * f, look.z + dz * f);
-        camera.lookAt(look.x, look.y + lift * f, look.z);
-      } else if (camBlend > 0.01) camera.lookAt(look.x, look.y + lift, look.z);
+      // the chamber: the camera waits in the doorway and only turns to follow you (see roomView)
+      const L = toLocal(P.x, P.z), roomD = Math.hypot(L.u - LC, L.v);
+      const inRoom = roomD < RC + 0.3 && L.u > (room ? ROOM_OUT : ROOM_IN) && P.y < site.y0 - D + 2;
+      const moved = lastP ? { x: P.x - lastP.x, z: P.z - lastP.z } : { x: 0, z: 0 };
+      lastP = { x: P.x, z: P.z };
+      if (inRoom && !room) enterRoom(rig);
+      else if (!inRoom && room) leaveRoom(rig, true, moved);
+      // a timed ease in and out (not an exponential one), so the camera starts and ends its move gently
+      roomRamp = Math.max(0, Math.min(1, roomRamp + (room ? dt / 0.8 : -dt / 0.7)));
+      roomBlend = roomRamp * roomRamp * (3 - 2 * roomRamp);
+      rig.fixedView = !!room;
+      if (roomBlend > 0.001) gaze = roomView(cam, gaze, rig, L, dt);
+      camera.lookAt(gaze.x, gaze.y, gaze.z);
+      lastCam = { x: cam.x, z: cam.z };
     },
     // places to keep storm devices away from
     avoid() {
