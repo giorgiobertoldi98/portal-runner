@@ -49,7 +49,7 @@ Each kind of knowledge has one home, so no file grows into a dump and each note 
 - One game mode, no difficulty levels, no stamina, no speed ramps over time; speeds are fractions of V.
 - Never show level numbers to the player; worlds are named only.
 - Fun but not impossible.
-- Prompt visually rather than with toasts; keep toasts few, short and suggestive (see Design principles in GAME.md). Whenever the game prompts the player to open a tool or press something, it also shows an arrow pointing at it and one or two plain words.
+- Prompt visually rather than with toasts; keep toasts few, short and suggestive (see Design principles in GAME.md). When the game prompts the player to open a tool or press something, highlighting it is enough: no arrows, at most one or two plain words.
 
 ## Code quality
 - Keep the code clean and easy to read, with concise, understandable comments (say why, not what the line already says).

@@ -26,7 +26,7 @@
 //                                      //   e.g. taking the glacier's map from its crate
 //       briefing?(touch) -> { image (SVG markup), text } | null,
 //                                      //   a note: one of your items while non-null (note button / Space);
-//                                      //   it calls for attention when it first appears
+//                                      //   it is held up once when it first appears
 //       grantAll?(),                   //   debug mode: every item the world lets you find is yours from the start
 //       onRespawn?({ base, heading, player }) -> string | null,  // after being caught; the string is added to the catch toast
 //     },

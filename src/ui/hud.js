@@ -84,8 +84,8 @@ export class HUD {
     clearTimeout(this.labelTimer);
     this.labelTimer = setTimeout(() => this.el.itemLabel.classList.remove('show'), 2600);
   }
-  // a tool calling for attention until it's used (a new item, e.g. the note at a world's start or the map once
-  // taken): a slow glow, and its name stays shown (beside it on touch, above the slot bar on PC while it's selected)
+  // a tool calling for attention until it's used (a new item that couldn't be held up the moment it was found):
+  // a slow glow, and its name stays shown (beside it on touch, above the slot bar on PC while it's selected)
   attention(btn, on) {
     btn.classList.toggle('attn', !!on);
     this.el.items.classList.toggle('attn', !!this.el.items.querySelector('.tool.sel.attn'));
