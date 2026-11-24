@@ -37,6 +37,7 @@ const MOAN_RANGE = 50;  // the hollow wind out of the hole can be heard within t
 export const SITE_CLEAR = 24; // metres around each candidate site kept free of props, gems and hunter waypoints
 
 const TWO_PI = Math.PI * 2;
+const STEER = [0.2, 0.4, 0.6, 0.85, 1.1, 1.35, 1.6]; // camera turns tried each way when rock blocks it in the hole (radians)
 const SLIDE = [0.2, -0.2, 0.4, -0.4, 0.6, -0.6, 0.8, -0.8, 1.05, -1.05, 1.3, -1.3]; // turns tried when a step hits a wall
 const wrap = (a) => ((a % TWO_PI) + TWO_PI) % TWO_PI;
 const inFootprint = (u, v, pad = 0) => (u > RP - 1 && u < LC && Math.abs(v) < TW + pad) || Math.hypot(u - LC, v) < RC + pad;
@@ -130,7 +131,7 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
   let site = null;          // { x, z, y0, rot, c, s }
   let H = new Float32Array(NU * NV), walk = new Uint8Array((NU - 1) * (NV - 1));
   let mapState = 'none';    // 'cave' (on the crate) | 'held'
-  let toldNoCall = false, dripTimer = 2, moanTimer = 1, camBlend = 0, boom = 1, lastCamT = 0, hint = null, held = false, canTake = false;
+  let toldNoCall = false, dripTimer = 2, moanTimer = 1, camBlend = 0, boom = 1, steerSide = 0, lastCamT = 0, hint = null, held = false, canTake = false;
   const keepOut = [];
 
   const toLocal = (x, z) => { const dx = x - site.x, dz = z - site.z; return { u: dx * site.c + dz * site.s, v: -dx * site.s + dz * site.c }; };
@@ -303,7 +304,7 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
   }
 
   // colliders for the cave props (only the explorer ever stands where they are); parked far away until a run starts
-  const cols = lp.map((p) => colliders.push({ x: 1e5, z: 1e5, r: p.r }) && colliders[colliders.length - 1]);
+  const cols = lp.map((p) => colliders.push({ x: 1e5, z: 1e5, r: p.r, low: true }) && colliders[colliders.length - 1]);
 
   // the map: one object, on the crate at first; the light comes from the lantern beside it (and follows the map
   // when it waits for you by the portal). A single light, created once, so no shader has to recompile mid-run.
@@ -401,9 +402,16 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
     const { u, v } = toLocal(x, z);
     const r = Math.hypot(u, v);
     if (r < RP - 0.25) return y > (pitHeight(x, z) ?? site.y0) + 0.25;
-    const gy = groundAt(x, z);
-    if (inFootprint(u, v, -0.3) && r > RP - 0.3) return (y > site.y0 - D + 0.25 && y < site.y0 - D + ceilLocal(u, v) - 0.25) || y > gy + 0.6;
-    return y > gy + 0.4;
+    if (inFootprint(u, v, -0.3) && r > RP - 0.3) return (y > site.y0 - D + 0.25 && y < site.y0 - D + ceilLocal(u, v) - 0.25) || y > groundAt(x, z) + 0.6;
+    return y > groundAt(x, z) + 0.4;
+  }
+  // how far the camera can sit from the look point towards c before rock gets in the way (the full length if none)
+  function clearance(look, c) {
+    const dx = c.x - look.x, dy = c.y - look.y, dz = c.z - look.z, len = Math.hypot(dx, dy, dz);
+    for (let s = 0.1; s <= len; s += 0.1) {   // fine enough to catch the thin corner where the tunnel meets the chamber
+      if (!air(look.x + dx * s / len, look.y + dy * s / len, look.z + dz * s / len)) return Math.max(0.35, s - 0.35);
+    }
+    return len;
   }
   const inCave = (p) => { if (!near(p.x, p.z, 24)) return false; const { u, v } = toLocal(p.x, p.z); return Math.hypot(u, v) > RP - 0.6 && inFootprint(u, v) && p.y < site.y0 - D + 2; };
   // how far into the tunnel you are (0 in the shaft or up on the ledge, 1 inside): the camera lowers and comes in
@@ -427,7 +435,7 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
     held = false; canTake = false;
     item.group.visible = false;
     light.intensity = 0;
-    camBlend = 0;
+    camBlend = 0; steerSide = 0;
   }
 
   const api = {
@@ -455,36 +463,65 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
       pos.x = px; pos.z = pz;
     },
     // keep the camera inside the hole and the cave: lower, closer and under the ceiling while you're in the cave,
-    // and never inside rock
+    // never inside rock, and swung away from the walls so it keeps its distance instead of pulling in close to you
     constrainCamera(camera, rig, P, frameDt) {
       const now = performance.now() / 1000, dt = Math.min(0.1, frameDt ?? (lastCamT ? now - lastCamT : 1 / 60));
       lastCamT = now;
-      if (!site || !near(P.x, P.z, 40)) { camBlend = 0; boom = 1; return; }
+      if (!site || !near(P.x, P.z, 40)) { camBlend = 0; boom = 1; steerSide = 0; return; }
       const look = { x: rig.target.x, y: rig.target.y + 1.5, z: rig.target.z };
       let lift = rig.lookLift || 0;   // looking up: the gaze tilts above the explorer's head
       camBlend = damp(camBlend, caveWeight(P), 5, dt);
       const cam = camera.position;
+      // in the cave the camera comes lower and closer than its usual orbit
+      const p = Math.max(-0.08, Math.min(rig.pitch, 0.26)), d = Math.min(rig.curDist ?? rig.distance, 5.2);
+      const caveSpot = (yaw) => ({ x: rig.target.x + Math.sin(yaw) * Math.cos(p) * d, y: rig.target.y + 1.7 + Math.sin(p) * d, z: rig.target.z + Math.cos(yaw) * Math.cos(p) * d });
+      const spot = (yaw) => {
+        const o = rig.spotAt(yaw), c = caveSpot(yaw);
+        return { x: o.x + (c.x - o.x) * camBlend, y: o.y + (c.y - o.y) * camBlend, z: o.z + (c.z - o.z) * camBlend };
+      };
+      // anywhere down in the hole, a camera blocked by rock swings round you towards open space: across the shaft,
+      // or along the tunnel. It takes the open direction nearest its own (each turn is worth what it frees up,
+      // minus its size, and the side it already leans to wins ties, so it never flips between two equal gaps).
+      // It gives way while you turn the camera yourself (then only the boom shortens) and eases in once you let go.
+      const yieldTo = Math.min(1, Math.max(0, (rig.sinceLook - 0.25) / 0.35));
+      const ideal = spot(rig.yaw), full = Math.hypot(ideal.x - look.x, ideal.y - look.y, ideal.z - look.z);
+      const here = sheltered(P) && yieldTo > 0 ? clearance(look, ideal) : full;
+      if (here < full * 0.92) {
+        let best = 0, bestScore = here;
+        for (const a of STEER) {
+          let open = false;
+          for (const off of [a * (steerSide || 1), -a * (steerSide || 1)]) {
+            const room = clearance(look, spot(rig.yaw + off));
+            const score = room - off * Math.sign(off) * 0.7 + (steerSide && Math.sign(off) === steerSide ? 0.3 : 0);
+            if (score > bestScore + 0.05) { best = off; bestScore = score; }
+            if (room > full * 0.98) open = true;
+          }
+          if (open) break;   // a wider turn can't free up more
+        }
+        if (best) steerSide = Math.sign(best);
+        rig.yaw += Math.sign(best) * Math.min(Math.abs(best) * (1 - Math.exp(-3 * dt)), 2 * dt) * yieldTo;
+      } else steerSide = 0;
       if (camBlend > 0.01) {
-        const p = Math.max(-0.08, Math.min(rig.pitch, 0.26)), d = Math.min(rig.curDist ?? rig.distance, 5.2);
-        const cx = rig.target.x + Math.sin(rig.yaw) * Math.cos(p) * d, cz = rig.target.z + Math.cos(rig.yaw) * Math.cos(p) * d;
-        const cy = rig.target.y + 1.7 + Math.sin(p) * d;
-        cam.set(cam.x + (cx - cam.x) * camBlend, cam.y + (cy - cam.y) * camBlend, cam.z + (cz - cam.z) * camBlend);
+        const c = caveSpot(rig.yaw);
+        cam.set(cam.x + (c.x - cam.x) * camBlend, cam.y + (c.y - cam.y) * camBlend, cam.z + (c.z - cam.z) * camBlend);
         lift = lift * (1 - camBlend) + Math.tan(Math.max(0, p - rig.pitch)) * Math.cos(p) * d * camBlend;
       }
       if (!air(look.x, look.y, look.z)) return;
       const dx = cam.x - look.x, dy = cam.y - look.y, dz = cam.z - look.z, len = Math.hypot(dx, dy, dz);
       if (len < 0.01) return;
-      let free = len;
-      for (let s = 0.2; s <= len; s += 0.2) {
-        if (!air(look.x + dx * s / len, look.y + dy * s / len, look.z + dz * s / len)) { free = Math.max(0.35, s - 0.35); break; }
-      }
-      // the boom shortens quickly and lengthens slowly, so rock coming between you and the camera never makes it jump;
-      // it only snaps in if the smoothed spot would sit inside rock
+      const free = clearance(look, cam);
+      // the boom eases in over a fraction of a second and out more slowly, so rock coming between you and the
+      // camera never makes it jump. If the eased spot would sit inside rock, it comes in only as far as it must:
+      // to the nearest open point towards you
       const want = free / len;
-      boom = want < boom ? damp(boom, want, 22, dt) : damp(boom, want, 4, dt);
+      const inRock = (k) => !air(look.x + dx * k, look.y + dy * k, look.z + dz * k);
+      boom = want < boom ? damp(boom, want, 9, dt) : damp(boom, want, 4, dt);
       if (boom > 0.999) boom = 1;
       let f = boom;
-      if (f < 1 && !air(look.x + dx * f, look.y + dy * f, look.z + dz * f)) { f = want; boom = want; }
+      if (f < 1 && inRock(f)) {
+        while (f > 0.07 && inRock(f)) f -= 0.01;
+        boom = f;
+      }
       if (f < 1) {
         cam.set(look.x + dx * f, look.y + dy * f, look.z + dz * f);
         camera.lookAt(look.x, look.y + lift * f, look.z);
