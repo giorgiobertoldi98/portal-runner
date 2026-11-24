@@ -65,10 +65,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #05060c; col
 /* the contextual action: a pulsing pill that always says what it does (with its key on PC) */
 .tool.act { position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom)); translate: -50% 0; width: auto; height: auto; padding: 9px 14px; border-radius: 999px; color: #ffe6b8; border-color: #ffc46b; background: rgba(70, 46, 14, .72); box-shadow: 0 0 18px rgba(255, 196, 107, .45); animation: toolin .22s ease-out, actpulse 1.6s ease-in-out .22s infinite; }
 @keyframes actpulse { 50% { box-shadow: 0 0 4px rgba(255, 196, 107, .2); } }
-/* PC: it sits right on top of the tools row (where the item's name label would be, which steps aside meanwhile),
+/* PC: it sits right on top of the tools row (where the item's name label would be; the label and the key hint under
+   the bar step aside meanwhile),
    or in the row's place when there's nothing in it. Touch: low at the bottom centre, between the two pads. */
 body:not(.touch) #tools:not(:has(#items:not(.none))):not(:has(#btn-drop.show)) .tool.act { bottom: calc(34px + env(safe-area-inset-bottom)); }
 #tools:has(.act.show) #item-label { opacity: 0; }
+#tools:has(.act.show) #item-keys { visibility: hidden; }   /* Space takes, not opens, while the action is up */
 body.touch .tool.act { bottom: calc(16px + env(safe-area-inset-bottom)); }
 body.touch .tool.act kbd { display: none; }
 
