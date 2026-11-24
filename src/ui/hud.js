@@ -12,7 +12,7 @@ const ICONS = {
 export class HUD {
   constructor() {
     this.el = {
-      hud: $('hud'), gemCount: $('gem-count'), carry: $('gem-carry'), dropN: $('drop-n'), act: $('btn-act'), actLabel: $('act-label'), actIcon: $('btn-act').querySelector('.ico'), gemIcon: $('gem-icon'), lives: $('lives'), level: $('level'), drop: $('btn-drop'), callChip: $('call-chip'), callText: $('call-text'), callBar: $('call-bar'),
+      hud: $('hud'), gemCount: $('gem-count'), dropN: $('drop-n'), act: $('btn-act'), actLabel: $('act-label'), actIcon: $('btn-act').querySelector('.ico'), gemIcon: $('gem-icon'), dropIcon: $('drop-icon'), lives: $('lives'), level: $('level'), drop: $('btn-drop'), callChip: $('call-chip'), callText: $('call-text'), callBar: $('call-bar'),
       banner: $('banner'), bannerName: $('banner-name'),
       bannerTag: $('banner-tag'), toast: $('toast'), vignette: $('vignette'), fade: $('fade'),
       menu: $('screen-menu'), settings: $('screen-settings'), pause: $('screen-pause'), end: $('screen-end'), loading: $('screen-loading'),
@@ -32,18 +32,12 @@ export class HUD {
   setAccent(css) { document.documentElement.style.setProperty('--accent', css); }
 
   setWorld(name) { this.el.level.textContent = name; }
-  // the counter's icon: a snapshot of this world's gem (ui/gemIcon.js)
-  setGemIcon(url) { this.el.gemIcon.src = url; }
-
-  // the item key guide beside the slot bar: wheel (mouse players) or 1–9 to pick, Space to open
-
+  // a snapshot of this world's gem (ui/gemIcon.js): the counter's icon and the face of Drop gem
+  setGemIcon(url) { this.el.gemIcon.src = url; this.el.dropIcon.src = url; }
 
   setGems(filled, quota, carrying, open) {
     this.el.gemCount.textContent = `${filled} / ${quota}`;
-    // carried gems show as a small badge beside the count
-    this.el.carry.textContent = carrying && !open ? `+${carrying} carried` : '';
-    this.el.carry.classList.toggle('show', !!carrying && !open);
-    this.el.carry.parentElement.classList.toggle('carrying', !!carrying && !open);
+    // how many you carry shows only on Drop gem
     this.el.dropN.textContent = carrying ? String(carrying) : '';
     this.el.hud.classList.toggle('portal-open', open);
   }
@@ -56,9 +50,9 @@ export class HUD {
     this.el.callBar.style.width = `${Math.round(k * 100)}%`;
   }
 
-  // Your items (things you hold up to read: the note, the map), in the order you found them, and the selected
-  // one. PC: a slot bar; the label above it names the selected item for a moment after the selection changes (and
-  // while that item calls for attention). Touch: buttons that fill a column of up to --max-rows, then wrap leftwards.
+  // Your items (things you hold up to read: the note, the map), in the order you found them, and the selected one:
+  // a slot bar on every device; the label above it names the selected item for a moment after the selection changes
+  // (and while that item calls for attention).
   setItems(ids, sel) {
     const key = ids.join() + '|' + sel;
     if (this.itemsKey === key) return;
@@ -66,14 +60,11 @@ export class HUD {
     this.itemsKey = key;
     const box = this.el.items;
     box.classList.toggle('none', !ids.length);
-    const rows = parseInt(getComputedStyle(box).getPropertyValue('--max-rows'), 10) || 4;
-    box.style.setProperty('--rows', String(Math.max(1, Math.min(ids.length, rows))));
     for (const [id, btn] of Object.entries(this.itemBtns)) {
       const i = ids.indexOf(id);
       btn.classList.toggle('show', i >= 0);
       btn.classList.toggle('sel', id === sel);
       btn.style.order = String(i);
-      btn.querySelector('.k').textContent = i >= 0 && i < 9 ? String(i + 1) : '';
     }
     box.classList.toggle('many', ids.length > 1);
     this.el.itemName.textContent = sel ? this.itemBtns[sel].getAttribute('aria-label') : '';
@@ -84,8 +75,8 @@ export class HUD {
     clearTimeout(this.labelTimer);
     this.labelTimer = setTimeout(() => this.el.itemLabel.classList.remove('show'), 2600);
   }
-  // a tool calling for attention until it's used (a new item, e.g. the note at a world's start or the map once
-  // taken): a slow glow, and its name stays shown (beside it on touch, above the slot bar on PC while it's selected)
+  // a tool calling for attention until it's used (a new item that couldn't be held up the moment it was found):
+  // a slow glow, and its name stays shown above the slot bar while it's selected
   attention(btn, on) {
     btn.classList.toggle('attn', !!on);
     this.el.items.classList.toggle('attn', !!this.el.items.querySelector('.tool.sel.attn'));

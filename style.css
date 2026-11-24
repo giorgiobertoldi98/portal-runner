@@ -7,16 +7,18 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #05060c; col
 /* HUD */
 #hud { position: fixed; inset: 0; pointer-events: none; }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-.hud-tl { position: absolute; top: max(10px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left)); padding: 5px 12px 6px; border-radius: 11px; }
+/* top left: the world chip, and your lives just right of it, aligned to its top */
+.hud-tl { position: absolute; top: max(10px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left)); display: flex; align-items: flex-start; gap: 10px; }
+.world-chip { min-width: 0; padding: 5px 12px 6px; border-radius: 11px; }
 .gems { display: flex; align-items: center; gap: 6px; font-family: Cinzel, serif; font-weight: 700; font-size: 17px; letter-spacing: .04em; white-space: nowrap; }
 .gems .gem-icon { width: 20px; height: 20px; margin: -2px 0; flex: none; }
 /* a snapshot of this world's 3D gem (ui/gemIcon.js), with a soft glow in its colour (--gem, set at each level start) */
 .gem-icon { object-fit: contain; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--gem, #ff2d95) 70%, transparent)); }
 .lvl { font-size: 9.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 1px; opacity: .95; }
 .gems .unit { font-family: Inter, sans-serif; font-size: 11px; font-weight: 500; opacity: .7; letter-spacing: 0; }
-#hud.portal-open .hud-tl { border-color: var(--accent); box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent); }
+#hud.portal-open .world-chip { border-color: var(--accent); box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent); }
 .hud-tr { position: absolute; top: max(14px, env(safe-area-inset-top)); right: calc(14px + env(safe-area-inset-right)); display: flex; align-items: center; gap: 8px; }
-#lives { display: flex; gap: 3px; margin-right: 4px; }
+#lives { display: flex; gap: 3px; flex: none; padding-top: 4px; }
 .heart svg { fill: #ff4d6d; filter: drop-shadow(0 0 4px rgba(255, 77, 109, .7)); }
 .heart.lost svg { fill: rgba(255, 255, 255, .18); filter: none; }
 .icon-btn { pointer-events: auto; width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: #fff; display: grid; place-items: center; cursor: pointer; backdrop-filter: blur(8px); }
@@ -42,94 +44,71 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #05060c; col
 #fade { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .55s ease; z-index: 5; }
 #fade.on { opacity: 1; }
 
-/* the explorer's tools: your items (note, map, ...), drop a gem, and the contextual action (e.g. take the map).
-   PC: a slot bar of items, then labelled pills, at the bottom centre. Touch: buttons in the right-hand gutter, above
-   the look pad: the action at the bottom, then drop, then the items, which wrap into new columns to the left. */
-#tools { position: absolute; z-index: 4; left: 0; right: 0; justify-content: center; bottom: calc(20px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 10px; pointer-events: none; }
-/* PC: the action prompt (Enter / click) sits in the upper half of the screen, where it's seen the first time you reach something */
-body:not(.touch) .tool.act { position: fixed; left: 50%; top: 32%; translate: -50% 0; }
-.tool { display: none; position: relative; pointer-events: auto; align-items: center; justify-content: center; gap: 8px; padding: 9px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: #fff; font: 600 14px Inter, sans-serif; cursor: pointer; touch-action: none; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+/* the explorer's tools, the same on every device: your items as a slot bar at the bottom centre, Drop gem as a
+   separate round button (to the right of the bar on PC, above the look pad on touch) and the contextual action,
+   centred in the upper half of the screen, where it's seen the first time you reach something. */
+#tools { position: absolute; z-index: 4; left: 0; right: 0; justify-content: center; bottom: calc(34px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 22px; pointer-events: none; }
+.tool { display: none; position: relative; pointer-events: auto; align-items: center; justify-content: center; gap: 8px; width: 40px; height: 40px; padding: 0; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: #fff; font: 600 14px Inter, sans-serif; cursor: pointer; touch-action: none; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .tool.show { display: flex; animation: toolin .22s ease-out; }
 @keyframes toolin { from { opacity: 0; transform: scale(.85); } }
 .tool svg { flex: none; display: block; }
 .tool kbd { font: 700 11px Inter, sans-serif; padding: 2px 6px; border-radius: 6px; background: rgba(255, 255, 255, .14); }
 .tool .ico { display: contents; }
-.tool .n { display: none; }
+.tool .tl { white-space: nowrap; }
 #btn-note { color: #f3e2bf; border-color: rgba(243, 226, 191, .45); }
 #btn-map { color: #ffd28a; border-color: rgba(255, 196, 107, .5); }
-/* the drop tool takes the colour of this world's gems (--gem, set at each level start) */
-#btn-drop { color: color-mix(in srgb, var(--gem, #ff2d95) 55%, white); border-color: color-mix(in srgb, var(--gem, #ff2d95) 50%, transparent); }
-#btn-drop svg { fill: color-mix(in srgb, var(--gem, #ff2d95) 70%, white); }
-.tool.act { color: #ffe6b8; border-color: #ffc46b; background: rgba(70, 46, 14, .72); box-shadow: 0 0 18px rgba(255, 196, 107, .45); animation: toolin .22s ease-out, actpulse 1.6s ease-in-out .22s infinite; }
-@keyframes actpulse { 50% { box-shadow: 0 0 4px rgba(255, 196, 107, .2); } }
 .tool.fresh { animation: toolin .22s ease-out, mapfresh 1.2s ease-out 3; }
-/* a tool calling for attention until it's used (the note at the start of a world): a slow glow that keeps going */
+/* a tool calling for attention until it's used: a slow glow that keeps going */
 .tool.attn { animation: toolin .22s ease-out, attn 1.6s ease-in-out .22s infinite; border-color: #ffd28a; }
 @keyframes attn { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 210, 138, .75), 0 0 14px rgba(255, 210, 138, .45); } 60% { box-shadow: 0 0 0 12px rgba(255, 210, 138, 0), 0 0 22px rgba(255, 210, 138, .7); } }
-.tool .tl { white-space: nowrap; }
-/* items. PC: a slot bar; slots have the size and look of the system buttons, the selected one is ringed in the world's
-   colour and carries a label above the bar for a moment (name, and the wheel when there's more than one) */
+@keyframes tlshow { 0% { opacity: 0; } 8%, 80% { opacity: 1; } 100% { opacity: 0; } }
+
+/* the contextual action: a pulsing pill that always says what it does (with its key on PC) */
+.tool.act { position: fixed; left: 50%; top: 32%; translate: -50% 0; width: auto; height: auto; padding: 9px 14px; border-radius: 999px; color: #ffe6b8; border-color: #ffc46b; background: rgba(70, 46, 14, .72); box-shadow: 0 0 18px rgba(255, 196, 107, .45); animation: toolin .22s ease-out, actpulse 1.6s ease-in-out .22s infinite; }
+@keyframes actpulse { 50% { box-shadow: 0 0 4px rgba(255, 196, 107, .2); } }
+body.touch .tool.act kbd { display: none; }
+
+/* items: a slot bar; slots have the size and look of the system buttons and carry nothing written on them. The selected
+   one is ringed in the world's colour and named in a label above the bar for a moment */
 #items { position: relative; display: flex; align-items: center; gap: 6px; }
 #items.none { display: none; }
-body:not(.touch) #items .tool { width: 40px; height: 40px; padding: 0; border-radius: 12px; }
-body:not(.touch) #items .tool:not(.sel):not(:hover) { opacity: .7; }
-body:not(.touch) #items .tool.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 12px color-mix(in srgb, var(--accent) 40%, transparent); }
-body:not(.touch) #items .tool.sel.attn { box-shadow: none; }
+#items .tool:not(.sel):not(:hover) { opacity: .7; }
+#items .tool.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 12px color-mix(in srgb, var(--accent) 40%, transparent); }
+#items .tool.sel.attn { box-shadow: none; opacity: 1; }
 #items .tool .tl { display: none; }
-#items .tool .k { position: absolute; right: 4px; bottom: 2px; font: 700 9px/1 Inter, sans-serif; font-style: normal; opacity: .55; }
-#item-label { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); display: flex; align-items: center; gap: 7px; padding: 4px 10px; border-radius: 99px; background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font: 600 12px Inter, sans-serif; white-space: nowrap; opacity: 0; transition: opacity .3s; pointer-events: none; }
-#item-label kbd { font: 700 10px Inter, sans-serif; padding: 2px 5px; border-radius: 5px; background: rgba(255, 255, 255, .14); }
-#item-label .wheel { display: none; opacity: .7; }
-#items.many #item-label .wheel { display: block; }
+#item-label { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); padding: 4px 10px; border-radius: 99px; background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font: 600 12px Inter, sans-serif; white-space: nowrap; opacity: 0; transition: opacity .3s; pointer-events: none; }
 #item-label.show, #items.attn #item-label { opacity: 1; }
-/* PC: a quiet, always-present key guide just below the slot bar, on one line: "[wheel] pick · [Space] open" (1–9 instead of
-   the wheel for keyboard-only players). The picking half only shows once there's more than one item to choose from.
-   Plain text, no container: a soft dark shadow keeps it legible over snow or sand. */
-#item-keys { position: absolute; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); display: flex; align-items: center; gap: 9px; white-space: nowrap; pointer-events: none; font: 500 11px Inter, sans-serif; color: rgba(255, 255, 255, .85); text-shadow: 0 0 6px rgba(0, 0, 0, .75), 0 1px 2px rgba(0, 0, 0, .6); filter: drop-shadow(0 0 4px rgba(0, 0, 0, .35)); }
-#item-keys .pick, #item-keys .open { display: flex; align-items: center; gap: 5px; }
-body:not(.touch) #tools { bottom: calc(34px + env(safe-area-inset-bottom)); }   /* room for the key guide below the bar */
-#items.many #item-keys .open::before { content: '·'; margin-right: 4px; opacity: .5; }
-#item-keys kbd { font: 700 10px Inter, sans-serif; color: #fff; padding: 2px 5px; border-radius: 5px; background: rgba(255, 255, 255, .15); }
-#item-keys svg { opacity: .9; }
-/* pick with the wheel (once there are several), open with Space */
+/* PC: a quiet key hint just below the bar, no words: the wheel (only once there's more than one item to pick) | Space.
+   Plain, no container: a soft dark shadow keeps it legible over snow or sand. */
+#item-keys, #btn-drop kbd { position: absolute; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); display: flex; align-items: center; gap: 7px; white-space: nowrap; pointer-events: none; color: rgba(255, 255, 255, .85); filter: drop-shadow(0 0 3px rgba(0, 0, 0, .6)); }
+#item-keys kbd, #btn-drop kbd { font: 700 10px Inter, sans-serif; color: #fff; padding: 2px 5px; border-radius: 5px; background: rgba(255, 255, 255, .15); }
+#btn-drop kbd { display: block; }
+#item-keys .sep { width: 1px; height: 11px; background: rgba(255, 255, 255, .45); }
 #item-keys .pick { display: none; }
-#items.many #item-keys .pick { display: flex; }
-body.touch #item-keys { display: none; }
-/* touch: one right-hand gutter (--edge) shared with the sound / pause buttons and the turn pad, so the tools sit in a
-   column right above the pad, the same size and shape as the buttons at the top */
-body.touch #hud { --edge: calc(14px + env(safe-area-inset-right)); }
-body.touch #tools { left: auto; justify-content: normal; right: var(--edge); bottom: calc(150px + env(safe-area-inset-bottom)); flex-direction: column; align-items: flex-end; gap: 8px; }
-body.touch .tool { width: 40px; height: 40px; padding: 0; border-radius: 12px; }
-body.touch .tool kbd { display: none; }
-/* on touch the name sits beside the button, shown for a moment when a tool first appears */
-body.touch .tool .tl { position: absolute; right: calc(100% + 8px); top: 50%; transform: translateY(-50%); padding: 4px 9px; border-radius: 99px; background: var(--panel); border: 1px solid var(--line); color: #fff; font: 600 12px Inter, sans-serif; opacity: 0; pointer-events: none; }
-body.touch .tool.fresh .tl { animation: tlshow 3.6s ease forwards; }
-body.touch .tool.attn .tl { animation: none; opacity: 1; }
-/* every prompt to use something also carries an arrow pointing at it: beside a touch button, above the PC slot bar
-   (on its label) and above the action pill, nudging gently */
-body.touch .tool.attn .tl::after { content: '→'; display: inline-block; margin-left: 6px; animation: nudge-x 1s ease-in-out infinite; }
-#items.attn #item-label::after { content: '↓'; display: inline-block; animation: nudge-y 1s ease-in-out infinite; }
-.tool.act::after { content: '↓'; position: absolute; left: 50%; bottom: calc(100% + 2px); margin-left: -6px; font-size: 18px; line-height: 1; color: #ffc46b; animation: nudge-y 1s ease-in-out infinite; }
-body.touch .tool.act::after { content: '→'; left: auto; bottom: auto; right: calc(100% + 6px); top: 50%; margin: -9px 0 0; animation-name: nudge-x; }
-@keyframes nudge-x { 50% { transform: translateX(4px); } }
-@keyframes nudge-y { 50% { transform: translateY(4px); } }
-@keyframes tlshow { 0% { opacity: 0; } 8%, 80% { opacity: 1; } 100% { opacity: 0; } }
-/* the contextual action always says what it does */
-body.touch .tool.act { width: auto; height: 40px; padding: 0 14px 0 11px; border-radius: 12px; }
-body.touch .tool.act .tl { position: static; transform: none; opacity: 1; padding: 0; border: 0; background: none; color: inherit; font-size: 14px; }
-body.touch .tool .n { display: block; position: absolute; top: -5px; right: -5px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 10px; background: var(--gem, #ff2d95); color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .55); font: 700 11px/19px Inter, sans-serif; text-align: center; box-shadow: 0 0 8px color-mix(in srgb, var(--gem, #ff2d95) 70%, transparent); }
-body.touch .tool .n:empty { display: none; }
-/* touch items: a tap holds one up. They fill a column of up to --max-rows (main.js sets --rows), then wrap into new
-   columns to the left, so they never climb into the sound / pause buttons */
-body.touch #items { --max-rows: 4; display: grid; grid-auto-flow: column; grid-template-rows: repeat(var(--rows, 1), auto); direction: rtl; gap: 8px; }
-body.touch #items.none, body.touch #item-label, body.touch #items .tool .k { display: none; }
-body.touch #items > * { direction: ltr; }
-body.touch #items .tool .tl { display: block; }
+#items.many #item-keys .pick { display: block; }
+
+/* Drop gem: round, in the colour of this world's gems (--gem, set at each level start), showing that gem and the
+   number you carry. It stands apart from the items: a gap on PC, its own spot above the look pad on touch. */
+#btn-drop { width: 44px; height: 44px; border-radius: 50%; border-color: color-mix(in srgb, var(--gem, #ff2d95) 60%, transparent); background: color-mix(in srgb, var(--gem, #ff2d95) 16%, rgba(10, 12, 24, .6)); }
+#btn-drop .gem-icon { width: 26px; height: 26px; }
+#btn-drop .tl { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); padding: 4px 9px; border-radius: 99px; background: var(--panel); border: 1px solid var(--line); font: 600 12px Inter, sans-serif; opacity: 0; pointer-events: none; }
+#btn-drop.fresh .tl { animation: tlshow 3.6s ease forwards; }
+.tool .n { position: absolute; top: -5px; right: -5px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 10px; background: var(--gem, #ff2d95); color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .55); font: 700 11px/19px Inter, sans-serif; text-align: center; box-shadow: 0 0 8px color-mix(in srgb, var(--gem, #ff2d95) 70%, transparent); }
+.tool .n:empty { display: none; }
+
+/* touch: everything within a thumb's reach, in one row over the two pads (both pads are --pad wide, centred --pad-y
+   above the bottom): the item bar sits over the joystick, starting at its left edge; Drop gem sits over the look pad,
+   centred on it. --row-y is the height of that row's centre line, so the bar and Drop gem share it. No key hints. */
+body.touch #hud { --edge: calc(14px + env(safe-area-inset-right)); --pad: 124px; --pad-y: 92px; --joy-x: 86px; --row-y: calc(var(--pad-y) + var(--pad) / 2 + 36px); }
+body.touch #items { position: fixed; left: calc(var(--joy-x) - var(--pad) / 2 + env(safe-area-inset-left)); bottom: calc(var(--row-y) - 20px + env(safe-area-inset-bottom)); }
+body.touch #item-keys, body.touch #btn-drop kbd { display: none; }
+body.touch #btn-drop { position: fixed; right: calc(var(--edge) + var(--pad) / 2 - 22px); bottom: calc(var(--row-y) - 22px + env(safe-area-inset-bottom)); }
+body.touch #btn-drop .tl { bottom: auto; left: auto; top: 50%; right: calc(100% + 8px); transform: translateY(-50%); }
 
 /* touch controls: always visible while playing on touch screens */
 #joystick, #lookpad { display: none; position: absolute; pointer-events: none; z-index: 4; }
 body.touch #joystick, body.touch #lookpad { display: block; }
-#joystick { width: 124px; height: 124px; margin: -62px 0 0 -62px; left: calc(86px + env(safe-area-inset-left)); top: calc(100% - 92px - env(safe-area-inset-bottom)); border-radius: 50%; border: 2px solid rgba(255, 255, 255, .55); background: radial-gradient(circle, rgba(255, 255, 255, .06) 0%, rgba(10, 12, 24, .35) 70%); box-shadow: 0 0 0 6px rgba(255, 255, 255, .06), inset 0 0 18px rgba(0, 0, 0, .35); transition: border-color .15s, box-shadow .15s, opacity .2s; opacity: .85; }
+#joystick { width: var(--pad); height: var(--pad); margin: calc(var(--pad) / -2) 0 0 calc(var(--pad) / -2); left: calc(var(--joy-x) + env(safe-area-inset-left)); top: calc(100% - var(--pad-y) - env(safe-area-inset-bottom)); border-radius: 50%; border: 2px solid rgba(255, 255, 255, .55); background: radial-gradient(circle, rgba(255, 255, 255, .06) 0%, rgba(10, 12, 24, .35) 70%); box-shadow: 0 0 0 6px rgba(255, 255, 255, .06), inset 0 0 18px rgba(0, 0, 0, .35); transition: border-color .15s, box-shadow .15s, opacity .2s; opacity: .85; }
 #joystick.active { opacity: 1; transition: border-color .15s, box-shadow .15s; }
 #joystick.run { border-color: var(--accent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 35%, transparent), 0 0 24px var(--accent); }
 .joy-arrows { position: absolute; inset: 0; width: 100%; height: 100%; fill: rgba(255, 255, 255, .6); }
@@ -138,7 +117,8 @@ body.touch #joystick, body.touch #lookpad { display: block; }
 .joy-label { display: none; position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 11px; font-weight: 600; letter-spacing: .06em; opacity: .75; text-shadow: 0 1px 4px rgba(0, 0, 0, .8); }
 #joystick.active .joy-label { opacity: 0; }
 /* the look pad: its right edge on the shared gutter (--edge) */
-#lookpad { width: 88px; height: 88px; margin: -44px 0 0 -44px; left: calc(100% - var(--edge) - 44px); top: calc(100% - 92px - env(safe-area-inset-bottom)); border-radius: 50%; border: 2px dashed rgba(255, 255, 255, .45); background: rgba(10, 12, 24, .25); opacity: .8; }
+/* the same size as the joystick, mirrored in the right-hand gutter */
+#lookpad { width: var(--pad); height: var(--pad); margin: calc(var(--pad) / -2) 0 0 calc(var(--pad) / -2); left: calc(100% - var(--edge) - var(--pad) / 2); top: calc(100% - var(--pad-y) - env(safe-area-inset-bottom)); border-radius: 50%; border: 2px dashed rgba(255, 255, 255, .45); background: rgba(10, 12, 24, .25); opacity: .8; }
 #lookpad svg { position: absolute; inset: 11px; width: calc(100% - 22px); height: calc(100% - 22px); fill: rgba(255, 255, 255, .6); }
 #lookpad.active { border-color: var(--accent); opacity: 1; }
 body.touch .icon-btn { width: 40px; height: 40px; }
@@ -182,47 +162,40 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 .switch[aria-checked=true] { background: var(--accent); }
 .switch[aria-checked=true] i { transform: translateX(22px); }
 
-/* HUD on narrow screens: hearts go under the buttons, level label truncates */
-.hud-tl { max-width: calc(100% - 150px); }
+/* the top-left group never reaches the sound / pause buttons: the level label truncates first */
+.hud-tl { max-width: calc(100% - 124px); }
 .lvl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-@media (max-width: 640px) {
-  .hud-tr { flex-wrap: wrap; justify-content: flex-end; width: 92px; row-gap: 8px; }
-  #lives { order: 2; margin-right: 0; }
-  .hud-tl { max-width: calc(100% - 124px); }
-}
 /* big screens (PC): the same chip, a little larger */
 @media (min-width: 900px) and (min-height: 560px) {
-  .hud-tl { top: max(14px, env(safe-area-inset-top)); left: 14px; padding: 7px 14px 8px; border-radius: 13px; }
+  .hud-tl { top: max(14px, env(safe-area-inset-top)); left: 14px; }
+  .world-chip { padding: 7px 14px 8px; border-radius: 13px; }
+  #lives { padding-top: 6px; }
   .lvl { font-size: 11px; margin-bottom: 2px; }
   .gems { font-size: 21px; gap: 7px; }
   .gems .gem-icon { width: 25px; height: 25px; }
   .gems .unit { font-size: 12px; }
-  .gems .carry { font-size: 12px; }
   #toast { top: calc(max(14px, env(safe-area-inset-top)) + 70px); font-size: 14px; }
 }
 
-/* carried-gems badge beside the count */
-.gems .carry.show { display: inline-block; }
-/* in the colour of this world's gems (--gem, set at each level start) */
-.gems .carry { display: none; font: 700 11px Inter, sans-serif; letter-spacing: 0; color: color-mix(in srgb, var(--gem, #ff2d95) 55%, white); padding: 1px 7px; border-radius: 99px; background: color-mix(in srgb, var(--gem, #ff2d95) 18%, transparent); border: 1px solid color-mix(in srgb, var(--gem, #ff2d95) 45%, transparent); }
 
 /* phones held sideways: the screen is short, so the HUD shrinks to a small chip (world name + gem count)
    and the touch pads get smaller and tuck into the corners, leaving the middle of the screen to the world */
 @media (max-height: 500px) {
-  .hud-tl { top: max(8px, env(safe-area-inset-top)); max-width: calc(100% - 290px - env(safe-area-inset-left) - env(safe-area-inset-right)); }
+  .hud-tl { top: max(8px, env(safe-area-inset-top)); gap: 8px; max-width: calc(100% - 110px - env(safe-area-inset-left) - env(safe-area-inset-right)); }
+  #lives { padding-top: 3px; }
   .hud-tr { top: max(8px, env(safe-area-inset-top)); right: max(10px, env(safe-area-inset-right)); gap: 6px; }
   .heart svg { width: 17px; height: 17px; }
   body.touch .icon-btn { width: 36px; height: 36px; border-radius: 10px; }
   .icon-btn svg { width: 17px; height: 17px; }
   body.touch #hud { --edge: max(10px, env(safe-area-inset-right)); }
-  #joystick { width: 112px; height: 112px; margin: -56px 0 0 -56px; left: calc(80px + env(safe-area-inset-left)); top: calc(100% - 72px - env(safe-area-inset-bottom)); }
   #joy-knob { width: 46px; height: 46px; }
-  #lookpad { width: 84px; height: 84px; margin: -42px 0 0 -42px; left: calc(100% - var(--edge) - 42px); top: calc(100% - 72px - env(safe-area-inset-bottom)); }
   #lookpad svg { inset: 11px; width: calc(100% - 22px); height: calc(100% - 22px); }
-  body.touch #tools { bottom: calc(126px + env(safe-area-inset-bottom)); gap: 6px; }
+  body.touch #hud { --pad: 112px; --pad-y: 72px; --joy-x: 80px; --row-y: calc(var(--pad-y) + var(--pad) / 2 + 32px); }
+  body.touch #items { bottom: calc(var(--row-y) - 18px + env(safe-area-inset-bottom)); }
   body.touch .tool { width: 36px; height: 36px; border-radius: 10px; }
-  body.touch .tool.act { height: 36px; border-radius: 10px; }
-  body.touch #items { --max-rows: 2; gap: 6px; }
+  body.touch #btn-drop { width: 40px; height: 40px; border-radius: 50%; right: calc(var(--edge) + var(--pad) / 2 - 20px); bottom: calc(var(--row-y) - 20px + env(safe-area-inset-bottom)); }
+  body.touch #btn-drop .gem-icon { width: 23px; height: 23px; }
+  body.touch .tool.act { width: auto; height: auto; padding: 7px 12px; border-radius: 999px; font-size: 13px; }
   #banner { top: 12%; }
   #banner-name { font-size: clamp(24px, 5vw, 40px); }
   #toast { top: calc(max(8px, env(safe-area-inset-top)) + 56px); font-size: 12px; padding: 6px 11px 6px 9px; }

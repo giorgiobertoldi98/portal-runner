@@ -183,16 +183,21 @@ class Game {
   // put away the item you hold up, by hand (Space)
   closeHeld() { if (this.mapView.open) this.toggleMap(); else if (this.briefing.open) this.closeBriefing(); }
 
-  // keep the items in step with what the world says you have: a new one joins the end, gets selected and glows
-  // until you first hold it up
+  // keep the items in step with what the world says you have: a new one joins the end, gets selected and is held up
+  // straight away, as if tapped (it glows until then, in case it can't open yet). Debug mode hands everything over at
+  // the start, quietly: no glow, nothing opens.
   syncItems() {
+    const found = [];
     for (const d of this.ITEMS) {
       const i = this.items.indexOf(d.id), has = this.world ? d.has() : false;
-      if (has && i < 0) { this.items.push(d.id); this.itemSel = this.items.length - 1; this.hud.attention(d.btn, true); }
-      else if (!has && i >= 0) { this.items.splice(i, 1); this.hud.attention(d.btn, false); }
+      if (has && i < 0) {
+        this.items.push(d.id); this.itemSel = this.items.length - 1;
+        if (!this.debug) { this.hud.attention(d.btn, true); found.push(d.id); }
+      } else if (!has && i >= 0) { this.items.splice(i, 1); this.hud.attention(d.btn, false); }
     }
     this.itemSel = clamp(this.itemSel, 0, Math.max(0, this.items.length - 1));
     this.hud.setItems(this.items, this.items[this.itemSel] ?? null);
+    if (found.length && this.state === 'playing') this.useItem(found[found.length - 1]);
   }
   selectItem(i) {
     const n = this.items.length;
