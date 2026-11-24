@@ -35,6 +35,7 @@ Each kind of knowledge has one home, so no file grows into a dump and each note 
 - Default tuning lives in `src/config.js`; saved settings override it at startup. Every speed there is a fraction of the running speed V, fixed per state.
 - Gameplay code stays world-agnostic: anything specific to one world lives in that world's module, its mechanics or its hunter brain, and reaches the game loop through the world contract's hooks.
 - Audio is fully procedural: no audio files.
+- Small rooms get a fixed camera shot (design principle in GAME.md): a world declares the room and its shot; how it behaves is in `src/engine/fixedShot.js`.
 
 ## Running it
 - Quick start: `task` (or `task run`) serves the repo root and opens the browser; `task serve` skips the browser; `task run PORT=3000` changes the port (default 8000). Requires [Task](https://taskfile.dev) and [uv](https://docs.astral.sh/uv/) (uv provides Python; no packages are installed).

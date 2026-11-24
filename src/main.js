@@ -4,6 +4,7 @@ import { WORLDS } from './worlds/registry.js';
 import { Input } from './engine/input.js';
 import { AudioEngine } from './engine/audio.js';
 import { CameraRig } from './engine/cameraRig.js';
+import { FixedShot } from './engine/fixedShot.js';
 import { mulberry32 } from './engine/noise.js';
 import { findSpot, dist2D, clamp, dampAngle, insideColliders } from './engine/utils.js';
 import { Player } from './entities/player.js';
@@ -64,6 +65,7 @@ class Game {
     this.items = [];     // ids, in the order found
     this.itemSel = 0;    // the selected one (PC: the wheel or 1-9 picks it, Space opens it)
     this.rig = new CameraRig(this.camera);
+    this.shot = new FixedShot();   // small rooms' fixed camera shots
     this.player = new Player();
     this.resonance = new Resonance();
     this.carried = [];
@@ -574,6 +576,7 @@ class Game {
         const w = this.world;
         this.rig.update(dt, this.player, this.input.consumeLook(), w.heightAt, false, t - this.input.lastLookTime, w.colliders);
         if (w.constrainCamera) w.constrainCamera(this.camera, this.rig, this.player.position, dt);
+        this.shot.update(this.camera, this.rig, this.player.position, dt, w.fixedShot);
         this.heldItem()?.zoomBy(this.input.consumeZoom());
         if (!this.heldItem()?.hold.pauses) this.state = 'playing';
       }
@@ -589,7 +592,7 @@ class Game {
     const P = this.player.position;
     this.time += dt;
     const look = this.input.consumeLook();
-    this.input.walkOnly = !!w.walkOnly?.(P);   // e.g. the ice cave's chamber: too small to run in
+    this.input.walkOnly = this.shot.active;   // a room with a fixed shot is too small to run in
     const move = this.input.getMove();
     const moving = Math.hypot(move.x, move.y) > 0.1;
     this.player.update(dt, move, this.rig.moveYaw(move), w, null, (k) => this.audio.footstep(w.audio.footstep, k));
@@ -612,6 +615,7 @@ class Game {
       if (Math.abs(Math.atan2(Math.sin(want - this.player.heading), Math.cos(want - this.player.heading))) < 0.003) this.mapAlign = false;
     }
     if (w.constrainCamera) w.constrainCamera(this.camera, this.rig, P, dt); // e.g. keep it inside the ice hole's cave
+    this.shot.update(this.camera, this.rig, P, dt, w.fixedShot);
 
     // world mechanics (e.g. snow storms), then the hunter, whose brain reads the mechanics' signals
     if (w.mechanics) {
