@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import { PLAYER } from '../config.js';
 import { clamp, damp, dampAngle, lerp, resolveCollisions, clampToRadius } from '../engine/utils.js';
-import { buildExplorer, animateCoat } from './explorerLooks.js';
+import { buildExplorer, animateCoat } from './explorerModel.js';
 import { createMiniGem } from './gem.js';
 
-// The explorer, with procedural idle / walk / run animation. Feet at y = 0, ~1.85 m tall. What it wears is its look
-// (explorerLooks.js); every look dresses the same rig, so movement and collisions never depend on it.
+// The explorer, with procedural idle / walk / run animation. Feet at y = 0, ~1.85 m tall.
+// The model and its rig are built in explorerModel.js.
 export class Player {
-  constructor(look) {
+  constructor() {
     this.object = new THREE.Group();
     this.position = this.object.position;
     this.velocity = new THREE.Vector3();
@@ -18,7 +18,7 @@ export class Player {
     this.moveDir = new THREE.Vector3(0, 0, 1);
     this.speedMul = 1;   // < 1 while carrying gems
     this.carried = [];   // mini gems orbiting the backpack, one per carried gem
-    buildExplorer(this, look);
+    buildExplorer(this);
     this.glowLevel = 0.75;
     this.carryGroup = new THREE.Group();
     this.carryGroup.position.set(0, 1.55, -0.25);
