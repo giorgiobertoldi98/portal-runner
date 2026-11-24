@@ -1,0 +1,13 @@
+# Worlds — what every world module must keep
+
+What a world is, how it plugs in, and the rules a new or changed world must follow. The full contract (every field and optional hook) is the header of `registry.js`: keep it in step with the code whenever a hook is added or changed.
+
+- **Self-contained**: a world is its module plus a registry entry. Adding or changing one never touches another world, `settings.js`, the menu or the HUD: the game loop reads it only through the contract's hooks, and the menu, Settings and portal frames build themselves from the registry.
+- **Its own tuning**: per-world settings go in the module's `settings` list; per-world defaults in their own block in `config.js`. Speeds are fractions of V.
+- **Ground = the drawn ground**: shape the terrain with a smooth height function, wrap it with `gridHeight(fn, size, segments)` and pass the same size and segment count (`quality.terrainSegments`) to `createTerrain`. Everything that stands on the ground (player, hunters, gems, props, storm edges, the safe-zone ring) reads `heightAt`, so it sits exactly on the visible triangles on every device; reading the smooth function instead makes things float or sink.
+- **Solid only through colliders**: you can't walk through something only if it has a collider (circles and axis-aligned boxes). Anything without one can be walked through.
+- **Gems**: the world sets its gem look (`gem`); it hides exactly as many gems as its quota, and the portal builds one socket per gem needed, so any quota works without other changes.
+- **Holes in the ground** (e.g. the Glacier's ice hole): `heightAt` includes the hole and `groundAt` is the terrain alone; `constrainMove` blocks steps that are too steep, `constrainCamera` keeps the camera out of rock, `hunterKeepOut` and `isSheltered` tell hunters where they can't go and where they lose you. Nothing underground casts shadows: they would land on the snow above.
+- **Mechanics** talk to the hunter brain through `signals` and to the game through the optional hooks; a world where the Resonance Call is silent also skips the call hint.
+- **Debug mode**: a world whose items you find in play must implement `grantAll()`, handing them over as if taken, without sounds or side effects.
+- Every world plays on touch and PC: anything costly scales with `quality` (density, terrain segments).
