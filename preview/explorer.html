@@ -123,7 +123,7 @@ function focus(i) {
 }
 const focusBar = document.getElementById('focus');
 ids.forEach((id, i) => {
-  const b = document.createElement('button'); b.dataset.v = i; b.textContent = LOOKS[id].name.replace(' (round 1)', '').replace('Scout · ', '');
+  const b = document.createElement('button'); b.dataset.v = i; b.textContent = LOOKS[id].name.replace(' (round 2)', '').replace('Ember · ', '');
   focusBar.append(b);
 });
 document.querySelectorAll('.group').forEach((g) => g.addEventListener('click', (e) => {

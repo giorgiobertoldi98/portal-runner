@@ -333,6 +333,12 @@ const SCOUT = {
 };
 const SCOUT_COAT = { coat: 0x2f5741, coatDark: 0x22402f, skin: 0xb98060, hair: 0x18120e };
 
+// graphite with the armoured explorer's orange: scarf, boot trims, pack details and emitter
+const EMBER = {
+  trousers: 0x5d6269, mask: 0xe0622a, gloves: 0x2a2d32, boots: 0x30333a, bootTrim: 0xff6b24,
+  pack: 0x3c4048, packDark: 0xff6b24, strap: 0x2a2d32, belt: 0x2a2d32, bedroll: 0x9aa0a8,
+};
+
 const BASE = {
   trousers: 0x2a2c30, belt: 0x3a2a1d, buckle: 0xb89548, buckleInner: 0x6b5328, buttons: 0x22201c,
   under: 0x1f2226, strap: 0x3b2c20, pack: 0x30332f, packDark: 0x1d1f22, bedroll: 0xb39a6c,
@@ -342,39 +348,23 @@ const BASE = {
 // The selectable looks. 'armoured' is the original explorer; the trench looks share one builder.
 export const LOOKS = {
   armoured: { name: 'Armoured (current)', build: armoured },
-  scout: {
-    name: 'Neon Scout (round 1)', build: trench,
-    style: { ...SCOUT, packScale: 1, colors: { ...BASE, ...SCOUT_COAT, mask: 0x1c1e21, boots: 0x1c1d20, bootTrim: 0x2c2e33, pack: 0x23262a } },
-  },
-  // The Neon Scout in three palettes: the same forest-green coat, hood, cyan piping and smaller pack,
-  // with lighter or warmer trousers, boots, pack and face covering so the figure reads against the dark coat
-  // and the black goggles stand out.
-  stone: {
-    name: 'Scout · Stone', build: trench,
-    // warm-white pack and boots and stone-grey trousers, echoing the armoured explorer's plates
-    style: {
-      ...SCOUT,
-      colors: { ...BASE, ...SCOUT_COAT, trousers: 0x8e9399, mask: 0x5d636b, gloves: 0x3a3e44, boots: 0xdcd6cb, bootTrim: 0xa9a49a,
-        pack: 0xdcd6cb, packDark: 0x4a4f56, strap: 0x4a4f56, belt: 0x4a4f56, bedroll: 0x8e9399 },
-    },
-  },
-  sand: {
-    name: 'Scout · Sand', build: trench,
-    // khaki trousers and cognac leather: an earthier explorer
-    style: {
-      ...SCOUT,
-      colors: { ...BASE, ...SCOUT_COAT, trousers: 0xb59b72, mask: 0x7a5a3e, gloves: 0x5a3b26, boots: 0x7c4f2c, bootTrim: 0x5a3b26,
-        pack: 0x8f6a44, packDark: 0x4d3523, strap: 0x5a3b26, belt: 0x5a3b26, bedroll: 0xd3c29f },
-    },
-  },
   ember: {
-    name: 'Scout · Ember', build: trench,
-    // graphite with the armoured explorer's orange: scarf, boot trims, pack details and emitter
-    style: {
-      ...SCOUT,
-      colors: { ...BASE, ...SCOUT_COAT, trousers: 0x5d6269, mask: 0xe0622a, gloves: 0x2a2d32, boots: 0x30333a, bootTrim: 0xff6b24,
-        pack: 0x3c4048, packDark: 0xff6b24, strap: 0x2a2d32, belt: 0x2a2d32, bedroll: 0x9aa0a8 },
-    },
+    name: 'Ember (round 2)', build: trench,
+    style: { ...SCOUT, colors: { ...BASE, ...SCOUT_COAT, ...EMBER } },
+  },
+  // Ember with the same green lifted in three clear steps (same hue, lighter and a touch more saturated), so the coat keeps
+  // its colour when it is in shade, as it usually is from the game camera behind the explorer.
+  ember1: {
+    name: 'Ember · light', build: trench,
+    style: { ...SCOUT, colors: { ...BASE, ...SCOUT_COAT, ...EMBER, coat: 0x3d7c59, coatDark: 0x316447 } },
+  },
+  ember2: {
+    name: 'Ember · lighter', build: trench,
+    style: { ...SCOUT, colors: { ...BASE, ...SCOUT_COAT, ...EMBER, coat: 0x49946b, coatDark: 0x3c7c58 } },
+  },
+  ember3: {
+    name: 'Ember · lightest', build: trench,
+    style: { ...SCOUT, colors: { ...BASE, ...SCOUT_COAT, ...EMBER, coat: 0x55ab7c, coatDark: 0x489469 } },
   },
 };
 export const DEFAULT_LOOK = 'armoured';
