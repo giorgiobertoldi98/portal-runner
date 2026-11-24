@@ -101,10 +101,10 @@ Every toast in the game (see Design principles: anything that can be shown inste
 - The glacier's playable area is a disc ~258 m in radius (~515 m across); about 70% of it is walkable (the rest is lake or steep slopes). Running across it takes about 45 seconds.
 
 ## The explorer (player character)
-- A low-poly explorer in a slim, belted trench coat: cool explorer vibes rather than a space suit. Palette: a mid green coat (deeper green on lapels, collar, hood peak, cuffs and hem), orange trims (scarf, boot collars and toe caps, pack details, antenna base, wrist scanner), graphite trousers and boots, cyan suit lights. The green is kept light enough to stay green in shade, and the orange keeps the figure readable against snow, sand and the alien ground alike.
+- A low-poly explorer in a slim, belted trench coat: cool explorer vibes rather than a space suit. Palette: a light leaf-green coat (deeper green on lapels, collar, hood peak, cuffs and hem), brown leather (belt, straps, gloves, pack, boots), warm taupe trousers, orange trims (scarf, boot collars and toe caps, pack pocket, antenna base, wrist scanner) and cyan suit lights. The green is light enough to stay green in shade, and the orange keeps the figure readable against snow, sand and the alien ground alike.
 - Hood up, black wraparound sports goggles and an orange scarf pulled up to the nose: the face is never shown.
 - The coat hangs a little below the knee, split front and back on each side, so it swings with the legs and opens at the sides and back as you run instead of hiding the stride.
-- The back, which the game camera sees most, carries a compact pack: an orange pocket, a glowing light column, a bedroll underneath, a whip antenna that sways with movement, and a gem emitter on top that the carried gems orbit above. A wrist scanner sits on the left forearm.
+- The back, which the game camera sees most, carries a compact leather pack: an orange pocket, a glowing light column, a bedroll underneath, a whip antenna that sways with movement, and a gem emitter on top that the carried gems orbit above. A wrist scanner sits on the left forearm.
 - Suit lights (along the lapels, the coat's hem, the belt buckle, the goggles' brow, the pack, the wrist scanner, the boot soles) glow steadily while moving and brighten with a slow pulse while you stand still, matching the moment you search for gems.
 
 ## Speeds

@@ -1,17 +1,18 @@
 import * as THREE from 'three';
 import { flatMat, mergeParts, m4 } from '../engine/utils.js';
 
-// The explorer's model: a slim green trench coat with orange trims, black sports goggles, a compact pack.
+// The explorer's model: a slim light-green trench coat with orange trims and brown leather, black sports goggles,
+// a compact pack.
 // Rig (what Player.animate drives; keep these names and pivots, or the walk / run animation breaks):
 // hips (y 0.95) > torso > head (0.66) · antenna · arms {sh (±0.29, 0.52), el (-0.31)} · legs {hip (±0.11), knee (-0.46)}.
 // +x is the explorer's left, +z its front. Feet sit at y = 0, the top of the hood at ~1.95 m.
 // The gem emitter on top of the pack sits under Player.carryGroup, where the carried gems orbit.
 
 const C = {
-  coat: 0x49946b, coatDark: 0x3c7c58,   // mid green; the darker tone marks lapels, collar, hood peak, hem and cuffs
+  coat: 0xa3d39a, coatDark: 0x6fa866,   // light leaf green; the deeper tone marks lapels, collar, hood peak, hem and cuffs
   orange: 0xff6b24, scarf: 0xe0622a,    // the trims that keep the figure readable on any ground
-  trousers: 0x4a4d4f, boots: 0x2c2f33, soles: 0x17181a, gloves: 0x2a2d30, belt: 0x2a2d30, strap: 0x2a2d30,
-  pack: 0x3a3f42, bedroll: 0xbfae8a, buckle: 0xb89548, buttons: 0x22201c, under: 0x1f2226,
+  leather: 0x5a3b26, boots: 0x4a3222,   // belt, straps, gloves and pack; boots a shade darker
+  trousers: 0x5b5348, soles: 0x1d1714, bedroll: 0xd8c8a2, buckle: 0xb89548, buttons: 0x2e2a24, under: 0x2a2622,
   skin: 0xb98060, goggleStrap: 0x16171a, goggleFrame: 0x0c0d0f, glint: 0x8a96a6,
 };
 const GLOW = 0x5cf4ff;
@@ -81,10 +82,10 @@ export function buildExplorer(p) {
   kit(p.hips)
     .add('cloth', G.box(0.36, 0.18, 0.23), C.trousers, 0, 0.02, 0)
     .add('coat', G.cyl(0.215, 0.2, 0.1, 10), C.coat, 0, 0.06, 0, 0, 0, 0, 1, 1, 0.72)
-    .add('cloth', G.cyl(0.222, 0.222, 0.06, 10), C.belt, 0, 0.1, 0, 0, 0, 0, 1, 1, 0.74)
+    .add('cloth', G.cyl(0.222, 0.222, 0.06, 10), C.leather, 0, 0.1, 0, 0, 0, 0, 1, 1, 0.74)
     .add('hard', G.box(0.07, 0.06, 0.02), C.buckle, 0, 0.1, 0.165)
     .add('glow', G.box(0.03, 0.022, 0.01), null, 0, 0.1, 0.176)
-    .add('cloth', G.box(0.04, 0.13, 0.012), C.belt, 0.05, 0.03, 0.168, 0, 0, 0.08)   // belt end
+    .add('cloth', G.box(0.04, 0.13, 0.012), C.leather, 0.05, 0.03, 0.168, 0, 0, 0.08)   // belt end
     .done();
 
   // ---- coat skirt: four curved panels (front/back, left/right) hanging from the belt, each with a hem band
@@ -118,8 +119,8 @@ export function buildExplorer(p) {
     .add('glow', G.box(0.012, 0.24, 0.012), null, -0.112, 0.5, 0.15, -0.08, 0, 0.32)
     .add('cloth', G.box(0.09, 0.14, 0.02), C.under, 0, 0.56, 0.128, -0.1)
     .add('coat', G.cyl(0.16, 0.135, 0.14, 10, true, 0.55, Math.PI * 2 - 1.1), C.coatDark, 0, 0.68, -0.01)
-    .add('cloth', G.box(0.045, 0.045, 0.34), C.strap, 0.14, 0.6, -0.04)
-    .add('cloth', G.box(0.045, 0.045, 0.34), C.strap, -0.14, 0.6, -0.04);
+    .add('cloth', G.box(0.045, 0.045, 0.34), C.leather, 0.14, 0.6, -0.04)
+    .add('cloth', G.box(0.045, 0.045, 0.34), C.leather, -0.14, 0.6, -0.04);
   for (const y of [0.22, 0.34]) for (const x of [0.065, -0.065]) T.add('hard', G.cyl(0.014, 0.014, 0.012, 6), C.buttons, x, y, 0.15, Math.PI / 2);
   T.done();
 
@@ -128,15 +129,15 @@ export function buildExplorer(p) {
   const top = new THREE.Vector3(0, 0.6, -0.155);
   const pack = new THREE.Group(); pack.position.copy(top); pack.scale.setScalar(PACK_SCALE); p.torso.add(pack);
   kit(pack)
-    .add('cloth', G.box(0.3, 0.38, 0.13), C.pack, 0, -0.21, -0.065)
+    .add('cloth', G.box(0.3, 0.38, 0.13), C.leather, 0, -0.21, -0.065)
     .add('cloth', G.box(0.26, 0.12, 0.03), C.orange, 0, -0.31, -0.135)
     .add('hard', G.box(0.05, 0.02, 0.03), C.buckle, 0.07, -0.26, -0.145)
     .add('hard', G.box(0.05, 0.02, 0.03), C.buckle, -0.07, -0.26, -0.145)
     .add('cloth', G.box(0.1, 0.2, 0.025), C.orange, 0, -0.13, -0.138)
     .add('glow', G.box(0.03, 0.16, 0.012), null, 0, -0.13, -0.152)
     .add('cloth', G.cyl(0.07, 0.07, 0.36, 8), C.bedroll, 0, -0.45, -0.075, 0, 0, Math.PI / 2)
-    .add('cloth', G.cyl(0.074, 0.074, 0.02, 8), C.strap, 0.1, -0.45, -0.075, 0, 0, Math.PI / 2)
-    .add('cloth', G.cyl(0.074, 0.074, 0.02, 8), C.strap, -0.1, -0.45, -0.075, 0, 0, Math.PI / 2)
+    .add('cloth', G.cyl(0.074, 0.074, 0.02, 8), C.leather, 0.1, -0.45, -0.075, 0, 0, Math.PI / 2)
+    .add('cloth', G.cyl(0.074, 0.074, 0.02, 8), C.leather, -0.1, -0.45, -0.075, 0, 0, Math.PI / 2)
     .add('hard', G.cyl(0.07, 0.085, 0.045, 8), C.orange, 0, 0, -0.065)
     .add('glow', G.cyl(0.046, 0.046, 0.012, 8), null, 0, 0.026, -0.065)
     .done();
@@ -179,7 +180,7 @@ export function buildExplorer(p) {
     const fk = kit(el)
       .add('coat', G.cap(0.064, 0.17, 7), C.coat, 0, -0.12, 0)
       .add('coat', G.cyl(0.072, 0.072, 0.035, 8), C.coatDark, 0, -0.2, 0)
-      .add('cloth', G.ico(0.058), C.gloves, 0, -0.3, 0, 0, 0, 0, 0.9, 1.15, 1);
+      .add('cloth', G.ico(0.058), C.leather, 0, -0.3, 0, 0, 0, 0, 0.9, 1.15, 1);
     if (side === 1) fk.add('hard', G.box(0.04, 0.07, 0.085), C.orange, 0.066, -0.15, 0.01).add('glow', G.box(0.008, 0.045, 0.06), null, 0.087, -0.15, 0.01);
     fk.done();
   }
