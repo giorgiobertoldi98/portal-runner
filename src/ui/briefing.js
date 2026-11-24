@@ -9,7 +9,7 @@ export class Briefing {
   constructor() {
     this.el = document.createElement('div');
     this.el.id = 'briefing';
-    this.el.className = 'held-item hidden';
+    this.el.className = 'held-item';
     this.el.innerHTML = '<div class="brief-page" role="dialog" aria-modal="true" aria-label="Note">'
       + '<div class="brief-image"></div><p class="brief-text"></p></div>';
     document.getElementById('hud').appendChild(this.el);
@@ -18,16 +18,17 @@ export class Briefing {
     this.ctl = heldControls({ label: 'note', onClose: () => this.close() });
     this.q('.brief-page').appendChild(this.ctl.el);
     this.open = false;
+    this.image = null;
     this.onClose = null;
   }
 
   show(data, { onClose } = {}) {
-    this.q('.brief-image').innerHTML = data.image || '';
+    // the sketch is built once: the world hands back the same markup every time
+    if (data.image !== this.image) { this.image = data.image; this.q('.brief-image').innerHTML = data.image || ''; }
     this.q('.brief-text').textContent = data.text || '';
     this.onClose = onClose;
     this.open = true;
-    this.el.classList.remove('hidden');
-    requestAnimationFrame(() => this.el.classList.add('show'));
+    this.el.classList.add('show');
   }
 
   zoomBy() {}
@@ -36,7 +37,6 @@ export class Briefing {
     if (!this.open) return;
     this.open = false;
     this.el.classList.remove('show');
-    setTimeout(() => { if (!this.open) this.el.classList.add('hidden'); }, 250);
     const cb = this.onClose; this.onClose = null;
     if (cb) cb();
   }

@@ -7,7 +7,9 @@
 //     zoom: whether it zooms (pinch, the mouse wheel, + / − and its zoom buttons);
 //     pauses: whether the game stops while it's open;
 // - each has the same controls in its top-right corner: a close button, then zoom in / out if it zooms.
-//   main.js routes the input; this module builds the controls.
+//   main.js routes the input; this module builds the controls;
+// - they open and close the same way: always in the page, only toggled by the `show` class (a fade), never added
+//   to or removed from the layout, and with their content built once, so opening is instant.
 
 const X_ICON = '<svg viewBox="0 0 24 24" width="18" height="18"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
 const PLUS = '<svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';

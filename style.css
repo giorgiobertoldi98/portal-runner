@@ -309,7 +309,8 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
   left: max(var(--held-m), env(safe-area-inset-left)); right: max(var(--held-m), env(safe-area-inset-right));
   opacity: 0; transform: scale(.97); transition: opacity .25s, transform .25s; }
 .held-item.show { opacity: 1; transform: none; }
-#map-view:not(.show) { visibility: hidden; transition: opacity .25s, transform .25s, visibility 0s .25s; }
+/* closed items stay laid out (only invisible), so opening one is just a fade */
+.held-item:not(.show) { visibility: hidden; transition: opacity .25s, transform .25s, visibility 0s .25s; }
 body.holding .hud-tl, body.holding .hud-tr, body.holding #tools, body.holding #call-chip, body.holding #banner,
 body.holding:not(.hold-move) #joystick, body.holding:not(.hold-look) #lookpad { opacity: 0 !important; visibility: hidden; }
 /* the pads an item keeps (its `hold.pads`) stay on top of it */
@@ -352,7 +353,6 @@ body.holding #toast { z-index: 5; top: calc(max(var(--held-m), env(safe-area-ins
 #map-view .map-compass { width: clamp(44px, 9vmin, 76px); height: auto; color: #3a2a1c; opacity: .85; }
 
 /* the note: the picture on the left, its one line on the right; stacked on squarer screens */
-#briefing.hidden { display: none; }
 #briefing .brief-page { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: center; column-gap: clamp(14px, 3vw, 40px);
   padding: clamp(12px, 3vmin, 30px) clamp(14px, 3.4vmin, 36px); border-radius: 6px 10px 8px 12px; color: #3a2c20;
   background: radial-gradient(ellipse at 30% 20%, rgba(255, 250, 238, .7), transparent 60%), radial-gradient(ellipse at 85% 85%, rgba(170, 120, 60, .12), transparent 50%), linear-gradient(160deg, #f2e7cf, #e6d6b4);
