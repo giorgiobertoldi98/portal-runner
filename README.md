@@ -9,8 +9,8 @@ No build step. From the repo root:
 python3 -m http.server 8000
 ```
 
-Open http://localhost:8000 in landscape. Controls: WASD / arrows to move, Shift to run, mouse to look, Q drop gem, Space to take, wheel / 1–9 to pick an item and Space to open it, Esc pause, M mute. On touch: left thumb joystick, right side to look.
+Open http://localhost:8000 in landscape. Controls: WASD to move, Shift to run, mouse to look, Q drop gem, Space to take, wheel / 1–9 to pick an item and Space to open it, Esc pause, M mute. On touch: left thumb joystick, right side to look.
 
 ## Docs
-- [`docs/NOTES.md`](docs/NOTES.md) — full design and technical reference (current state).
-- [`CLAUDE.md`](CLAUDE.md) — instructions for Claude Code.
+- [`docs/GAME.md`](docs/GAME.md) — the game as designed: concept, principles, mechanics, tuning.
+- [`CLAUDE.md`](CLAUDE.md) — how we work, engineering rules and where each kind of note lives (with scoped notes beside the code).

@@ -7,7 +7,7 @@
 //   id, name, tagline, monsterName,
 //   settings?: [{ id, label, hint?, unit?, min, max, step, get(), set(v) }]   // per-level settings shown in the menu
 //   theme: { glow, colA, colB, colC, stone, css, hum },   // used by the portal LEADING here + HUD accent
-//   gem?: { style: 'cluster' | 'geode' | 'rose', dark, col, glow, inner?, innerDark?, glowK? }   // this world's gems (entities/gemDesigns.js)
+//   gem?: { style: 'cluster' | 'geode' | 'rose', dark, col, glow, inner?, innerDark?, glowK?, mapCol? }   // this world's gems (entities/gemDesigns.js)
 //   createPortalFrame({ W, H }) -> THREE.Object3D          // frame for the portal that leads to this world
 //   build({ quality }) -> {
 //     scene, radius, heightAt(x, z), isValidSpot(x, z), colliders: [...],
@@ -24,9 +24,9 @@
 //       hasMap?() -> bool, mapMarks?() -> { hole },     //   a map among your items (true once found), drawn from world.mapInfo
 //       action?() -> { id, label, icon } | null, doAction?(ctx),   // a contextual action (Space / the action button),
 //                                      //   e.g. taking the glacier's map from its crate
-//       briefing?(touch) -> { kicker, title, image (SVG markup), text } | null,
+//       briefing?(touch) -> { image (SVG markup), text } | null,
 //                                      //   a note: one of your items while non-null (note button / Space);
-//                                      //   it calls for attention as the level opens and replaces introHint
+//                                      //   it calls for attention when it first appears
 //       grantAll?(),                   //   debug mode: every item the world lets you find is yours from the start
 //       onRespawn?({ base, heading, player }) -> string | null,  // after being caught; the string is added to the catch toast
 //     },

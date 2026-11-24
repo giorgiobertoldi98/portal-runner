@@ -53,7 +53,7 @@ export const GAME = {
 };
 
 // Hunter speeds, as fractions of your running speed (PLAYER.runSpeed). Fixed per state, never growing over time.
-// The reasoning behind each value is in the Portal Runner notes.
+// The reasoning behind each value is in docs/GAME.md (Speeds).
 export const SPEED = {
   chase: 0.65,              // plain-chase hunters (worlds without their own brain): gentle, they always know where you are
   retreat: 0.4,             // plain-chase hunters while you're in the portal safe zone: they amble away from it
