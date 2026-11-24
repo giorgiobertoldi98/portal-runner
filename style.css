@@ -100,7 +100,7 @@ body.touch .tool.act kbd { display: none; }
    the bottom): the item bar right above the pad, centred on it; Drop gem just left of the pad, level with its centre.
    Both keep the same --gap from the pad's edge. No key hints. The bar is as wide as fits centred on the pad without
    leaving the screen (--bar-w); more items wrap into new rows above, so the first row stays next to the pad. */
-body.touch #hud { --edge: calc(14px + env(safe-area-inset-right)); --pad: 124px; --pad-y: 92px; --joy-x: 86px; --gap: 22px; }
+body.touch #hud { --edge: calc(14px + env(safe-area-inset-right)); --pad: 124px; --pad-y: 92px; --joy-x: 86px; --gap: 32px; }
 body.touch #items { position: fixed; --bar-w: calc(var(--pad) + 2 * (var(--edge) - env(safe-area-inset-right)) - 12px); width: max-content; max-width: var(--bar-w); flex-wrap: wrap-reverse; justify-content: center; left: calc(100% - var(--edge) - var(--pad) / 2); transform: translateX(-50%); bottom: calc(var(--pad-y) + var(--pad) / 2 + var(--gap) + env(safe-area-inset-bottom)); }
 body.touch #item-keys, body.touch #btn-drop kbd { display: none; }
 body.touch #btn-drop { position: fixed; right: calc(var(--edge) + var(--pad) + var(--gap)); bottom: calc(var(--pad-y) - 22px + env(safe-area-inset-bottom)); }
@@ -191,7 +191,7 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
   body.touch #hud { --edge: max(10px, env(safe-area-inset-right)); }
   #joy-knob { width: 46px; height: 46px; }
   #lookpad svg { inset: 11px; width: calc(100% - 22px); height: calc(100% - 22px); }
-  body.touch #hud { --pad: 112px; --pad-y: 72px; --joy-x: 80px; --gap: 18px; }
+  body.touch #hud { --pad: 112px; --pad-y: 72px; --joy-x: 80px; --gap: 26px; }
   body.touch .tool { width: 36px; height: 36px; border-radius: 10px; }
   body.touch #btn-drop { width: 40px; height: 40px; border-radius: 50%; bottom: calc(var(--pad-y) - 20px + env(safe-area-inset-bottom)); }
   body.touch #btn-drop .gem-icon { width: 23px; height: 23px; }
