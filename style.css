@@ -44,9 +44,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #05060c; col
 #fade { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .55s ease; z-index: 5; }
 #fade.on { opacity: 1; }
 
-/* the explorer's tools, the same on every device: your items as a slot bar at the bottom centre, Drop gem as a
-   separate round button (to the right of the bar on PC, above the look pad on touch) and the contextual action,
-   centred in the upper half of the screen, where it's seen the first time you reach something. */
+/* the explorer's tools, the same on every device: your items as a slot bar, Drop gem as a separate round button (to
+   the right of the bar on PC, beside the look pad on touch) and the contextual action, a pill at the bottom centre. */
 #tools { position: absolute; z-index: 4; left: 0; right: 0; justify-content: center; bottom: calc(34px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 22px; pointer-events: none; }
 .tool { display: none; position: relative; pointer-events: auto; align-items: center; justify-content: center; gap: 8px; width: 40px; height: 40px; padding: 0; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: #fff; font: 600 14px Inter, sans-serif; cursor: pointer; touch-action: none; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .tool.show { display: flex; animation: toolin .22s ease-out; }
@@ -64,8 +63,13 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #05060c; col
 @keyframes tlshow { 0% { opacity: 0; } 8%, 80% { opacity: 1; } 100% { opacity: 0; } }
 
 /* the contextual action: a pulsing pill that always says what it does (with its key on PC) */
-.tool.act { position: fixed; left: 50%; top: 32%; translate: -50% 0; width: auto; height: auto; padding: 9px 14px; border-radius: 999px; color: #ffe6b8; border-color: #ffc46b; background: rgba(70, 46, 14, .72); box-shadow: 0 0 18px rgba(255, 196, 107, .45); animation: toolin .22s ease-out, actpulse 1.6s ease-in-out .22s infinite; }
+.tool.act { position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom)); translate: -50% 0; width: auto; height: auto; padding: 9px 14px; border-radius: 999px; color: #ffe6b8; border-color: #ffc46b; background: rgba(70, 46, 14, .72); box-shadow: 0 0 18px rgba(255, 196, 107, .45); animation: toolin .22s ease-out, actpulse 1.6s ease-in-out .22s infinite; }
 @keyframes actpulse { 50% { box-shadow: 0 0 4px rgba(255, 196, 107, .2); } }
+/* PC: it sits right on top of the tools row (where the item's name label would be, which steps aside meanwhile),
+   or in the row's place when there's nothing in it. Touch: low at the bottom centre, between the two pads. */
+body:not(.touch) #tools:not(:has(#items:not(.none))):not(:has(#btn-drop.show)) .tool.act { bottom: calc(34px + env(safe-area-inset-bottom)); }
+#tools:has(.act.show) #item-label { opacity: 0; }
+body.touch .tool.act { bottom: calc(16px + env(safe-area-inset-bottom)); }
 body.touch .tool.act kbd { display: none; }
 
 /* items: a slot bar; slots have the size and look of the system buttons and carry nothing written on them. The selected
@@ -199,7 +203,7 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
   #banner { top: 12%; }
   #banner-name { font-size: clamp(24px, 5vw, 40px); }
   #toast { top: calc(max(8px, env(safe-area-inset-top)) + 56px); font-size: 12px; padding: 6px 11px 6px 9px; }
-  #call-chip { top: auto; bottom: calc(16px + env(safe-area-inset-bottom)); }
+  #call-chip { top: auto; bottom: calc(62px + env(safe-area-inset-bottom)); }   /* above the action's spot at the bottom centre */
 }
 
 /* Resonance Call indicator */
