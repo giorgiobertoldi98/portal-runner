@@ -18,15 +18,18 @@
 <div id="vignette"></div>
 
 <div id="hud" class="hidden">
-  <div class="hud-tl panel">
-    <div id="level" class="lvl"></div>
-    <div class="gems">
-      <img class="gem-icon" id="gem-icon" alt="">
-      <span id="gem-count">0 / 0</span><span class="unit">in the portal</span><span id="gem-carry" class="carry" title="Gems you are carrying"></span>
+  <!-- top left: the world chip, with your lives just beside it -->
+  <div class="hud-tl">
+    <div class="world-chip panel">
+      <div id="level" class="lvl"></div>
+      <div class="gems">
+        <img class="gem-icon" id="gem-icon" alt="">
+        <span id="gem-count">0 / 0</span><span class="unit">in the portal</span>
+      </div>
     </div>
+    <div id="lives"></div>
   </div>
   <div class="hud-tr">
-    <div id="lives"></div>
     <button id="btn-mute" class="icon-btn" aria-label="Sound">
       <svg class="on" viewBox="0 0 24 24" width="20" height="20"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       <svg class="off" viewBox="0 0 24 24" width="20" height="20"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="m16 9 6 6m0-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -38,29 +41,27 @@
   <div id="banner"><div id="banner-name"></div><div id="banner-tag"></div></div>
   <div id="toast"></div>
   <div id="call-chip"><span id="call-text">Calling</span><div class="bar"><i id="call-bar"></i></div></div>
-  <!-- the explorer's tools: everything you can do with what you hold or what's in reach, in one group -->
+  <!-- the explorer's tools, on PC and touch alike: your items as a slot bar at the bottom centre, Drop gem as a
+       separate round button (beside the bar on PC, above the look pad on touch) and the contextual action (top half) -->
   <div id="tools">
-    <!-- your items (things you hold up to read), gathered as you find them in a world: on PC a slot bar (the wheel or
-         1-9 picks one, Space opens it), on touch buttons that fill a column, then wrap into new columns to the left -->
+    <!-- your items (things you hold up to read), gathered as you find them in a world: the wheel (or 1-9) picks one,
+         Space or a tap opens it -->
     <div id="items" class="none">
-    <!-- PC only: one quiet line beside the slot bar: how to pick an item (the wheel, once there are several) and open it (Space) -->
+    <!-- PC only: a quiet key hint under the bar: the wheel (once there are several items) | Space -->
     <div id="item-keys" aria-hidden="true">
-      <span class="pick"><svg class="m" viewBox="0 0 24 24" width="13" height="13"><rect x="7" y="3" width="10" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="w">pick</span></span>
-      <span class="open"><kbd>Space</kbd><span class="w">open</span></span>
+      <svg class="pick" viewBox="0 0 24 24" width="13" height="13"><rect x="7" y="3" width="10" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="sep pick"></span><kbd>Space</kbd>
     </div>
-    <div id="item-label"><span id="item-name"></span><svg class="wheel" viewBox="0 0 24 24" width="14" height="14" aria-label="mouse wheel"><rect x="7" y="3" width="10" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+    <div id="item-label"><span id="item-name"></span></div>
     <button id="btn-note" class="tool item" aria-label="Note" title="Note">
       <svg viewBox="0 0 24 24" width="21" height="21"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 7.5h6M9 10.5h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".7"/></svg>
-      <span class="tl">Note</span><i class="k"></i>
     </button>
     <button id="btn-map" class="tool item" aria-label="Map" title="Map">
       <svg viewBox="0 0 24 24" width="21" height="21"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 4v13.5M15 6.5V20" stroke="currentColor" stroke-width="1.5" opacity=".7"/></svg>
-      <span class="tl">Map</span><i class="k"></i>
     </button>
     </div>
+    <!-- Drop gem: this world's gem, with the number you carry; on PC its key (Q) sits just below it -->
     <button id="btn-drop" class="tool" aria-label="Drop a gem" title="Drop a gem (Q)">
-      <svg viewBox="0 0 24 24" width="21" height="21"><path d="M12 3 6 9l6 9 6-9z"/><path d="M12 20v2M8 21h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <span class="tl">Drop gem</span><kbd>Q</kbd><b class="n" id="drop-n"></b>
+      <img class="gem-icon" id="drop-icon" alt=""><span class="tl">Drop gem</span><kbd>Q</kbd><b class="n" id="drop-n"></b>
     </button>
     <button id="btn-act" class="tool act" aria-label="Action">
       <span class="ico"></span><span class="tl" id="act-label"></span><kbd id="act-key">Space</kbd>
