@@ -96,18 +96,19 @@ body.touch .tool.act kbd { display: none; }
 .tool .n { position: absolute; top: -5px; right: -5px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 10px; background: var(--gem, #ff2d95); color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .55); font: 700 11px/19px Inter, sans-serif; text-align: center; box-shadow: 0 0 8px color-mix(in srgb, var(--gem, #ff2d95) 70%, transparent); }
 .tool .n:empty { display: none; }
 
-/* touch: the same bar, low between the two pads, with no key hint; Drop gem sits right above the look pad, centred on it
-   (the right-hand gutter --edge is shared with the sound / pause buttons and the pad) */
-body.touch #hud { --edge: calc(14px + env(safe-area-inset-right)); --pad: 88px; --pad-y: 92px; }
-body.touch #tools { bottom: calc(18px + env(safe-area-inset-bottom)); }
+/* touch: everything within a thumb's reach, in one row over the two pads (both pads are --pad wide, centred --pad-y
+   above the bottom): the item bar sits over the joystick, starting at its left edge; Drop gem sits over the look pad,
+   centred on it. --row-y is the height of that row's centre line, so the bar and Drop gem share it. No key hints. */
+body.touch #hud { --edge: calc(14px + env(safe-area-inset-right)); --pad: 124px; --pad-y: 92px; --joy-x: 86px; --row-y: calc(var(--pad-y) + var(--pad) / 2 + 36px); }
+body.touch #items { position: fixed; left: calc(var(--joy-x) - var(--pad) / 2 + env(safe-area-inset-left)); bottom: calc(var(--row-y) - 20px + env(safe-area-inset-bottom)); }
 body.touch #item-keys, body.touch #btn-drop kbd { display: none; }
-body.touch #btn-drop { position: fixed; right: calc(var(--edge) + var(--pad) / 2 - 22px); bottom: calc(var(--pad-y) + var(--pad) / 2 + 14px + env(safe-area-inset-bottom)); }
+body.touch #btn-drop { position: fixed; right: calc(var(--edge) + var(--pad) / 2 - 22px); bottom: calc(var(--row-y) - 22px + env(safe-area-inset-bottom)); }
 body.touch #btn-drop .tl { bottom: auto; left: auto; top: 50%; right: calc(100% + 8px); transform: translateY(-50%); }
 
 /* touch controls: always visible while playing on touch screens */
 #joystick, #lookpad { display: none; position: absolute; pointer-events: none; z-index: 4; }
 body.touch #joystick, body.touch #lookpad { display: block; }
-#joystick { width: 124px; height: 124px; margin: -62px 0 0 -62px; left: calc(86px + env(safe-area-inset-left)); top: calc(100% - 92px - env(safe-area-inset-bottom)); border-radius: 50%; border: 2px solid rgba(255, 255, 255, .55); background: radial-gradient(circle, rgba(255, 255, 255, .06) 0%, rgba(10, 12, 24, .35) 70%); box-shadow: 0 0 0 6px rgba(255, 255, 255, .06), inset 0 0 18px rgba(0, 0, 0, .35); transition: border-color .15s, box-shadow .15s, opacity .2s; opacity: .85; }
+#joystick { width: var(--pad); height: var(--pad); margin: calc(var(--pad) / -2) 0 0 calc(var(--pad) / -2); left: calc(var(--joy-x) + env(safe-area-inset-left)); top: calc(100% - var(--pad-y) - env(safe-area-inset-bottom)); border-radius: 50%; border: 2px solid rgba(255, 255, 255, .55); background: radial-gradient(circle, rgba(255, 255, 255, .06) 0%, rgba(10, 12, 24, .35) 70%); box-shadow: 0 0 0 6px rgba(255, 255, 255, .06), inset 0 0 18px rgba(0, 0, 0, .35); transition: border-color .15s, box-shadow .15s, opacity .2s; opacity: .85; }
 #joystick.active { opacity: 1; transition: border-color .15s, box-shadow .15s; }
 #joystick.run { border-color: var(--accent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 35%, transparent), 0 0 24px var(--accent); }
 .joy-arrows { position: absolute; inset: 0; width: 100%; height: 100%; fill: rgba(255, 255, 255, .6); }
@@ -116,7 +117,8 @@ body.touch #joystick, body.touch #lookpad { display: block; }
 .joy-label { display: none; position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 11px; font-weight: 600; letter-spacing: .06em; opacity: .75; text-shadow: 0 1px 4px rgba(0, 0, 0, .8); }
 #joystick.active .joy-label { opacity: 0; }
 /* the look pad: its right edge on the shared gutter (--edge) */
-#lookpad { width: 88px; height: 88px; margin: -44px 0 0 -44px; left: calc(100% - var(--edge) - 44px); top: calc(100% - 92px - env(safe-area-inset-bottom)); border-radius: 50%; border: 2px dashed rgba(255, 255, 255, .45); background: rgba(10, 12, 24, .25); opacity: .8; }
+/* the same size as the joystick, mirrored in the right-hand gutter */
+#lookpad { width: var(--pad); height: var(--pad); margin: calc(var(--pad) / -2) 0 0 calc(var(--pad) / -2); left: calc(100% - var(--edge) - var(--pad) / 2); top: calc(100% - var(--pad-y) - env(safe-area-inset-bottom)); border-radius: 50%; border: 2px dashed rgba(255, 255, 255, .45); background: rgba(10, 12, 24, .25); opacity: .8; }
 #lookpad svg { position: absolute; inset: 11px; width: calc(100% - 22px); height: calc(100% - 22px); fill: rgba(255, 255, 255, .6); }
 #lookpad.active { border-color: var(--accent); opacity: 1; }
 body.touch .icon-btn { width: 40px; height: 40px; }
@@ -186,20 +188,18 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
   body.touch .icon-btn { width: 36px; height: 36px; border-radius: 10px; }
   .icon-btn svg { width: 17px; height: 17px; }
   body.touch #hud { --edge: max(10px, env(safe-area-inset-right)); }
-  #joystick { width: 112px; height: 112px; margin: -56px 0 0 -56px; left: calc(80px + env(safe-area-inset-left)); top: calc(100% - 72px - env(safe-area-inset-bottom)); }
   #joy-knob { width: 46px; height: 46px; }
-  #lookpad { width: 84px; height: 84px; margin: -42px 0 0 -42px; left: calc(100% - var(--edge) - 42px); top: calc(100% - 72px - env(safe-area-inset-bottom)); }
   #lookpad svg { inset: 11px; width: calc(100% - 22px); height: calc(100% - 22px); }
-  body.touch #hud { --pad: 84px; --pad-y: 72px; }
-  body.touch #tools { bottom: calc(12px + env(safe-area-inset-bottom)); }
+  body.touch #hud { --pad: 112px; --pad-y: 72px; --joy-x: 80px; --row-y: calc(var(--pad-y) + var(--pad) / 2 + 32px); }
+  body.touch #items { bottom: calc(var(--row-y) - 18px + env(safe-area-inset-bottom)); }
   body.touch .tool { width: 36px; height: 36px; border-radius: 10px; }
-  body.touch #btn-drop { width: 40px; height: 40px; border-radius: 50%; right: calc(var(--edge) + var(--pad) / 2 - 20px); bottom: calc(var(--pad-y) + var(--pad) / 2 + 12px + env(safe-area-inset-bottom)); }
+  body.touch #btn-drop { width: 40px; height: 40px; border-radius: 50%; right: calc(var(--edge) + var(--pad) / 2 - 20px); bottom: calc(var(--row-y) - 20px + env(safe-area-inset-bottom)); }
   body.touch #btn-drop .gem-icon { width: 23px; height: 23px; }
   body.touch .tool.act { width: auto; height: auto; padding: 7px 12px; border-radius: 999px; font-size: 13px; }
   #banner { top: 12%; }
   #banner-name { font-size: clamp(24px, 5vw, 40px); }
   #toast { top: calc(max(8px, env(safe-area-inset-top)) + 56px); font-size: 12px; padding: 6px 11px 6px 9px; }
-  #call-chip { top: auto; bottom: calc(84px + env(safe-area-inset-bottom)); }   /* above the item bar and its label */
+  #call-chip { top: auto; bottom: calc(16px + env(safe-area-inset-bottom)); }
 }
 
 /* Resonance Call indicator */
