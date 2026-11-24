@@ -10,6 +10,24 @@ export class CameraRig {
     this.target = { x: 0, y: 0, z: 0 };
     this.pos = { x: 0, y: 5, z: 8 };
     this.lookLift = 0;
+    this.sinceLook = Infinity;   // seconds since the player last turned the camera
+    this.fixedView = false;      // set by a world while the camera stands still and only turns (e.g. the ice cave's chamber)
+    this.held = null;            // the walking direction being held (see moveYaw)
+  }
+
+  // The heading the controls move you relative to. While the camera stands still and only turns, the heading is held
+  // from the moment you start moving until you let go, clearly change direction or turn the camera yourself, so
+  // the camera turning (or swinging round as you leave) never bends your path. A hold started there carries on
+  // after the camera goes back to following you, until one of those happens.
+  moveYaw(move) {
+    if (Math.hypot(move.x, move.y) < 0.1 || this.sinceLook === 0) { this.held = null; return this.yaw; }
+    const dir = Math.atan2(move.x, move.y);
+    if (this.held) {
+      const turn = Math.atan2(Math.sin(dir - this.held.dir), Math.cos(dir - this.held.dir));
+      if (Math.abs(turn) < 0.8) return this.held.yaw;
+    }
+    this.held = this.fixedView ? { yaw: this.yaw, dir } : null;
+    return this.yaw;
   }
 
   snap(player) {
@@ -19,6 +37,7 @@ export class CameraRig {
   }
 
   // Shorten the boom when a prop (tree, rock, pillar...) sits between the player and the camera.
+  // Low props (marked low: crates, a bedroll) sit below the camera's line of sight and are ignored.
   clearDistance(colliders) {
     if (!colliders) return this.distance;
     const t = this.target;
@@ -27,7 +46,7 @@ export class CameraRig {
     let best = this.distance;
     for (let i = 0; i < colliders.length; i++) {
       const c = colliders[i];
-      if (c.type === 'box') continue;
+      if (c.type === 'box' || c.low) continue;
       const r = c.cr ?? c.r + 0.3;
       const ox = c.x - t.x, oz = c.z - t.z;
       const proj = ox * dx + oz * dz;
@@ -41,6 +60,7 @@ export class CameraRig {
   }
 
   update(dt, player, look, heightAt, moving, idleLookSec, colliders) {
+    this.sinceLook = look.dx || look.dy ? 0 : this.sinceLook + dt;
     this.yaw -= look.dx * 0.0042;
     this.pitch = clamp(this.pitch + look.dy * 0.003, CameraRig.MIN_PITCH, 1.15);
     // Gently swing behind the player when moving and the user isn't steering the camera
@@ -54,17 +74,20 @@ export class CameraRig {
     this.compute(false, heightAt, dt);
   }
 
+  // Where the orbit puts the camera for a given yaw, before smoothing and the ground check.
+  spotAt(yaw, dist = this.curDist ?? this.distance) {
+    const t = this.target, orbit = Math.max(this.pitch, CameraRig.ORBIT_FLOOR), cp = Math.cos(orbit);
+    return { x: t.x + Math.sin(yaw) * cp * dist, y: t.y + 1.7 + Math.sin(orbit) * dist, z: t.z + Math.cos(yaw) * cp * dist };
+  }
+
   // Looking up: below ORBIT_FLOOR the camera stops sinking (it would dig into the ground) and tilts its gaze
   // upward instead, by the remaining angle, keeping the explorer in the lower part of the view.
   compute(instant, heightAt, dt = 0) {
     const t = this.target;
     const orbit = Math.max(this.pitch, CameraRig.ORBIT_FLOOR);
-    const cp = Math.cos(orbit);
     const dist = instant ? this.distance : (this.curDist ?? this.distance);
-    const x = t.x + Math.sin(this.yaw) * cp * dist;
-    const z = t.z + Math.cos(this.yaw) * cp * dist;
-    let y = t.y + 1.7 + Math.sin(orbit) * dist;
-    this.lookLift = Math.tan(orbit - this.pitch) * cp * dist;   // 0 unless looking up past the floor
+    let { x, y, z } = this.spotAt(this.yaw, dist);
+    this.lookLift = Math.tan(orbit - this.pitch) * Math.cos(orbit) * dist;   // 0 unless looking up past the floor
     if (heightAt) y = Math.max(y, heightAt(x, z) + 0.8);
     if (instant) { this.pos = { x, y, z }; this.curDist = this.distance; }
     else {

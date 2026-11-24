@@ -591,7 +591,7 @@ class Game {
     const look = this.input.consumeLook();
     const move = this.input.getMove();
     const moving = Math.hypot(move.x, move.y) > 0.1;
-    this.player.update(dt, move, this.rig.yaw, w, null, (k) => this.audio.footstep(w.audio.footstep, k));
+    this.player.update(dt, move, this.rig.moveYaw(move), w, null, (k) => this.audio.footstep(w.audio.footstep, k));
     // the camera swings behind the explorer while walking, but not when walking backward (S): the explorer turns to face
     // the camera and walks straight towards it, instead of the camera chasing round in a circle. It also waits until the
     // explorer has finished turning to its walking direction (e.g. S then W), so it doesn't wobble while the heading sweeps round.
