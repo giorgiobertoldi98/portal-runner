@@ -66,7 +66,8 @@ class Game {
     this.itemSel = 0;    // the selected one (PC: the wheel or 1-9 picks it, Space opens it)
     this.rig = new CameraRig(this.camera);
     this.shot = new FixedShot();   // small rooms' fixed camera shots
-    this.player = new Player();
+    // ?look=<id> tries one of the explorer's looks (explorerLooks.js) while choosing a new one
+    this.player = new Player(new URLSearchParams(location.search).get('look') ?? undefined);
     this.resonance = new Resonance();
     this.carried = [];
     this.worlds = new Map();

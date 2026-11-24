@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Explorer Looks</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;600&display=swap">
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+<style>
+  :root { --bg: #0d1220; --panel: rgba(12, 18, 32, 0.78); --line: rgba(160, 200, 255, 0.22); --text: #e8eef8; --muted: #9fb0c8; --accent: #5cf4ff; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font: 14px/1.35 Inter, system-ui, sans-serif; }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  .bar { position: absolute; left: 50%; transform: translateX(-50%); bottom: 12px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: calc(100% - 24px); }
+  .group { display: flex; gap: 2px; padding: 3px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; backdrop-filter: blur(6px); }
+  button { font: inherit; font-size: 13px; color: var(--muted); background: none; border: 0; padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+  button.on { color: #061018; background: var(--accent); font-weight: 600; }
+  h1 { position: absolute; left: 16px; top: 10px; margin: 0; font: 700 18px Cinzel, serif; letter-spacing: 0.04em; text-shadow: 0 2px 8px #000a; }
+  .label { position: absolute; transform: translate(-50%, 0); pointer-events: none; text-align: center; font-weight: 600; font-size: 13px; text-shadow: 0 1px 4px #000c; white-space: nowrap; }
+  .hint { position: absolute; right: 16px; top: 14px; color: var(--muted); font-size: 12px; text-shadow: 0 1px 4px #000a; }
+  .label small { display: block; font-weight: 400; color: var(--muted); font-size: 11px; }
+  @media (max-height: 420px) { h1 { font-size: 14px; } button { padding: 5px 9px; font-size: 12px; } .bar { bottom: 6px; gap: 5px; } }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<h1>Explorer looks</h1>
+<div id="labels"></div>
+<div class="hint">Drag to orbit · scroll to zoom</div>
+<div class="bar">
+  <div class="group" data-k="pose"><button data-v="idle" class="on">Idle</button><button data-v="walk">Walk</button><button data-v="run">Run</button></div>
+  <div class="group" data-k="carry"><button data-v="0" class="on">No gems</button><button data-v="3">3 gems</button></div>
+  <div class="group" data-k="world"><button data-v="glacier" class="on">Glacier</button><button data-v="alien">Alien</button><button data-v="desert">Desert</button></div>
+  <div class="group" data-k="view"><button data-v="front" class="on">Front</button><button data-v="side">Side</button><button data-v="back">Back</button><button data-v="game">Game camera</button></div>
+  <div class="group" data-k="focus" id="focus"></div>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { Player } from '../src/entities/player.js';
+import { LOOKS } from '../src/entities/explorerLooks.js';
+import { PLAYER } from '../src/config.js';
+
+// Preview of the explorer's looks side by side, driven by the game's own Player animation.
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 400);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+
+const hemi = new THREE.HemisphereLight(0xdfe9ff, 0x445066, 1.1); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff1dc, 2.4);
+sun.position.set(6, 12, 8); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8 });
+scene.add(sun);
+
+const ground = new THREE.Mesh(new THREE.CircleGeometry(60, 48), new THREE.MeshStandardMaterial({ roughness: 0.95 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+
+const WORLDS = {
+  glacier: { sky: 0xb9cbe4, ground: 0xeef3fa, hemi: [0xdfe9ff, 0x6a7a92], sun: 0xffe6cf },
+  alien: { sky: 0x5a2f7f, ground: 0x5d3788, hemi: [0xe2a8ff, 0x23a097], sun: 0xffd6f6 },
+  desert: { sky: 0xf4d3a2, ground: 0xe2b77c, hemi: [0xfff0d8, 0x9a6a3c], sun: 0xffd79a },
+};
+
+const ids = Object.keys(LOOKS);
+const gap = 2.2;
+const explorers = ids.map((id, i) => {
+  const p = new Player(id);
+  p.place((i - (ids.length - 1) / 2) * gap, 0, 0, 0);
+  scene.add(p.object);
+  const el = document.createElement('div'); el.className = 'label';
+  el.innerHTML = `${LOOKS[id].name}<small>${id}</small>`;
+  document.getElementById('labels').append(el);
+  return { p, el };
+});
+
+// a 1.8 m marker next to the line-up, the game's scale reference
+const mark = new THREE.Mesh(new THREE.BoxGeometry(0.04, PLAYER.height, 0.04), new THREE.MeshBasicMaterial({ color: 0xff6b24 }));
+mark.position.set(-((ids.length - 1) / 2) * gap - 1.1, PLAYER.height / 2, 0); scene.add(mark);
+
+const state = { pose: 'idle', carry: '0', world: 'glacier', view: 'front' };
+const SPEED = { idle: 0, walk: PLAYER.walkSpeed, run: PLAYER.runSpeed };
+
+function setWorld(w) {
+  const W = WORLDS[w];
+  scene.background = new THREE.Color(W.sky);
+  scene.fog = new THREE.Fog(W.sky, 25, 70);
+  ground.material.color.set(W.ground);
+  hemi.color.set(W.hemi[0]); hemi.groundColor.set(W.hemi[1]); sun.color.set(W.sun);
+}
+function setView(v) {
+  const w = (ids.length - 1) * gap;
+  camera.fov = v === 'game' ? 62 : 34;
+  camera.updateProjectionMatrix();
+  if (v === 'front') { camera.position.set(1.5, 1.9, 6 + w * 0.9); controls.target.set(0, 0.95, 0); }
+  if (v === 'back') { camera.position.set(-1.5, 2.3, -(6 + w * 0.9)); controls.target.set(0, 1.0, 0); }
+  if (v === 'side') { camera.position.set(1, 1.5, 6 + w * 0.9); controls.target.set(0, 0.95, 0); }
+  // the game camera: 7.5 m behind on the in-game orbit's default pitch, looking at the explorers' backs
+  if (v === 'game') { camera.position.set(0, 1.7 + Math.sin(0.32) * 7.5, -Math.cos(0.32) * 7.5); controls.target.set(0, 1.2, 0); }
+}
+function apply() {
+  setWorld(state.world); setView(state.view);
+  for (const { p } of explorers) { p.setCarried(+state.carry); p.object.rotation.y = state.view === 'side' ? Math.PI / 2 : 0; }
+}
+// close-up of one explorer's head and torso, from the current side
+function focus(i) {
+  const x = explorers[i].p.position.x, back = state.view === 'back' || state.view === 'game' ? -1 : 1;
+  const side = state.view === 'side';
+  camera.fov = 30; camera.updateProjectionMatrix();
+  camera.position.set(x + (side ? 0.4 : 0.9), 1.75, side ? 3.4 : back * 3.4);
+  controls.target.set(x, 1.4, 0);
+}
+const focusBar = document.getElementById('focus');
+ids.forEach((id, i) => {
+  const b = document.createElement('button'); b.dataset.v = i; b.textContent = LOOKS[id].name.replace(' (current)', '');
+  focusBar.append(b);
+});
+document.querySelectorAll('.group').forEach((g) => g.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  g.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+  if (g.dataset.k === 'focus') return focus(+b.dataset.v);
+  if (g.dataset.k !== 'pose') focusBar.querySelectorAll('button').forEach((x) => x.classList.remove('on'));
+  state[g.dataset.k] = b.dataset.v;
+  if (g.dataset.k !== 'pose') apply();
+}));
+
+function resize() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize(); apply();
+
+const v = new THREE.Vector3();
+let last = performance.now();
+renderer.setAnimationLoop(() => {
+  const now = performance.now(), dt = Math.min(0.05, (now - last) / 1000); last = now;
+  for (const { p, el } of explorers) {
+    p.speed = SPEED[state.pose];
+    p.animate(dt);
+    p.animateCarried(now / 1000);
+    v.set(p.position.x, 2.35, p.position.z).project(camera);
+    el.style.left = `${(v.x + 1) / 2 * innerWidth}px`;
+    el.style.top = `${(1 - v.y) / 2 * innerHeight - 30}px`;
+    el.style.display = v.z < 1 && v.y < 0.95 ? '' : 'none';
+  }
+  controls.update();
+  renderer.render(scene, camera);
+});
+window.__ready = true;
+</script>
+</body>
+</html>
