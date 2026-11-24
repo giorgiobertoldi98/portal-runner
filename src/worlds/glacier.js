@@ -715,6 +715,7 @@ function build({ quality }) {
     // the ice hole: its walls stop you, the camera stays inside it, the Yeti can't come in and loses you while you're in
     constrainMove: cave.constrainMove,
     constrainCamera: cave.constrainCamera,
+    walkOnly: cave.walkOnly,
     hunterKeepOut: cave.keepOut,
     isSheltered: cave.sheltered,
     mapInfo: {

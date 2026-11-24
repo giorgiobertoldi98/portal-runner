@@ -589,6 +589,7 @@ class Game {
     const P = this.player.position;
     this.time += dt;
     const look = this.input.consumeLook();
+    this.input.walkOnly = !!w.walkOnly?.(P);   // e.g. the ice cave's chamber: too small to run in
     const move = this.input.getMove();
     const moving = Math.hypot(move.x, move.y) > 0.1;
     this.player.update(dt, move, this.rig.moveYaw(move), w, null, (k) => this.audio.footstep(w.audio.footstep, k));

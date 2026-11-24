@@ -189,10 +189,11 @@ export class Input {
     if (k.has('KeyS')) y -= 1;
     if (k.has('KeyD')) x += 1;
     if (k.has('KeyA')) x -= 1;
-    let run = k.has('ShiftLeft') || k.has('ShiftRight');
+    // where the world allows walking only (walkOnly), Shift and the stick's edge just walk, and the stick shows no run glow
+    let run = !this.walkOnly && (k.has('ShiftLeft') || k.has('ShiftRight'));
     if (this.joy.active) {
       x += this.joy.x; y -= this.joy.y;
-      const edge = Math.hypot(this.joy.x, this.joy.y) > 0.8;
+      const edge = !this.walkOnly && Math.hypot(this.joy.x, this.joy.y) > 0.8;
       if (edge) run = true;
       this.joystickEl.classList.toggle('run', edge);
     }
