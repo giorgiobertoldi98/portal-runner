@@ -185,14 +185,14 @@ class Game {
 
   // keep the items in step with what the world says you have: a new one joins the end, gets selected and is held up
   // straight away, as if tapped (it glows until then, in case it can't open yet). Debug mode hands everything over at
-  // the start, quietly: no glow, nothing opens.
+  // the start, quietly: no glow, nothing opens, and the first item stays selected.
   syncItems() {
     const found = [];
     for (const d of this.ITEMS) {
       const i = this.items.indexOf(d.id), has = this.world ? d.has() : false;
       if (has && i < 0) {
-        this.items.push(d.id); this.itemSel = this.items.length - 1;
-        if (!this.debug) { this.hud.attention(d.btn, true); found.push(d.id); }
+        this.items.push(d.id);
+        if (!this.debug) { this.itemSel = this.items.length - 1; this.hud.attention(d.btn, true); found.push(d.id); }
       } else if (!has && i >= 0) { this.items.splice(i, 1); this.hud.attention(d.btn, false); }
     }
     this.itemSel = clamp(this.itemSel, 0, Math.max(0, this.items.length - 1));

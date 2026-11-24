@@ -51,7 +51,7 @@ General principles that guide every design decision. New ones are added here as 
 ## Settings
 - Opened from the main menu. Changes apply from the next run and are remembered in the browser. **Reset to defaults** restores the values in this document (on / off switches stay as they are).
 - **General**: footstep sounds on/off (default on), debug mode on/off (default off; see below), base speed V (12 m/s), speed lost per gem (11% of V per gem carried, 0–30%; never below 45% of V), portal safe radius (13 m), lives (3).
-- **Debug mode**: for testing. While it's on, every world starts with all the items it lets you find already among your items (in the Glacier: the note and the explorers' map), quietly: none glows or opens by itself; the paper in the snow and the map on the crate are gone, and the storm devices don't shift as they do when you take the map. Everything else plays as normal. It applies from the next world you enter.
+- **Debug mode**: for testing. While it's on, every world starts with all the items it lets you find already among your items (in the Glacier: the note and the explorers' map), quietly: none glows or opens by itself, and the first one is selected; the paper in the snow and the map on the crate are gone, and the storm devices don't shift as they do when you take the map. Everything else plays as normal. It applies from the next world you enter.
 - Hints that quote your carrying speeds (Yeti approach speed, storm close chase) update to match the speed lost per gem.
 - **Worlds** (one tab per world, named after it, no numbers):
   - Every world: gems needed (3, range 1–12). Exactly this many gems are hidden in the world.
