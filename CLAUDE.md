@@ -58,5 +58,6 @@ Each kind of knowledge has one home, so no file grows into a dump and each note 
 - Before a large change, state the plan briefly. Challenge design ideas when they conflict with the rules above or seem likely to make the game less fun.
 - Commit in small, descriptive commits. Run the game and check the browser console for errors before committing.
 - Never commit or merge to main. You can merge to the dev branch only if I tell you explictly. For new features / developments, branch off dev and when you think you are done, open a pr to dev which I must always approve
+- When something can't be done or checked because access or a tool is missing (a blocked host, an unavailable tool, a missing credential or permission), say so in a clearly marked note: what was blocked, what it prevented, and what access would fix it, so I can decide whether to grant it. Do what you can without it, but never skip it silently or work around it unannounced.
 - Every PR description has a **Docs:** line naming the docs it updated, or "none" and why.
 - When a piece of work is finished, remind me or propose merging into dev (and open the PR), unless there is certainly more to do first.
