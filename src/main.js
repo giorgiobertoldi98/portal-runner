@@ -6,7 +6,7 @@ import { AudioEngine } from './engine/audio.js';
 import { CameraRig } from './engine/cameraRig.js';
 import { FixedShot } from './engine/fixedShot.js';
 import { mulberry32 } from './engine/noise.js';
-import { findSpot, dist2D, clamp, dampAngle, insideColliders } from './engine/utils.js';
+import { findSpot, dist2D, clamp, insideColliders } from './engine/utils.js';
 import { Player } from './entities/player.js';
 import { createPortal } from './entities/portal.js';
 import { createGem, gemMapColor } from './entities/gem.js';
@@ -29,7 +29,7 @@ const QUALITY = isTouch
   : { pixelRatio: Math.min(devicePixelRatio, 2), shadowMap: 2048, density: 1, terrainSegments: 200 };
 
 const CALL_HINT = () => (isTouch ? 'Let go of the stick to send a Resonance Call' : 'Stand still to send a Resonance Call');
-const ZOOM_KEYS = { Equal: 1.6, NumpadAdd: 1.6, Minus: 1 / 1.6, NumpadSubtract: 1 / 1.6 }; // + / − zoom a held item
+const MAP_TURN = 2.2;   // rad/s: how fast the open map's turn slider (full tilt) or A / D turn the explorer and the camera
 const MENU_ACCENT = '#e6defc'; // starlight: the landing view belongs to no single world
 // The game is landscape only. Browsers don't let a page lock the orientation (outside fullscreen), so a screen taller
 // than it is wide shows the #rotate notice (CSS), a run in progress pauses and nothing is rendered behind it.
@@ -52,7 +52,7 @@ class Game {
     this.audio = new AudioEngine();
     this.hud = new HUD();
     this.hud.setTouch(isTouch);
-    this.mapView = new MapView();
+    this.mapView = new MapView({ touch: isTouch });
     this.mapView.onClose = () => { if (this.mapView.open) this.toggleMap(); };
     this.holding = false;
     this.briefing = new Briefing();
@@ -149,15 +149,12 @@ class Game {
       if (this.briefing.open && live) {
         if (['Escape', 'Enter', 'NumpadEnter'].includes(e.code)) { e.preventDefault(); this.closeBriefing(); return; }
       }
-      // the open map: Esc puts it away (instead of pausing); + / − zoom it
-      if (this.mapView.open && live) {
-        if (e.code === 'Escape') { e.preventDefault(); this.toggleMap(); return; }
-        if (ZOOM_KEYS[e.code] && this.mapView.hold.zoom) { e.preventDefault(); this.mapView.zoomBy(ZOOM_KEYS[e.code]); return; }
-      }
+      // the open map: Esc puts it away (instead of pausing)
+      if (this.mapView.open && live && e.code === 'Escape') { e.preventDefault(); this.toggleMap(); return; }
       if (e.code === 'Escape' || e.code === 'KeyP') { if (this.state === 'playing') this.pause(); else if (this.state === 'paused') this.resume(); }
       if (e.code === 'Escape' && this.state === 'menu' && !document.getElementById('screen-settings').classList.contains('hidden')) this.hud.showScreen('menu');
       if (e.code === 'KeyM') toggleMute();
-      if ((e.code === 'KeyQ' || e.code === 'KeyG') && this.state === 'playing') this.dropQueued = true;
+      if ((e.code === 'KeyQ' || e.code === 'KeyG') && this.state === 'playing' && !this.heldItem()) this.dropQueued = true;   // not while an item is held up: the game's controls are off
     });
     // tapping or clicking an item holds it up straight away (and selects it)
     for (const d of this.ITEMS) d.btn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.state === 'playing') this.useItem(d.id); });
@@ -174,7 +171,6 @@ class Game {
   toggleMap() {
     if (!this.hasMap()) return;
     if (!this.mapView.open && this.briefing.open) this.briefing.dismiss();
-    if (!this.mapView.open) this.mapView.setHint(isTouch ? 'Drag on the right to turn' : 'Drag to turn');
     this.mapView.show(!this.mapView.open);
     this.syncHolding();
     this.audio.noiseBurst({ type: 'bandpass', freq: 2200, q: 1, dur: 0.22, gain: 0.07, attack: 0.01, sweepTo: this.mapView.open ? 3200 : 1200 });
@@ -219,21 +215,18 @@ class Game {
     this.syncItems();
   }
 
-  // Holding an item up (the map, the note): it covers almost the whole screen and the HUD steps aside
-  // (style.css, body.holding). Each item's `hold` says which pads still work ('both', 'right' or 'none'), whether it
-  // zooms and whether the game pauses while it's open (see held.js).
+  // Holding an item up (the map, the note): it covers almost the whole screen, the HUD and both pads step aside
+  // (style.css, body.holding) and the game's own controls are off; the item handles its own gestures. Its `hold`
+  // says whether the game pauses while it's open (see held.js).
   heldItem() { return this.mapView.open ? this.mapView : this.briefing.open ? this.briefing : null; }
   syncHolding() {
     const item = this.heldItem();
     if (item === this.heldNow) return;
     this.heldNow = item;
     this.holding = !!item;
-    const h = item?.hold, move = h?.pads === 'both', look = h?.pads === 'both' || h?.pads === 'right';
     document.body.classList.toggle('holding', !!item);
-    document.body.classList.toggle('hold-move', !!item && move);
-    document.body.classList.toggle('hold-look', !!item && look);
     this.input.reset();
-    this.input.setHold(item ? { move, look, zoom: !!h.zoom } : null);
+    this.input.setHold(!!item);
     if (item) { this.relock = this.input.locked || this.relock; this.input.releaseLock(); }
     else if (this.relock) { this.relock = false; if (!isTouch && (this.state === 'playing' || this.state === 'frozen')) this.input.requestLock(); }   // put it away and the mouse looks again, no extra click
     // a new item opened by itself the moment you found it, so the HUD was away: it introduces itself (its name and a
@@ -585,13 +578,8 @@ class Game {
     if (this.state === 'playing') this.update(dt, t);
     else if (this.state === 'transition' || this.state === 'over' || this.state === 'frozen') {
       if (this.state === 'frozen') {
-        // a held item that pauses the game: the world is frozen, the music plays on, and the camera turns if allowed
+        // a held item that pauses the game: the world is frozen and the music plays on
         this.audio.update(dt, {});
-        const w = this.world;
-        this.rig.update(dt, this.player, this.input.consumeLook(), w.heightAt, false, t - this.input.lastLookTime, w.colliders);
-        if (w.constrainCamera) w.constrainCamera(this.camera, this.rig, this.player.position, dt);
-        this.shot.update(this.camera, this.rig, this.player.position, dt, w.fixedShot);
-        this.heldItem()?.zoomBy(this.input.consumeZoom());
         if (!this.heldItem()?.hold.pauses) this.state = 'playing';
       }
       this.world.update(dt, t, this.camera, this.player.position);
@@ -617,16 +605,16 @@ class Game {
     const turned = Math.abs(Math.atan2(Math.sin(turnLeft), Math.cos(turnLeft))) < 0.35;
     const follow = moving && move.y > -0.1 && turned;
     this.rig.update(dt, this.player, look, w.heightAt, follow, t - this.input.lastLookTime, w.colliders);
-    // With the map open (you can't walk then), turning the camera (right side of the screen / mouse) also turns the
-    // explorer to face where the camera looks, so the map's arrow (the explorer's heading) turns with it.
-    // (Once you turn the camera, it keeps easing until it's aligned; closing the map stops it.)
-    if (!this.mapView.open || moving) this.mapAlign = false;
-    else if (t - this.input.lastLookTime < 0.1) this.mapAlign = true;
-    if (this.mapAlign) {
-      const want = this.rig.yaw + Math.PI;
-      this.player.heading = dampAngle(this.player.heading, want, 16, dt);
-      this.player.object.rotation.y = this.player.heading;
-      if (Math.abs(Math.atan2(Math.sin(want - this.player.heading), Math.cos(want - this.player.heading))) < 0.003) this.mapAlign = false;
+    // With the map open (you can't walk then), its turn slider or A / D turn the explorer and the camera together, so
+    // the map's arrow (the explorer's heading) turns and the view behind the map keeps its angle to you.
+    if (this.mapView.open) {
+      const k = this.input.keys, turn = this.mapView.turnInput() + (k.has('KeyD') ? 1 : 0) - (k.has('KeyA') ? 1 : 0);
+      if (turn) {
+        const d = -clamp(turn, -1, 1) * MAP_TURN * dt;   // right turns clockwise, as the mouse does
+        this.rig.yaw += d;
+        this.player.heading += d;
+        this.player.object.rotation.y = this.player.heading;
+      }
     }
     if (w.constrainCamera) w.constrainCamera(this.camera, this.rig, P, dt); // e.g. keep it inside the ice hole's cave
     this.shot.update(this.camera, this.rig, P, dt, w.fixedShot);
@@ -743,7 +731,6 @@ class Game {
     if (steps && !this.heldItem()) this.selectItem(this.itemSel + steps);
     if (!this.hasMap() && this.mapView.open) this.putAway();
     if (this.mapView.open) {
-      this.mapView.zoomBy(this.input.consumeZoom());
       this.mapView.draw(w, {
         player: P, heading: this.player.heading, gems: this.groundGemSpots(), t,
         portal: { x: portal.position.x, z: portal.position.z }, ...(w.mechanics?.mapMarks ? w.mechanics.mapMarks() : {}),

@@ -1,11 +1,15 @@
 // The explorers' map: a hand-drawn chart of the current world, held up almost full screen over the game (which keeps
 // running; see held.js for what all held items share). The chart is square, so it sits on an unrolled scroll that
 // takes the screen's proportions: wooden rods at both ends, the world's name, the legend and a compass on the parchment
-// beside the chart, the close and zoom controls in the top-right corner.
+// beside the chart, the close button in the top-right corner.
 // It shows you (an arrow pointing the way the explorer faces, with a faint view cone), the portal, the ice hole and every
 // gem lying on the ground. Gems lying close together (e.g. the ones you lose when caught) share one diamond with a
-// count, so a pile never reads as a single gem. Zoomed in, the chart centres on you (stopping at the map's edge),
-// and anything out of view gets a small pointer at the chart's edge.
+// count, so a pile never reads as a single gem. It opens centred on you (stopping at the map's edge); anything out of
+// view gets a small pointer at the chart's edge.
+// Its gestures are its own and work only on the chart: pinch (touch) or the mouse wheel (PC) zoom around the fingers /
+// the cursor, a drag moves the chart, a double tap / double-click goes back to the whole map. Turning is on the right
+// page: a turn slider on touch (read by main.js with turnInput()), A / D on PC (read by main.js). The left page says how,
+// in a few handwritten words, for the controls in use.
 // The world supplies what's drawn through `world.mapInfo`:
 //   { kind(x, z) -> 'lake' | 'rock' | 'ground', landmarks: [{ x, z, label }], trees: [{ x, z }], title }
 // The world is sampled once into a grid; the chart (paper, lakes, cliffs, contour lines, trees, landmarks) is drawn
@@ -13,11 +17,39 @@
 // drawn on top every frame. Marks keep a fixed size on screen whatever the zoom.
 import * as THREE from 'three';
 import { gemMapColor } from '../entities/gem.js';
-import { Zoom, heldControls } from './held.js';
+import { heldControls } from './held.js';
 
 const MARK = 1.15;     // size of the marks, in CSS px per unit of their original drawing
 const GRID = 256;      // world samples per side
 const PAPER = '#e6eef4';
+const TAP = { ms: 320, px: 30 };   // two taps this close in time and place reset the zoom
+
+// A zoom level that eases toward its target (the wheel), or follows the fingers at once (a pinch: set()).
+class Zoom {
+  constructor(min = 1, max = 4) { this.min = min; this.max = max; this.v = 1; this.target = 1; }
+  clamp(z) { return Math.min(this.max, Math.max(this.min, z)); }
+  by(f) { if (f && f !== 1) this.target = this.clamp(this.target * f); }
+  set(z) { this.v = this.target = this.clamp(z); }
+  update(dt) {
+    const k = 1 - Math.exp(-dt * 14);
+    this.v += (this.target - this.v) * k;
+    if (Math.abs(this.target - this.v) < 0.002) this.v = this.target;
+  }
+  get moving() { return this.v !== this.target; }
+}
+
+// how to use the chart, for the controls in use: [gesture, what it does]
+const HOW = {
+  touch: [['Pinch', 'zoom'], ['Drag', 'move'], ['Double tap', 'reset']],
+  pc: [['Wheel', 'zoom'], ['Drag', 'move'], ['Double-click', 'reset']],
+};
+// turning, on the right page: a pad on touch, the A / D keys on PC
+const TURN_ARROW = (d) => `<svg viewBox="-12 -12 24 24" aria-hidden="true"><path d="${d > 0 ? 'M6 -5A7.5 7.5 0 1 0 7 3' : 'M-6 -5A7.5 7.5 0 1 1 -7 3'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`
+  + `<path d="${d > 0 ? 'M2.6 -7.6 6.4 -4.6 2.4 -2.2' : 'M-2.6 -7.6 -6.4 -4.6 -2.4 -2.2'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const TURN = {
+  touch: `<div class="map-slider" aria-label="Turn"><i class="slider-l">${TURN_ARROW(-1)}</i><i class="slider-r">${TURN_ARROW(1)}</i><b class="slider-knob"></b></div>`,
+  pc: `<div class="map-keys"><span class="key">${TURN_ARROW(-1)}A</span><span class="key">D${TURN_ARROW(1)}</span></div>`,
+};
 
 const COMPASS = '<svg class="map-compass" viewBox="-30 -36 60 66" aria-hidden="true"><circle r="22" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".75"/>'
   + '<circle r="17" fill="none" stroke="currentColor" stroke-width=".8" opacity=".45"/>'
@@ -26,25 +58,30 @@ const COMPASS = '<svg class="map-compass" viewBox="-30 -36 60 66" aria-hidden="t
   + '<text y="-26" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-weight="700" font-size="11" fill="currentColor">N</text></svg>';
 
 export class MapView {
-  constructor() {
+  constructor({ touch = false } = {}) {
     this.el = document.createElement('div');
     this.el.id = 'map-view';
     this.el.className = 'held-item';
     this.el.innerHTML = '<div class="scroll"><i class="rod"></i><div class="sheet">'
       + '<div class="map-side map-side-l"><div class="map-title"></div><i class="map-rule"></i>'
       + '<ul class="map-legend"><li class="lg-you">You</li><li class="lg-gem">Gems</li><li class="lg-portal">Portal</li><li class="lg-hole">Ice hole</li></ul>'
-      + '<p class="map-hint"></p></div>'
+      + '<i class="map-rule"></i><dl class="map-how">'
+      + HOW[touch ? 'touch' : 'pc'].map(([g, a]) => `<div><dt>${g}</dt><dd>${a}</dd></div>`).join('') + '</dl></div>'
       + '<div class="map-chart"><canvas></canvas></div>'
-      + '<div class="map-side map-side-r">' + COMPASS + '</div>'
+      + '<div class="map-side map-side-r">' + COMPASS + '<div class="map-turn">' + TURN[touch ? 'touch' : 'pc'] + '<span class="map-turn-label">Turn</span></div></div>'
       + '</div><i class="rod"></i></div>';
     document.getElementById('hud').appendChild(this.el);
     this.sheet = this.el.querySelector('.sheet');
     this.canvas = this.el.querySelector('canvas');
     this.ctx = this.canvas.getContext('2d');
-    this.hold = { pads: 'right', zoom: true, pauses: false };   // turn the camera to point your arrow; zoom; the game runs on
+    this.hold = { pauses: false };   // the game runs on
     this.zoom = new Zoom(1, 4);
+    this.c = { x: 0, z: 0 };         // the chart's centre, in metres
+    this.anchor = null;              // a point the wheel zooms around: { wx, wz (world), sx, sy (on the chart) }
+    this.view = null;                // the view last drawn: { cx, cz, half }
+    this.recentre = true;
     this.onClose = null;
-    this.ctl = heldControls({ label: 'map', zoom: this.zoom, onClose: () => this.onClose && this.onClose() });
+    this.ctl = heldControls({ label: 'map', onClose: () => this.onClose && this.onClose() });
     this.sheet.appendChild(this.ctl.el);
     this.open = false;
     this.grids = new Map();
@@ -52,18 +89,112 @@ export class MapView {
     this.cs = 0; this.dpr = 1;
     this.lastT = null;
     addEventListener('resize', () => { if (this.open) this.layout(); });
+    this.bindChart(this.el.querySelector('.map-chart'));
+    this.turn = 0;
+    const slider = this.el.querySelector('.map-slider');
+    if (slider) this.bindSlider(slider);
   }
+
+  // the chart's own gestures: a drag moves it, two fingers pinch, the wheel zooms, a double tap / click resets
+  bindChart(el) {
+    const ptrs = new Map();
+    let pinch = null, lastTap = null;
+    const at = (e) => { const r = el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    const k = () => this.cs / (2 * this.view.half);
+    const toWorld = (p) => ({ x: this.view.cx + (p.x - this.cs / 2) / k(), z: this.view.cz + (p.y - this.cs / 2) / k() });
+    const mid = () => { const [a, b] = [...ptrs.values()]; return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)) }; };
+    const startPinch = () => { const m = mid(); pinch = { d: m.d, z: this.zoom.v, w: toWorld(m) }; };
+    el.addEventListener('pointerdown', (e) => {
+      if (!this.open || !this.view) return;
+      e.preventDefault(); e.stopPropagation();
+      try { el.setPointerCapture(e.pointerId); } catch (_) { /* not a live pointer */ }
+      const p = at(e);
+      ptrs.set(e.pointerId, { ...p, x0: p.x, y0: p.y, t0: performance.now() });
+      this.anchor = null;
+      if (ptrs.size === 2) startPinch();
+      el.classList.add('dragging');
+    });
+    el.addEventListener('pointermove', (e) => {
+      const q = ptrs.get(e.pointerId);
+      if (!q || !this.view) return;
+      const p = at(e), dx = p.x - q.x, dy = p.y - q.y;
+      q.x = p.x; q.y = p.y;
+      if (ptrs.size >= 2 && pinch) {
+        // the point between the fingers stays under them while they spread or move
+        const m = mid();
+        this.zoom.set(pinch.z * m.d / pinch.d);
+        const kk = this.cs * this.zoom.v / (2 * this.view.S);
+        this.c = { x: pinch.w.x - (m.x - this.cs / 2) / kk, z: pinch.w.z - (m.y - this.cs / 2) / kk };
+      } else if (ptrs.size === 1) {
+        this.c = { x: this.c.x - dx / k(), z: this.c.z - dy / k() };
+      }
+    });
+    const up = (e) => {
+      const q = ptrs.get(e.pointerId);
+      if (!q) return;
+      ptrs.delete(e.pointerId);
+      pinch = null;
+      if (ptrs.size === 2) startPinch();
+      if (!ptrs.size) el.classList.remove('dragging');
+      // a quick touch that didn't move is a tap; two in a row reset the zoom (a mouse uses dblclick)
+      if (e.type !== 'pointerup' || e.pointerType === 'mouse') return;
+      const tap = performance.now() - q.t0 < 250 && Math.hypot(q.x - q.x0, q.y - q.y0) < 10;
+      if (!tap) { lastTap = null; return; }
+      const now = performance.now();
+      if (lastTap && now - lastTap.t < TAP.ms && Math.hypot(q.x - lastTap.x, q.y - lastTap.y) < TAP.px) { this.resetZoom(); lastTap = null; }
+      else lastTap = { t: now, x: q.x, y: q.y };
+    };
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+    el.addEventListener('dblclick', (e) => { e.preventDefault(); this.resetZoom(); });
+    // the wheel zooms around the cursor, and only over the chart
+    el.addEventListener('wheel', (e) => {
+      if (!this.open || !this.view) return;
+      e.preventDefault(); e.stopPropagation();
+      const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
+      const p = at(e), w = toWorld(p);
+      this.anchor = { wx: w.x, wz: w.z, sx: p.x, sy: p.y };
+      this.zoom.by(Math.exp(-Math.max(-300, Math.min(300, dy)) * 0.0018));
+    }, { passive: false });
+    this.chartPtrs = ptrs;
+  }
+  resetZoom() { this.anchor = null; this.zoom.target = 1; }
+
+  // the turn slider (touch): hold the knob to one side to keep turning, faster the further out; it springs back
+  bindSlider(pad) {
+    const knob = pad.querySelector('.slider-knob');
+    let id = null;
+    const set = (e) => {
+      const r = pad.getBoundingClientRect(), R = Math.max(1, (r.width - knob.offsetWidth) / 2 - 3);
+      const x = Math.max(-R, Math.min(R, e.clientX - (r.left + r.width / 2)));
+      knob.style.transform = `translate(calc(-50% + ${x}px), -50%)`;
+      const f = x / R;
+      this.turn = Math.sign(f) * Math.pow(Math.abs(f), 1.5);   // fine aim near the middle
+      pad.classList.toggle('turn-l', f < -0.15); pad.classList.toggle('turn-r', f > 0.15);
+    };
+    const end = (e) => { if (e.pointerId !== id) return; id = null; this.releaseSlider(); };
+    pad.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      if (id !== null) return;
+      id = e.pointerId; try { pad.setPointerCapture(id); } catch (_) {} pad.classList.add('active'); set(e);
+    });
+    pad.addEventListener('pointermove', (e) => { if (e.pointerId === id) set(e); });
+    pad.addEventListener('pointerup', end);
+    pad.addEventListener('pointercancel', end);
+    this.releaseSlider = () => {
+      id = null; this.turn = 0; knob.style.transform = '';
+      pad.classList.remove('active', 'turn-l', 'turn-r');
+    };
+  }
+  // -1 (left) … 1 (right) from the turn slider, 0 when it's let go
+  turnInput() { return this.open ? this.turn : 0; }
 
   show(on) {
     this.open = on;
     this.el.classList.toggle('show', on);
-    if (on) { this.layout(); this.lastT = null; }
+    if (on) { this.layout(); this.lastT = null; this.recentre = true; this.anchor = null; }
+    else { this.releaseSlider?.(); this.chartPtrs?.clear(); this.el.querySelector('.map-chart').classList.remove('dragging'); }
   }
-
-  // how to turn (and so point your arrow), for the controls in use: set by main.js each time the map opens
-  setHint(text) { this.el.querySelector('.map-hint').textContent = text; }
-
-  zoomBy(f) { if (f !== 1) { this.zoom.by(f); this.ctl.refresh(); } }
 
   // fit the square chart into the scroll: as tall as the sheet allows, keeping room beside it for the legend and compass
   layout() {
@@ -197,19 +328,30 @@ export class MapView {
       this.el.querySelector('.map-title').textContent = title;
     }
     this.el.querySelector('.lg-hole').style.display = state.hole ? '' : 'none';
-    // the view: the whole map at 1×; zoomed in, centred on you but never past the map's edge
-    const S = this.grid(world).S, half = S / this.zoom.v, lim = S - half;
-    const view = { half, cx: Math.max(-lim, Math.min(lim, state.player.x)), cz: Math.max(-lim, Math.min(lim, state.player.z)) };
-    const r = this.rendered, cs = this.cs;
+    // the view: the whole map at 1×; zoomed in, wherever you moved it (it opens centred on you), never past the map's edge
+    const S = this.grid(world).S, half = S / this.zoom.v, lim = S - half, cs = this.cs;
+    if (this.recentre) { this.c = { x: state.player.x, z: state.player.z }; this.recentre = false; }
+    if (this.anchor) {
+      // zooming with the wheel: the point under the cursor stays under it
+      const a = this.anchor, kk = cs / (2 * half);
+      this.c = { x: a.wx - (a.sx - cs / 2) / kk, z: a.wz - (a.sy - cs / 2) / kk };
+      if (!this.zoom.moving) this.anchor = null;
+    }
+    this.c = { x: Math.max(-lim, Math.min(lim, this.c.x)), z: Math.max(-lim, Math.min(lim, this.c.z)) };
+    const view = { half, cx: this.c.x, cz: this.c.z, S };
+    this.view = view;
+    const r = this.rendered;
     const fresh = r && r.world === world && r.size === this.canvas.width;
     const same = fresh && Math.abs(r.half - view.half) < 1e-3 * S && Math.hypot(r.cx - view.cx, r.cz - view.cz) * cs / (2 * half) < 0.5;
-    if (!same && (!fresh || !this.zoom.moving)) this.render(world, view);
+    // while the chart is zoomed or dragged it's drawn afresh at most every 60 ms (the last drawing is stretched and
+    // moved along in between), so a large, sharp chart never holds up the frame
+    const busy = this.zoom.moving || this.chartPtrs.size > 0, now = performance.now();
+    if (!same && (!fresh || !busy || now - (this.renderedAt || 0) > 60)) { this.render(world, view); this.renderedAt = now; }
     const g = this.ctx;
     g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     g.fillStyle = PAPER; g.fillRect(0, 0, cs, cs);
     const k = cs / (2 * view.half);
     {
-      // while zooming, the last drawn chart is stretched to the current view until the zoom settles
       const R = this.rendered;
       g.drawImage(R.img, (R.cx - R.half - view.cx) * k + cs / 2, (R.cz - R.half - view.cz) * k + cs / 2, 2 * R.half * k, 2 * R.half * k);
     }
