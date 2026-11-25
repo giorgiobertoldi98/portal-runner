@@ -392,10 +392,8 @@ body:not(.touch) #btn-pause .esc-hint { display: flex; align-items: center; gap:
   background: var(--page-fill-hi); border: 1px solid var(--ink-line); box-shadow: 0 2px 0 var(--ink-line); }
 .help-cols .glyph { width: 26px; height: 26px; fill: none; stroke: var(--ink); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .help-cols .glyph .fill { fill: var(--ink); stroke: none; }
-/* an item button as it looks in the HUD, inked */
-.help-cols .item-ico { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; color: var(--ink); background: var(--page-fill-hi); border: 1.5px solid color-mix(in srgb, var(--ink) 55%, transparent); }
 .help-cols.mob { display: none; } body.touch .help-cols.mob { display: grid; } body.touch .help-cols.desk { display: none; }
-body.touch .help-cols .k { width: 34px; }
+body.touch .help-cols .k { width: 34px; justify-content: center; }   /* gestures: one icon each, centred in a column */
 @media (max-height: 500px) {
   .help-cols { margin-bottom: 12px; } .help-cols ul { gap: 6px; } .help-cols li { font-size: 13px; }
 }
