@@ -23,6 +23,9 @@ const TERRAIN_SIZE = 1100; // metres across the ground mesh (also used by gridHe
 const R = 270;
 const PORTAL_SPOTS = [{ x: 175, z: -165 }, { x: -195, z: -95 }, { x: -45, z: 215 }];
 const LAKE = { x: 40, z: 55, r: 46 };
+// The ground is levelled to the ice out past the ice disc by more than one terrain cell, so the flat disc always
+// lies on the ground the player walks on; beyond that a wide blend climbs or drops back to the hills.
+const LAKE_ICE = LAKE.r * 1.1, LAKE_FLAT = LAKE.r * 1.27, LAKE_SHORE = LAKE.r * 1.9;
 const HORIZON = 0xb9cbe4;
 
 const theme = {
@@ -172,7 +175,7 @@ function build({ quality }) {
   const base = (x, z) => {
     let h = raw(x, z);
     const dl = Math.hypot(x - LAKE.x, z - LAKE.z);
-    const lk = 1 - smoothstep(LAKE.r * 0.8, LAKE.r * 1.4, dl);
+    const lk = 1 - smoothstep(LAKE_FLAT, LAKE_SHORE, dl);
     h = h * (1 - lk) + iceLevel * lk;
     h += edgeFactor(x, z, R, 170) * 170 * (0.65 + 0.5 * ridged(n3, x * 0.01, z * 0.01, 3));
     return h;
@@ -181,7 +184,7 @@ function build({ quality }) {
   const caveSites = pickCaveSites({
     base, radius: R,
     avoid: [
-      ...PORTAL_SPOTS.map((p) => ({ ...p, d: 45 })), { x: LAKE.x, z: LAKE.z, d: LAKE.r * 1.4 + 26 },
+      ...PORTAL_SPOTS.map((p) => ({ ...p, d: 45 })), { x: LAKE.x, z: LAKE.z, d: LAKE_SHORE + 12 },
       ...[CAMP, TOWER, MAMMOTH].map((p) => ({ ...p, d: 50 })), { ...CREVASSE, d: 62 },
       { x: FALLS.dx * 248, z: FALLS.dz * 248, d: 50 },
       ...[{ x: -90, z: -30 }, { x: 120, z: 120 }, { x: 30, z: -200 }].map((p) => ({ ...p, d: 30 })),
@@ -196,7 +199,7 @@ function build({ quality }) {
     { x: FALLS.dx * 248, z: FALLS.dz * 248, inner: 14, outer: 26 },
   ]);
   const heightAt = gridHeight(smoothHeight, TERRAIN_SIZE, quality.terrainSegments); // the ground exactly as drawn
-  const inLake = (x, z) => Math.hypot(x - LAKE.x, z - LAKE.z) < LAKE.r * 0.95;
+  const inLake = (x, z) => Math.hypot(x - LAKE.x, z - LAKE.z) < LAKE_ICE; // the whole ice disc: no props or gems on it
   const hy = (x, z) => heightAt(x, z);
 
   const scene = new THREE.Scene();
@@ -234,7 +237,7 @@ function build({ quality }) {
   const solid = (geo, mat, x, y, z, ry = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.y = ry; m.castShadow = true; m.receiveShadow = true; return add(m); };
 
   // ── frozen lake with cracks + fishing hut ──
-  const lake = new THREE.Mesh(new THREE.CircleGeometry(LAKE.r * 1.1, 64), new THREE.MeshStandardMaterial({ map: lakeTexture(), emissive: 0x0d3a5a, emissiveIntensity: 0.15, roughness: 0.22, metalness: 0.05 }));
+  const lake = new THREE.Mesh(new THREE.CircleGeometry(LAKE_ICE, 64), new THREE.MeshStandardMaterial({ map: lakeTexture(), emissive: 0x0d3a5a, emissiveIntensity: 0.15, roughness: 0.22, metalness: 0.05 }));
   lake.rotation.x = -Math.PI / 2; lake.position.set(LAKE.x, iceLevel + 0.04, LAKE.z); lake.receiveShadow = true;
   add(lake);
   {

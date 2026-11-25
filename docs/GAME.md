@@ -101,7 +101,7 @@ Every toast in the game (see Design principles: anything that can be shown inste
 
 ## Scale
 - The player is 1.8 m tall.
-- The glacier's playable area is a disc ~258 m in radius (~515 m across); about 70% of it is walkable (the rest is lake or steep slopes). Running across it takes about 45 seconds.
+- The glacier's playable area is a disc ~258 m in radius (~515 m across); about 70% of it is walkable (the rest is steep slopes). The frozen lake is walkable all the way to its shore, where the ice meets level snow. Running across it takes about 45 seconds.
 
 ## The explorer (player character)
 - A low-poly explorer in a slim, belted trench coat: cool explorer vibes rather than a space suit. Palette: a light leaf-green coat (deeper green on lapels, collar, hood peak, cuffs and hem), brown leather (belt, straps, gloves, pack, boots), warm taupe trousers, orange trims (scarf, boot collars and toe caps, pack pocket, antenna base, wrist scanner) and cyan suit lights. The green is light enough to stay green in shade, and the orange keeps the figure readable against snow, sand and the alien ground alike.
