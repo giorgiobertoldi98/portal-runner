@@ -172,6 +172,7 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 
 /* the world chip never reaches the system buttons: the world's name truncates first */
 .hud-status { max-width: calc(100% - 76px - env(safe-area-inset-left) - env(safe-area-inset-right)); }
+body:not(.touch) .hud-status { max-width: calc(100% - 180px); }   /* clear of the wider "Esc to pause" */
 .lvl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* big screens (PC): the same chip, a little larger */
 @media (min-width: 900px) and (min-height: 560px) {
@@ -362,13 +363,20 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
   /* landscape phones: wider and shorter, the stats in one row and the two buttons side by side */
   .card.small.paper { width: min(600px, 100%); display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; }
   .card.paper > :not(button) { grid-column: 1 / -1; }
-  #screen-pause .card.small.paper { width: min(460px, 100%); }
+  #screen-pause .card.small.paper { width: min(340px, 100%); display: block; }   /* buttons stacked, as on PC */
+  #screen-pause .card.paper > button.ghost { margin-top: 8px; }
   .card.paper > button.ghost { margin-top: 0; }
   .card.paper .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .card.paper .stats b { font-size: 15px; }
 }
 @media (prefers-reduced-motion: reduce) { .card.paper { transform: none; } }
 
+/* on PC the pause button is a reminder of its key rather than something to click: "Esc to pause" */
+.esc-hint { display: none; }
+body:not(.touch) #btn-pause { width: auto; padding: 0 12px; }
+body:not(.touch) #btn-pause svg { display: none; }
+body:not(.touch) #btn-pause .esc-hint { display: flex; align-items: center; gap: 7px; font: 600 13px Inter, sans-serif; white-space: nowrap; }
+.esc-hint kbd { font: 700 11px Inter, sans-serif; padding: 2px 6px; border-radius: 6px; background: rgba(255, 255, 255, .14); }
 /* the pause card's small system buttons (sound, controls), inked like the card's other controls */
 .card-sys { display: flex; justify-content: center; gap: 10px; margin-top: 14px; }
 .card.paper .icon-btn { width: 38px; height: 38px; border-radius: 50%; color: var(--ink); background: var(--page-fill); border: 1.5px solid color-mix(in srgb, var(--ink) 50%, transparent); backdrop-filter: none; -webkit-backdrop-filter: none; }

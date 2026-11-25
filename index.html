@@ -18,10 +18,11 @@
 <div id="vignette"></div>
 
 <div id="hud" class="hidden">
-  <!-- top left: pause (sound and the controls card are on the pause card) -->
+  <!-- top left: pause (on PC it reads "Esc to pause"; sound and the controls card are on the pause card) -->
   <div class="hud-sys">
     <button id="btn-pause" class="icon-btn" data-i18n-aria="hud.pause">
       <svg viewBox="0 0 24 24" width="20" height="20"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+      <span class="esc-hint" data-i18n-html="hud.escPause"></span>
     </button>
   </div>
   <!-- top right: your lives, then the world chip in the corner -->
@@ -160,13 +161,12 @@
       <ul>
         <li><span class="k"><kbd data-key="wasd"></kbd></span><span data-i18n="help.move"></span></li>
         <li><span class="k"><kbd data-key="shift"></kbd></span><span data-i18n="help.run"></span></li>
-        <li><span class="k"><svg class="glyph" viewBox="0 0 24 24"><rect x="6.5" y="3" width="11" height="18" rx="5.5"/><path d="M12 3v6M6.5 9h11"/></svg></span><span data-i18n="help.lookPc"></span></li>
+        <li><span class="k"><svg class="glyph" viewBox="0 0 24 24"><rect x="6.5" y="3" width="11" height="18" rx="5.5"/><path d="M12 3v6M6.5 9h11"/></svg></span><span data-i18n="help.look"></span></li>
       </ul>
       <ul>
         <li><span class="k"><svg class="glyph" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="5"/><path d="M12 7v4"/></svg></span><span data-i18n="help.pick"></span></li>
         <li><span class="k"><kbd data-key="space"></kbd></span><span data-i18n="help.use"></span></li>
         <li><span class="k"><kbd data-key="esc"></kbd></span><span data-i18n="help.pause"></span></li>
-        <li><span class="k"><kbd data-key="m"></kbd></span><span data-i18n="help.sound"></span></li>
       </ul>
     </div>
     <div class="help-cols mob">
@@ -175,7 +175,7 @@
         <li><span class="k"><svg class="glyph" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-dasharray="3 2.4"/><path d="M12 6.5 10 9h4zM12 17.5 10 15h4zM6.5 12 9 10v4zM17.5 12 15 10v4z" class="fill"/></svg></span><span data-i18n="help.lookTouch"></span></li>
       </ul>
       <ul>
-        <li><span class="k"><span class="item-ico"><svg viewBox="0 0 24 24" width="17" height="17"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 4v13.5M15 6.5V20" stroke="currentColor" stroke-width="1.5" opacity=".7"/></svg></span></span><span data-i18n="help.useTouch"></span></li>
+        <li><span class="k"><span class="item-ico"></span></span><span data-i18n="help.useTouch"></span></li>
         <li><span class="k"><svg class="glyph" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1" class="fill"/><rect x="14" y="5" width="4" height="14" rx="1" class="fill"/></svg></span><span data-i18n="help.pauseTouch"></span></li>
       </ul>
     </div>
