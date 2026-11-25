@@ -115,11 +115,13 @@ export function createPortal({ dest, gem = undefined, destIndex, x, y, z, label:
   beam.position.y = H + 132;
   if (beacon) group.add(beam);
 
-  // destination label
-  const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTexture(labelText || dest.name, th.css), transparent: true, depthWrite: false, fog: false, toneMapped: false }));
-  label.scale.set(11, 2.06, 1);
-  label.position.y = H + 4.2;
-  if (showLabel) group.add(label);
+  // destination label (the caller passes it in the player's language)
+  if (showLabel && labelText) {
+    const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTexture(labelText, th.css), transparent: true, depthWrite: false, fog: false, toneMapped: false }));
+    label.scale.set(11, 2.06, 1);
+    label.position.y = H + 4.2;
+    group.add(label);
+  }
 
   // orbiting motes along the arch
   const MOTES = 70;

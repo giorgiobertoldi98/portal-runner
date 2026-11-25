@@ -7,13 +7,15 @@
 // - each says, in its `hold` settings, whether the game stops while it's open: { pauses };
 // - each has a close button in its top-right corner (heldControls).
 
+import { tr } from '../i18n/i18n.js';
+
 const X_ICON = '<svg viewBox="0 0 24 24" width="18" height="18"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
 
-// The corner controls: the close button.
+// The corner controls: the close button. label = the item's name, as the player reads it.
 export function heldControls({ label, onClose }) {
   const el = document.createElement('div');
   el.className = 'held-ctl';
-  el.innerHTML = `<button class="held-btn held-x" aria-label="Close ${label}" title="Close">${X_ICON}</button>`;
+  el.innerHTML = `<button class="held-btn held-x" aria-label="${tr('hud.closeItem', { item: label })}" title="${tr('hud.close')}">${X_ICON}</button>`;
   el.querySelector('.held-x').addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); onClose(); });
   el.addEventListener('pointerdown', (e) => e.stopPropagation());   // never starts a gesture on the item behind it
   return { el };

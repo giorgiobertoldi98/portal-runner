@@ -11,6 +11,7 @@ import { archPath, archTube } from '../engine/shapes.js';
 import { smoothstep, mergeParts, m4, instanced, flatMat, scatterPoints, fogColor } from '../engine/utils.js';
 import { YetiBrain } from '../hunters/yeti.js';
 import { GLACIER, carryText } from '../config.js';
+import { tr } from '../i18n/i18n.js';
 import { createSnowStorms } from '../mechanics/snowStorms.js';
 import { createIceCave, pickCaveSites, terrainHole, SITE_CLEAR } from '../mechanics/iceCave.js';
 import { holeSketch } from '../mechanics/iceCaveSketch.js';
@@ -690,8 +691,8 @@ function build({ quality }) {
     // read by main.js
     canCall: () => false,          // the gems here never answer the call: the explorers' map shows them instead
     hasMap: () => cave.hasMap,
-    action: () => (note.canTake ? { id: 'take-note', label: 'Take the note', icon: 'note' }
-      : cave.canTake ? { id: 'take-map', label: 'Take the map', icon: 'map' } : null),
+    action: () => (note.canTake ? { id: 'take-note', label: tr('actions.takeNote'), icon: 'note' }
+      : cave.canTake ? { id: 'take-map', label: tr('actions.takeMap'), icon: 'map' } : null),
     // taking the map also reshuffles the storm devices (cues placed after the map's own chime)
     doAction: (ctx) => {
       if (note.canTake) return note.take(ctx);
@@ -703,7 +704,7 @@ function build({ quality }) {
     // the note found near the start, one of your items for the whole world once taken
     briefing: () => (note.held ? {
       image: sketch || (sketch = holeSketch()),
-      text: 'Thought I saw ice spikes in a circle somewhere...',
+      text: tr('glacier.note'),
     } : null),
   };
   const trees = [...pines, ...spruces].filter((_, i) => i % 2 === 0).map((p) => ({ x: p.x, z: p.z }));
@@ -719,13 +720,13 @@ function build({ quality }) {
     hunterKeepOut: cave.keepOut,
     isSheltered: cave.sheltered,
     mapInfo: {
-      title: 'The Frozen Peaks',
+      title: tr('glacier.name'),
       kind: (x, z) => (inLake(x, z) ? 'lake' : Math.hypot(x, z) > R - 10 || slopeAt(heightAt, x, z, 5) > 0.75 ? 'rock' : 'ground'),
       trees,
       landmarks: [
-        { ...CAMP, label: 'Camp' }, { ...TOWER, label: 'Watchtower' }, { ...MAMMOTH, label: 'Mammoth' },
-        { ...CREVASSE, label: 'Ice arches' }, { x: LAKE.x - 10, z: LAKE.z - 30, label: 'Frozen lake' },
-        { x: FALLS.dx * 236, z: FALLS.dz * 236, label: 'Frozen falls' },
+        { ...CAMP, label: tr('glacier.places.camp') }, { ...TOWER, label: tr('glacier.places.tower') }, { ...MAMMOTH, label: tr('glacier.places.mammoth') },
+        { ...CREVASSE, label: tr('glacier.places.arches') }, { x: LAKE.x - 10, z: LAKE.z - 30, label: tr('glacier.places.lake') },
+        { x: FALLS.dx * 236, z: FALLS.dz * 236, label: tr('glacier.places.falls') },
       ],
     },
     createMonsterBody: createYeti,
@@ -776,11 +777,36 @@ const MUSIC = {
 };
 
 
+// This world's text, per language (see i18n/CLAUDE.md). Reached as tr('glacier.<key>'), also by its mechanics.
+const STRINGS = {
+  en: {
+    name: 'The Frozen Peaks',
+    tab: 'Glacier',
+    tagline: 'Wind, ice, white silence.',
+    hunter: 'The Yeti',
+    note: 'Thought I saw ice spikes in a circle somewhere...',
+    sketch: 'Sketch of a ring of tall blue ice spikes standing on a snowy rise, with mountains behind',
+    windsChanging: 'Winds are changing…',
+    firstStorm: 'Snow storms... make the Yeti so hungry!',
+    places: { camp: 'Camp', tower: 'Watchtower', mammoth: 'Mammoth', arches: 'Ice arches', lake: 'Frozen lake', falls: 'Frozen falls' },
+    settings: {
+      detectIn: { label: 'Yeti approach distance', hint: 'It approaches when you come this close, and gives up once you are farther than this.' },
+      yetiSpeed: { label: 'Yeti approach speed', hint: 'Share of your running speed V. With 1 / 2 / 3 gems you run at {carry}%.' },
+      stormSprint: { label: 'Yeti storm sprint', hint: 'Its speed in a storm while farther than its approach distance, as a share of V.' },
+      stormClose: { label: 'Yeti storm close chase', hint: 'Its speed in a storm once within its approach distance, as a share of V. You run at 100% with no gems, {carry}% with 1 / 2 / 3. Above 100% you can\'t outrun it.' },
+      forget: { label: 'Yeti forget time', hint: 'After giving up, it won\'t approach you again for this long (storms still bring it).' },
+      devices: { label: 'Storm devices', hint: 'Hidden devices, spread evenly over the map.' },
+      reach: { label: 'Device trigger radius', hint: 'Come this close to a device and a storm breaks out.' },
+      stormMin: { label: 'Storm radius · min' },
+      stormMax: { label: 'Storm radius · max', hint: 'Each storm picks a random radius in this range.' },
+      caveMinDist: { label: 'Ice hole distance', hint: 'The hole with the explorers\' map never opens closer than this to the portal or to where you start.' },
+    },
+  },
+};
+
 export default {
   id: 'glacier',
-  name: 'The Frozen Peaks',
-  tagline: 'Wind, ice, white silence.',
-  monsterName: 'the Yeti',
+  strings: STRINGS,
   theme,
   // the gems here: a cluster of ice prisms, dark grey while hidden, clear blue once revealed (entities/gemDesigns.js)
   gem: { style: 'cluster', dark: 0x5d6168, col: 0x3d86e0, glow: 0x5aa8ff },
@@ -789,52 +815,43 @@ export default {
   // per-level settings shown in the menu (Settings → Levels)
   settings: [
     {
-      id: 'detectIn', label: 'Yeti approach distance', unit: 'm', min: 20, max: 250, step: 5,
-      hint: 'It approaches when you come this close, and gives up once you are farther than this.',
+      id: 'detectIn', text: 'glacier.settings.detectIn', unit: 'm', min: 20, max: 250, step: 5,
       get: () => GLACIER.detectIn, set: (v) => { GLACIER.detectIn = v; },
     },
     {
-      id: 'yetiSpeed', label: 'Yeti approach speed', unit: '%', min: 40, max: 100, step: 1,
-      hint: () => `Share of your running speed V. With 1 / 2 / 3 gems you run at ${carryText()}.`,
+      id: 'yetiSpeed', text: 'glacier.settings.yetiSpeed', unit: 'pct', min: 40, max: 100, step: 1, vars: () => ({ carry: carryText() }),
       get: () => Math.round(GLACIER.speed.approach * 100), set: (v) => { GLACIER.speed.approach = v / 100; },
     },
     {
-      id: 'stormSprint', label: 'Yeti storm sprint', unit: '%', min: 100, max: 400, step: 10,
-      hint: 'Its speed in a storm while farther than its approach distance, as a share of V.',
+      id: 'stormSprint', text: 'glacier.settings.stormSprint', unit: 'pct', min: 100, max: 400, step: 10,
       get: () => Math.round(GLACIER.speed.stormFar * 100), set: (v) => { GLACIER.speed.stormFar = v / 100; },
     },
     {
-      id: 'stormClose', label: 'Yeti storm close chase', unit: '%', min: 40, max: 200, step: 5,
-      hint: () => `Its speed in a storm once within its approach distance, as a share of V. You run at 100% with no gems, ${carryText()} with 1 / 2 / 3. Above 100% you can't outrun it.`,
+      id: 'stormClose', text: 'glacier.settings.stormClose', unit: 'pct', min: 40, max: 200, step: 5, vars: () => ({ carry: carryText() }),
       get: () => Math.round(GLACIER.speed.stormNear * 100), set: (v) => { GLACIER.speed.stormNear = v / 100; },
     },
     {
-      id: 'forget', label: 'Yeti forget time', unit: 's', min: 0, max: 30, step: 1,
-      hint: 'After giving up, it won\'t approach you again for this long (storms still bring it).',
+      id: 'forget', text: 'glacier.settings.forget', unit: 's', min: 0, max: 30, step: 1,
       get: () => GLACIER.forget, set: (v) => { GLACIER.forget = v; },
     },
     {
-      id: 'devices', label: 'Storm devices', min: 0, max: 60, step: 1,
-      hint: 'Hidden devices, spread evenly over the map.',
+      id: 'devices', text: 'glacier.settings.devices', min: 0, max: 60, step: 1,
       get: () => GLACIER.devices, set: (v) => { GLACIER.devices = v; },
     },
     {
-      id: 'reach', label: 'Device trigger radius', unit: 'm', min: 4, max: 60, step: 1,
-      hint: 'Come this close to a device and a storm breaks out.',
+      id: 'reach', text: 'glacier.settings.reach', unit: 'm', min: 4, max: 60, step: 1,
       get: () => GLACIER.reach, set: (v) => { GLACIER.reach = v; },
     },
     {
-      id: 'stormMin', label: 'Storm radius · min', unit: 'm', min: 10, max: 150, step: 5,
+      id: 'stormMin', text: 'glacier.settings.stormMin', unit: 'm', min: 10, max: 150, step: 5,
       get: () => GLACIER.stormMin, set: (v) => { GLACIER.stormMin = v; if (GLACIER.stormMax < v) GLACIER.stormMax = v; },
     },
     {
-      id: 'stormMax', label: 'Storm radius · max', unit: 'm', min: 10, max: 150, step: 5,
-      hint: 'Each storm picks a random radius in this range.',
+      id: 'stormMax', text: 'glacier.settings.stormMax', unit: 'm', min: 10, max: 150, step: 5,
       get: () => GLACIER.stormMax, set: (v) => { GLACIER.stormMax = v; if (GLACIER.stormMin > v) GLACIER.stormMin = v; },
     },
     {
-      id: 'caveMinDist', label: 'Ice hole distance', unit: 'm', min: 30, max: 220, step: 10,
-      hint: 'The hole with the explorers\' map never opens closer than this to the portal or to where you start.',
+      id: 'caveMinDist', text: 'glacier.settings.caveMinDist', unit: 'm', min: 30, max: 220, step: 10,
       get: () => GLACIER.caveMinDist, set: (v) => { GLACIER.caveMinDist = v; },
     },
   ],

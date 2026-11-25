@@ -4,18 +4,19 @@
 // The world supplies it through the optional `mechanics.briefing()` hook: { image (SVG markup), text } or null.
 // It closes with its close button or Esc / Enter / Space.
 import { heldControls } from './held.js';
+import { tr } from '../i18n/i18n.js';
 
 export class Briefing {
   constructor() {
     this.el = document.createElement('div');
     this.el.id = 'briefing';
     this.el.className = 'held-item hidden';
-    this.el.innerHTML = '<div class="brief-page" role="dialog" aria-modal="true" aria-label="Note">'
+    this.el.innerHTML = `<div class="brief-page" role="dialog" aria-modal="true" aria-label="${tr('hud.note')}">`
       + '<div class="brief-image"></div><p class="brief-text"></p></div>';
     document.getElementById('hud').appendChild(this.el);
     this.q = (s) => this.el.querySelector(s);
     this.hold = { pauses: false };
-    this.ctl = heldControls({ label: 'note', onClose: () => this.close() });
+    this.ctl = heldControls({ label: tr('hud.note'), onClose: () => this.close() });
     this.q('.brief-page').appendChild(this.ctl.el);
     this.open = false;
     this.onClose = null;

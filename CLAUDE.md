@@ -29,12 +29,14 @@ Each kind of knowledge has one home, so no file grows into a dump and each note 
 - `src/worlds/` one module per world + `registry.js` (world order, the world contract and optional hooks)
 - `src/hunters/` hunter brains · `src/mechanics/` world-specific mechanics · `src/entities/` player, gems, portal, hunter
 - `src/engine/` terrain, audio (procedural Web Audio), input, camera · `src/ui/` HUD, menu, map, held items, settings
+- `src/i18n/` the player's language: `tr()`, one catalogue per language (each world's own text is in its module)
 - Adding a world = a new file in `src/worlds/` + a registry entry; don't edit other worlds for it.
 
 ## Engineering rules
 - Default tuning lives in `src/config.js`; saved settings override it at startup. Every speed there is a fraction of the running speed V, fixed per state.
 - Gameplay code stays world-agnostic: anything specific to one world lives in that world's module, its mechanics or its hunter brain, and reaches the game loop through the world contract's hooks.
 - Audio is fully procedural: no audio files.
+- Every word the player reads goes through `tr()` (`src/i18n/`): no literal player-facing text in code or markup, and no sentences built from pieces. Check text changes with `?lang=pseudo`. Rules in `src/i18n/CLAUDE.md`.
 - Small rooms get a fixed camera shot (design principle in GAME.md): a world declares the room and its shot; how it behaves is in `src/engine/fixedShot.js`.
 
 ## Running it

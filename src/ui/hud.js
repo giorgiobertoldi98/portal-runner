@@ -1,4 +1,5 @@
-// DOM-based HUD and screens.
+// DOM-based HUD and screens. Static text is in index.html (data-i18n keys); text set from here goes through tr().
+import { tr } from '../i18n/i18n.js';
 const $ = (id) => document.getElementById(id);
 
 const HEART = '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 21s-7.5-4.6-10-9.2C.4 8.6 2.3 4.5 6.2 4.5c2.2 0 3.6 1.2 4.4 2.4h2.8c.8-1.2 2.2-2.4 4.4-2.4 3.9 0 5.8 4.1 4.2 7.3C19.5 16.4 12 21 12 21z"/></svg>';
@@ -46,7 +47,8 @@ export class HUD {
   setCall(on, radius = 0, k = 0, found = 0, trail = false) {
     this.el.callChip.classList.toggle('show', on);
     if (!on) return;
-    this.el.callText.textContent = found ? `${found} gem${found === 1 ? '' : 's'} answered · ${Math.round(radius)} m` : trail ? 'Nothing in range — follow the trail' : `Calling… ${Math.round(radius)} m`;
+    const r = Math.round(radius);
+    this.el.callText.textContent = found ? tr('hud.answered', { count: found, r }) : trail ? tr('hud.nothingInRange') : tr('hud.callingRadius', { r });
     this.el.callBar.style.width = `${Math.round(k * 100)}%`;
   }
 
@@ -136,7 +138,7 @@ export class HUD {
   }
 
   showEnd(win, text, stats) {
-    this.el.endTitle.textContent = win ? 'You made it home' : 'Caught';
+    this.el.endTitle.textContent = tr(win ? 'end.win' : 'end.lose');
     this.el.end.classList.toggle('win', win);
     this.el.endText.textContent = text;
     this.el.endStats.innerHTML = stats.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');

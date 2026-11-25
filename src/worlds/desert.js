@@ -802,9 +802,10 @@ const MUSIC = {
 
 export default {
   id: 'desert',
-  name: 'Sands of the Pharaohs',
-  tagline: 'Old stone, endless sand.',
-  monsterName: 'the Giant Scarab',
+  // this world's text, per language (see i18n/CLAUDE.md)
+  strings: {
+    en: { name: 'Sands of the Pharaohs', tab: 'Desert', tagline: 'Old stone, endless sand.', hunter: 'The Giant Scarab' },
+  },
   theme,
   // the gems here: crystal desert roses, amber once revealed (softer glow so the petals keep their shading)
   gem: { style: 'rose', dark: 0x6a4a30, col: 0xc9742a, glow: 0xffa030, glowK: 0.6 },

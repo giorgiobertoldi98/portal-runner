@@ -4,8 +4,10 @@
 //
 // A world module default-exports:
 // {
-//   id, name, tagline, monsterName,
-//   settings?: [{ id, label, hint?, unit?, min, max, step, get(), set(v) }]   // per-level settings shown in the menu
+//   id,
+//   strings: { en: { name, tab, tagline, hunter, ... }, <lang>: {...} },   // this world's text, per language (i18n/CLAUDE.md):
+//                                    //   name, its Settings tab, the arrival line, the hunter (as a sentence subject)
+//   settings?: [{ id, text, unit?, min, max, step, get(), set(v), vars?() }]   // per-level settings shown in the menu (settings.js)
 //   theme: { glow, colA, colB, colC, stone, css, hum },   // used by the portal LEADING here + HUD accent
 //   gem?: { style: 'cluster' | 'geode' | 'rose', dark, col, glow, inner?, innerDark?, glowK?, mapCol? }   // this world's gems (entities/gemDesigns.js)
 //   createPortalFrame({ W, H }) -> THREE.Object3D          // frame for the portal that leads to this world
@@ -20,7 +22,7 @@
 //       onGemInserted?(ctx),           //   optional: called when a gem goes into the portal (not the last one)
 //       // optional hooks read by main.js:
 //       canCall?() -> bool,            //   false = the Resonance Call is silent (glacier: always)
-//       introHint?(touch) -> string,   //   a toast: the first hint of the level
+//       introHint?(touch) -> string,   //   a toast: the first hint of the level (every string a hook returns is already translated, via tr())
 //       hasMap?() -> bool, mapMarks?() -> { hole },     //   a map among your items (true once found), drawn from world.mapInfo
 //       action?() -> { id, label, icon } | null, doAction?(ctx),   // a contextual action (Space / the action button),
 //                                      //   e.g. taking the glacier's map from its crate
@@ -35,7 +37,7 @@
 //     constrainMove?(pos, prevX, prevZ), constrainCamera?(camera, rig, playerPos, dt),
 //     hunterKeepOut?: [{ x, z, r }], isSheltered?(pos),   // places hunters can't enter / where they lose you
 //     fixedShot?(pos, active) -> { cam, look, exit } | null,   // a small room's fixed camera shot (engine/fixedShot.js)
-//     mapInfo?: { title, kind(x, z), landmarks: [{ x, z, label }], trees: [{ x, z }] },
+//     mapInfo?: { title, kind(x, z), landmarks: [{ x, z, label }], trees: [{ x, z }] },   // labels already in the player's language
 //     audio: { ambient, footstep, growl },
 //     update(dt, t, camera, playerPos),
 //   }
@@ -45,5 +47,10 @@
 import glacier from './glacier.js';
 import alien from './alien.js';
 import desert from './desert.js';
+import { tr, addStrings } from '../i18n/i18n.js';
 
 export const WORLDS = [glacier, alien, desert];
+WORLDS.forEach((def) => addStrings(def.id, def.strings));
+
+// one of a world's own strings, in the player's language
+export const worldText = (def, key, vars) => tr(`${def.id}.${key}`, vars);

@@ -170,7 +170,11 @@ export function labelTexture(text, color = '#ffffff') {
   const c = document.createElement('canvas');
   c.width = 1024; c.height = 192;
   const g = c.getContext('2d');
-  g.font = '700 84px Cinzel, Georgia, serif';
+  // shrink to fit: names run longer in some languages
+  let size = 84;
+  g.font = `700 ${size}px Cinzel, Georgia, serif`;
+  const w = g.measureText(text).width;
+  if (w > 940) { size = Math.floor(size * 940 / w); g.font = `700 ${size}px Cinzel, Georgia, serif`; }
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   g.shadowColor = color;

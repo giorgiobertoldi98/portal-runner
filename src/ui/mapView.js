@@ -19,6 +19,8 @@
 import * as THREE from 'three';
 import { gemMapColor } from '../entities/gem.js';
 import { heldControls } from './held.js';
+import { tr } from '../i18n/i18n.js';
+import { KEYS as KEY_NAMES } from '../i18n/keys.js';
 
 const MARK = 1.15;     // size of the marks, in CSS px per unit of their original drawing
 const GRID = 256;      // world samples per side
@@ -41,13 +43,13 @@ class Zoom {
 
 // how to use the chart, for the controls in use: [gesture, what it does]
 const HOW = {
-  touch: [['Pinch', 'zoom'], ['Drag', 'move'], ['Double tap', 'reset']],
-  pc: [['Wheel', 'zoom'], ['Drag', 'move'], ['Double-click', 'reset']],
+  touch: [['pinch', 'zoom'], ['drag', 'move'], ['doubleTap', 'reset']],
+  pc: [['wheel', 'zoom'], ['drag', 'move'], ['doubleClick', 'reset']],
 };
 // the A / D keys (PC), drawn as little keycaps with turn arrows
 const TURN_ARROW = (d) => `<svg viewBox="-12 -12 24 24" aria-hidden="true"><path d="${d > 0 ? 'M6 -5A7.5 7.5 0 1 0 7 3' : 'M-6 -5A7.5 7.5 0 1 1 -7 3'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`
   + `<path d="${d > 0 ? 'M2.6 -7.6 6.4 -4.6 2.4 -2.2' : 'M-2.6 -7.6 -6.4 -4.6 -2.4 -2.2'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-const KEYS = `<div class="map-keys"><span class="key">${TURN_ARROW(-1)}A</span><span class="key">D${TURN_ARROW(1)}</span></div>`;
+const KEYS = () => `<div class="map-keys"><span class="key">${TURN_ARROW(-1)}${KEY_NAMES.a}</span><span class="key">${KEY_NAMES.d}${TURN_ARROW(1)}</span></div>`;
 
 // The heading dial: a compass (north up, like the chart) whose needle is you, the chart's orange arrow, ending in a
 // wooden bead on the rim (the rods' wood) to show it can be dragged round. The needle points right at 0 and is
@@ -56,12 +58,13 @@ const TICKS = Array.from({ length: 16 }, (_, i) => {
   const a = i * Math.PI / 8, r0 = i % 4 ? 41 : 37.5, c = Math.cos(a), s = Math.sin(a);
   return `M${(c * r0).toFixed(1)} ${(s * r0).toFixed(1)}L${(c * 44).toFixed(1)} ${(s * 44).toFixed(1)}`;
 }).join('');
-const DIAL = '<div class="map-dial" aria-label="Turn"><svg viewBox="-50 -50 100 100" aria-hidden="true">'
+const DIAL = () => `<div class="map-dial" aria-label="${tr('map.turn')}"><svg`
+  + ' viewBox="-50 -50 100 100" aria-hidden="true">'
   + '<defs><radialGradient id="dial-wood" cx="38%" cy="32%"><stop offset="0" stop-color="#e0ad72"/><stop offset=".55" stop-color="#9a6534"/><stop offset="1" stop-color="#5a3818"/></radialGradient></defs>'
   + '<circle r="47" fill="rgba(255,250,238,.45)" stroke="currentColor" stroke-width="1.6" opacity=".9"/>'
   + '<circle r="44" fill="none" stroke="currentColor" stroke-width=".7" opacity=".45"/>'
   + `<path d="${TICKS}" stroke="currentColor" stroke-width="1.2" opacity=".6"/>`
-  + '<text y="-23" text-anchor="middle" dominant-baseline="middle" font-family="Cinzel, Georgia, serif" font-weight="700" font-size="12" fill="currentColor">N</text>'
+  + '<text y="-23" text-anchor="middle" dominant-baseline="middle" font-family="Cinzel, Georgia, serif" font-weight="700" font-size="12" fill="currentColor">' + tr('map.north') + '</text>'
   + '<g class="dial-needle"><path d="M-6 0H30" stroke="rgba(58,42,28,.45)" stroke-width="1.6" stroke-linecap="round"/>'
   + '<path d="M17 0 3 7.5 6.5 0 3 -7.5z" fill="#ff7a1a" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/>'
   + '<circle cx="38" r="6.5" fill="url(#dial-wood)" stroke="rgba(30,16,6,.55)" stroke-width="1"/></g>'
@@ -74,11 +77,11 @@ export class MapView {
     this.el.className = 'held-item';
     this.el.innerHTML = '<div class="scroll"><i class="rod"></i><div class="sheet">'
       + '<div class="map-side map-side-l"><div class="map-title"></div><i class="map-rule"></i>'
-      + '<ul class="map-legend"><li class="lg-you">You</li><li class="lg-gem">Gems</li><li class="lg-portal">Portal</li><li class="lg-hole">Ice hole</li></ul>'
+      + `<ul class="map-legend"><li class="lg-you">${tr('map.you')}</li><li class="lg-gem">${tr('map.gems')}</li><li class="lg-portal">${tr('map.portal')}</li><li class="lg-hole">${tr('map.iceHole')}</li></ul>`
       + '<i class="map-rule"></i><dl class="map-how">'
-      + HOW[touch ? 'touch' : 'pc'].map(([g, a]) => `<div><dt>${g}</dt><dd>${a}</dd></div>`).join('') + '</dl></div>'
+      + HOW[touch ? 'touch' : 'pc'].map(([g, a]) => `<div><dt>${tr(`map.${g}`)}</dt><dd>${tr(`map.${a}`)}</dd></div>`).join('') + '</dl></div>'
       + '<div class="map-chart"><canvas></canvas></div>'
-      + '<div class="map-side map-side-r"><div class="map-turn">' + DIAL + (touch ? '' : KEYS) + '<span class="map-turn-label">Turn</span></div></div>'
+      + '<div class="map-side map-side-r"><div class="map-turn">' + DIAL() + (touch ? '' : KEYS()) + `<span class="map-turn-label">${tr('map.turn')}</span></div></div>`
       + '</div><i class="rod"></i></div>';
     document.getElementById('hud').appendChild(this.el);
     this.sheet = this.el.querySelector('.sheet');
@@ -91,7 +94,7 @@ export class MapView {
     this.view = null;                // the view last drawn: { cx, cz, half }
     this.recentre = true;
     this.onClose = null;
-    this.ctl = heldControls({ label: 'map', onClose: () => this.onClose && this.onClose() });
+    this.ctl = heldControls({ label: tr('hud.map'), onClose: () => this.onClose && this.onClose() });
     this.sheet.appendChild(this.ctl.el);
     this.open = false;
     this.grids = new Map();
@@ -329,7 +332,7 @@ export class MapView {
     const dt = this.lastT === null ? 0 : Math.min(0.1, Math.max(0, t - this.lastT));
     this.lastT = t;
     this.zoom.update(dt);
-    const title = world.mapInfo.title || world.def?.name || '';
+    const title = world.mapInfo.title || (world.def ? tr(`${world.def.id}.name`) : '');
     if (this.title !== title) {
       this.title = title;
       this.el.querySelector('.map-title').textContent = title;
@@ -377,8 +380,9 @@ export class MapView {
       for (let a = 0; a < 12.6; a += 0.2) { const rr = (1 + a * 0.7) * M; g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
       g.stroke();
       g.font = `700 ${Math.round(14 * M)}px Cinzel, Georgia, serif`; g.textAlign = 'center'; g.textBaseline = 'top';
-      g.lineWidth = 4; g.strokeStyle = 'rgba(230, 238, 244, 0.9)'; g.strokeText('Ice hole', x, y + 12 * M);
-      g.fillStyle = 'rgba(30, 90, 140, 0.95)'; g.fillText('Ice hole', x, y + 12 * M);
+      const name = tr('map.iceHole');
+      g.lineWidth = 4; g.strokeStyle = 'rgba(230, 238, 244, 0.9)'; g.strokeText(name, x, y + 12 * M);
+      g.fillStyle = 'rgba(30, 90, 140, 0.95)'; g.fillText(name, x, y + 12 * M);
     }
     // the portal
     {
