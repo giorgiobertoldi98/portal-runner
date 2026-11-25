@@ -6,7 +6,9 @@
 // so reduced motion stills it.
 import { mulberry32 } from '../engine/noise.js';
 
-const INK = '#3a2c20', PAPER = '#f4ead4';
+const INK = '#3a2c20';
+// the screens' paper tone (--page-base in style.css), which far-off and washed colours fade into
+let PAPER = '#cfb98e';
 const hex = (n) => (typeof n === 'string' ? n : `#${n.toString(16).padStart(6, '0')}`);
 // a colour thinned towards the paper, as a watercolour wash would be
 const wash = (c, k) => {
@@ -91,6 +93,7 @@ function gem(look, rng) {
 const glint = (c) => `<path class="glint-star" d="M0 -9 L1.6 -1.6 L9 0 L1.6 1.6 L0 9 L-1.6 1.6 L-9 0 L-1.6 -1.6Z" fill="${c}" stroke="${INK}" stroke-width=".6" vector-effect="non-scaling-stroke"/>`;
 
 export function menuIllustration(worlds) {
+  PAPER = getComputedStyle(document.documentElement).getPropertyValue('--page-base').trim() || PAPER;
   const rng = mulberry32(23);
   const spots = worlds.map((_, i) => spot(i));
   const tints = worlds.map((w) => hex(w.theme.glow));
