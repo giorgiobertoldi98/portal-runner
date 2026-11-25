@@ -29,7 +29,8 @@ const QUALITY = isTouch
   : { pixelRatio: Math.min(devicePixelRatio, 2), shadowMap: 2048, density: 1, terrainSegments: 200 };
 
 const CALL_HINT = () => (isTouch ? 'Let go of the stick to send a Resonance Call' : 'Stand still to send a Resonance Call');
-const MAP_TURN = 2.2;   // rad/s: how fast the open map's turn slider (full tilt) or A / D turn the explorer and the camera
+const MAP_TURN = 2.2;   // rad/s: how fast A / D turn the explorer and the camera with the map open
+const MAP_AIM = 7;      // rad/s at most: how fast they turn to face where the map's dial points
 const MENU_ACCENT = '#e6defc'; // starlight: the landing view belongs to no single world
 // The game is landscape only. Browsers don't let a page lock the orientation (outside fullscreen), so a screen taller
 // than it is wide shows the #rotate notice (CSS), a run in progress pauses and nothing is rendered behind it.
@@ -605,12 +606,19 @@ class Game {
     const turned = Math.abs(Math.atan2(Math.sin(turnLeft), Math.cos(turnLeft))) < 0.35;
     const follow = moving && move.y > -0.1 && turned;
     this.rig.update(dt, this.player, look, w.heightAt, follow, t - this.input.lastLookTime, w.colliders);
-    // With the map open (you can't walk then), its turn slider or A / D turn the explorer and the camera together, so
+    // With the map open (you can't walk then), its heading dial or A / D turn the explorer and the camera together, so
     // the map's arrow (the explorer's heading) turns and the view behind the map keeps its angle to you.
     if (this.mapView.open) {
-      const k = this.input.keys, turn = this.mapView.turnInput() + (k.has('KeyD') ? 1 : 0) - (k.has('KeyA') ? 1 : 0);
-      if (turn) {
-        const d = -clamp(turn, -1, 1) * MAP_TURN * dt;   // right turns clockwise, as the mouse does
+      const k = this.input.keys, key = (k.has('KeyD') ? 1 : 0) - (k.has('KeyA') ? 1 : 0), aim = this.mapView.aim();
+      let d = 0;
+      if (key) { d = -key * MAP_TURN * dt; this.mapView.aimed(); }   // D turns clockwise, as the mouse does
+      else if (aim !== null) {
+        // the shortest way round to the dial's heading, easing in over the last stretch
+        const off = Math.atan2(Math.sin(aim - this.player.heading), Math.cos(aim - this.player.heading));
+        d = Math.sign(off) * Math.min(Math.abs(off), MAP_AIM * dt, Math.abs(off) * 12 * dt + 0.002);
+        if (Math.abs(off) < 0.003) this.mapView.aimed();
+      }
+      if (d) {
         this.rig.yaw += d;
         this.player.heading += d;
         this.player.object.rotation.y = this.player.heading;

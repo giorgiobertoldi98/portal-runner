@@ -1,6 +1,6 @@
 // The explorers' map: a hand-drawn chart of the current world, held up almost full screen over the game (which keeps
 // running; see held.js for what all held items share). The chart is square, so it sits on an unrolled scroll that
-// takes the screen's proportions: wooden rods at both ends, the world's name, the legend and a compass on the parchment
+// takes the screen's proportions: wooden rods at both ends, the world's name, the legend and a heading dial on the parchment
 // beside the chart, the close button in the top-right corner.
 // It shows you (an arrow pointing the way the explorer faces, with a faint view cone), the portal, the ice hole and every
 // gem lying on the ground. Gems lying close together (e.g. the ones you lose when caught) share one diamond with a
@@ -8,7 +8,8 @@
 // view gets a small pointer at the chart's edge.
 // Its gestures are its own and work only on the chart: pinch (touch) or the mouse wheel (PC) zoom around the fingers /
 // the cursor, a drag moves the chart, a double tap / double-click goes back to the whole map. Turning is on the right
-// page: a turn slider on touch (read by main.js with turnInput()), A / D on PC (read by main.js). The left page says how,
+// page: a heading dial, north-up like the chart, whose needle is your arrow: drag it round or tap where you want to
+// face (main.js reads aim()); on PC the dial works with the mouse and A / D turn as well. The left page says how,
 // in a few handwritten words, for the controls in use.
 // The world supplies what's drawn through `world.mapInfo`:
 //   { kind(x, z) -> 'lake' | 'rock' | 'ground', landmarks: [{ x, z, label }], trees: [{ x, z }], title }
@@ -43,19 +44,28 @@ const HOW = {
   touch: [['Pinch', 'zoom'], ['Drag', 'move'], ['Double tap', 'reset']],
   pc: [['Wheel', 'zoom'], ['Drag', 'move'], ['Double-click', 'reset']],
 };
-// turning, on the right page: a pad on touch, the A / D keys on PC
+// the A / D keys (PC), drawn as little keycaps with turn arrows
 const TURN_ARROW = (d) => `<svg viewBox="-12 -12 24 24" aria-hidden="true"><path d="${d > 0 ? 'M6 -5A7.5 7.5 0 1 0 7 3' : 'M-6 -5A7.5 7.5 0 1 1 -7 3'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`
   + `<path d="${d > 0 ? 'M2.6 -7.6 6.4 -4.6 2.4 -2.2' : 'M-2.6 -7.6 -6.4 -4.6 -2.4 -2.2'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-const TURN = {
-  touch: `<div class="map-slider" aria-label="Turn"><i class="slider-l">${TURN_ARROW(-1)}</i><i class="slider-r">${TURN_ARROW(1)}</i><b class="slider-knob"></b></div>`,
-  pc: `<div class="map-keys"><span class="key">${TURN_ARROW(-1)}A</span><span class="key">D${TURN_ARROW(1)}</span></div>`,
-};
+const KEYS = `<div class="map-keys"><span class="key">${TURN_ARROW(-1)}A</span><span class="key">D${TURN_ARROW(1)}</span></div>`;
 
-const COMPASS = '<svg class="map-compass" viewBox="-30 -36 60 66" aria-hidden="true"><circle r="22" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".75"/>'
-  + '<circle r="17" fill="none" stroke="currentColor" stroke-width=".8" opacity=".45"/>'
-  + '<path d="M0-20 6 0 0 20-6 0z" fill="currentColor" opacity=".25"/><path d="M0-20 6 0H-6z" fill="currentColor"/>'
-  + '<path d="M-20 0h-5M20 0h5M0 20v5" stroke="currentColor" stroke-width="1.4"/>'
-  + '<text y="-26" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-weight="700" font-size="11" fill="currentColor">N</text></svg>';
+// The heading dial: a compass (north up, like the chart) whose needle is you, the chart's orange arrow, ending in a
+// wooden bead on the rim (the rods' wood) to show it can be dragged round. The needle points right at 0 and is
+// rotated to your heading as the chart draws you.
+const TICKS = Array.from({ length: 16 }, (_, i) => {
+  const a = i * Math.PI / 8, r0 = i % 4 ? 41 : 37.5, c = Math.cos(a), s = Math.sin(a);
+  return `M${(c * r0).toFixed(1)} ${(s * r0).toFixed(1)}L${(c * 44).toFixed(1)} ${(s * 44).toFixed(1)}`;
+}).join('');
+const DIAL = '<div class="map-dial" aria-label="Turn"><svg viewBox="-50 -50 100 100" aria-hidden="true">'
+  + '<defs><radialGradient id="dial-wood" cx="38%" cy="32%"><stop offset="0" stop-color="#e0ad72"/><stop offset=".55" stop-color="#9a6534"/><stop offset="1" stop-color="#5a3818"/></radialGradient></defs>'
+  + '<circle r="47" fill="rgba(255,250,238,.45)" stroke="currentColor" stroke-width="1.6" opacity=".9"/>'
+  + '<circle r="44" fill="none" stroke="currentColor" stroke-width=".7" opacity=".45"/>'
+  + `<path d="${TICKS}" stroke="currentColor" stroke-width="1.2" opacity=".6"/>`
+  + '<text y="-23" text-anchor="middle" dominant-baseline="middle" font-family="Cinzel, Georgia, serif" font-weight="700" font-size="12" fill="currentColor">N</text>'
+  + '<g class="dial-needle"><path d="M-6 0H30" stroke="rgba(58,42,28,.45)" stroke-width="1.6" stroke-linecap="round"/>'
+  + '<path d="M17 0 3 7.5 6.5 0 3 -7.5z" fill="#ff7a1a" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/>'
+  + '<circle cx="38" r="6.5" fill="url(#dial-wood)" stroke="rgba(30,16,6,.55)" stroke-width="1"/></g>'
+  + '<circle r="2.6" fill="currentColor"/></svg></div>';
 
 export class MapView {
   constructor({ touch = false } = {}) {
@@ -68,7 +78,7 @@ export class MapView {
       + '<i class="map-rule"></i><dl class="map-how">'
       + HOW[touch ? 'touch' : 'pc'].map(([g, a]) => `<div><dt>${g}</dt><dd>${a}</dd></div>`).join('') + '</dl></div>'
       + '<div class="map-chart"><canvas></canvas></div>'
-      + '<div class="map-side map-side-r">' + COMPASS + '<div class="map-turn">' + TURN[touch ? 'touch' : 'pc'] + '<span class="map-turn-label">Turn</span></div></div>'
+      + '<div class="map-side map-side-r"><div class="map-turn">' + DIAL + (touch ? '' : KEYS) + '<span class="map-turn-label">Turn</span></div></div>'
       + '</div><i class="rod"></i></div>';
     document.getElementById('hud').appendChild(this.el);
     this.sheet = this.el.querySelector('.sheet');
@@ -90,9 +100,8 @@ export class MapView {
     this.lastT = null;
     addEventListener('resize', () => { if (this.open) this.layout(); });
     this.bindChart(this.el.querySelector('.map-chart'));
-    this.turn = 0;
-    const slider = this.el.querySelector('.map-slider');
-    if (slider) this.bindSlider(slider);
+    this.target = null;   // the heading the dial asked for, until the explorer faces it
+    this.bindDial(this.el.querySelector('.map-dial'));
   }
 
   // the chart's own gestures: a drag moves it, two fingers pinch, the wheel zooms, a double tap / click resets
@@ -160,43 +169,41 @@ export class MapView {
   }
   resetZoom() { this.anchor = null; this.zoom.target = 1; }
 
-  // the turn slider (touch): hold the knob to one side to keep turning, faster the further out; it springs back
-  bindSlider(pad) {
-    const knob = pad.querySelector('.slider-knob');
+  // the heading dial: press anywhere on it (away from the very middle) and the explorer turns to face that way on the
+  // chart; keep dragging and it follows
+  bindDial(dial) {
     let id = null;
-    const set = (e) => {
-      const r = pad.getBoundingClientRect(), R = Math.max(1, (r.width - knob.offsetWidth) / 2 - 3);
-      const x = Math.max(-R, Math.min(R, e.clientX - (r.left + r.width / 2)));
-      knob.style.transform = `translate(calc(-50% + ${x}px), -50%)`;
-      const f = x / R;
-      this.turn = Math.sign(f) * Math.pow(Math.abs(f), 1.5);   // fine aim near the middle
-      pad.classList.toggle('turn-l', f < -0.15); pad.classList.toggle('turn-r', f > 0.15);
+    this.needle = dial.querySelector('.dial-needle');
+    const aimAt = (e) => {
+      const r = dial.getBoundingClientRect(), x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2);
+      if (Math.hypot(x, y) < r.width * 0.12) return;
+      this.target = Math.atan2(x, y);   // the chart draws heading h along (sin h, cos h)
     };
-    const end = (e) => { if (e.pointerId !== id) return; id = null; this.releaseSlider(); };
-    pad.addEventListener('pointerdown', (e) => {
+    dial.addEventListener('pointerdown', (e) => {
       e.preventDefault(); e.stopPropagation();
       if (id !== null) return;
-      id = e.pointerId; try { pad.setPointerCapture(id); } catch (_) {} pad.classList.add('active'); set(e);
+      id = e.pointerId; try { dial.setPointerCapture(id); } catch (_) {}
+      dial.classList.add('active'); aimAt(e);
     });
-    pad.addEventListener('pointermove', (e) => { if (e.pointerId === id) set(e); });
-    pad.addEventListener('pointerup', end);
-    pad.addEventListener('pointercancel', end);
-    this.releaseSlider = () => {
-      id = null; this.turn = 0; knob.style.transform = '';
-      pad.classList.remove('active', 'turn-l', 'turn-r');
-    };
+    dial.addEventListener('pointermove', (e) => { if (e.pointerId === id) aimAt(e); });
+    const end = (e) => { if (e.pointerId === id) { id = null; dial.classList.remove('active'); } };
+    dial.addEventListener('pointerup', end);
+    dial.addEventListener('pointercancel', end);
+    this.dialHeld = () => id !== null;
+    this.releaseDial = () => { id = null; dial.classList.remove('active'); };
   }
-  // -1 (left) … 1 (right) from the turn slider, 0 when it's let go
-  turnInput() { return this.open ? this.turn : 0; }
+  // the heading the dial asks for (radians), or null; main.js turns towards it and calls aimed() once there
+  aim() { return this.open ? this.target : null; }
+  aimed() { if (!this.dialHeld()) this.target = null; }
 
   show(on) {
     this.open = on;
     this.el.classList.toggle('show', on);
     if (on) { this.layout(); this.lastT = null; this.recentre = true; this.anchor = null; }
-    else { this.releaseSlider?.(); this.chartPtrs?.clear(); this.el.querySelector('.map-chart').classList.remove('dragging'); }
+    else { this.releaseDial(); this.target = null; this.chartPtrs?.clear(); this.el.querySelector('.map-chart').classList.remove('dragging'); }
   }
 
-  // fit the square chart into the scroll: as tall as the sheet allows, keeping room beside it for the legend and compass
+  // fit the square chart into the scroll: as tall as the sheet allows, keeping room beside it for the legend and the dial
   layout() {
     const w = this.sheet.clientWidth, h = this.sheet.clientHeight;
     if (!w || !h) return;
@@ -410,6 +417,7 @@ export class MapView {
         g.fillText(String(n), bx, by + 0.5);
       }
     }
+    this.needle.setAttribute('transform', `rotate(${(Math.atan2(Math.cos(state.heading), Math.sin(state.heading)) * 180 / Math.PI).toFixed(2)})`);
     // you: an arrow pointing the way the explorer faces, with a faint view cone
     {
       const x = px(state.player.x), y = pz(state.player.z);
