@@ -84,9 +84,12 @@ body.touch .tool.act kbd { display: none; }
 #items .tool .tl { display: none; }
 #item-label { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); padding: 4px 10px; border-radius: 99px; background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font: 600 12px Inter, sans-serif; white-space: nowrap; opacity: 0; transition: opacity .3s; pointer-events: none; }
 #item-label.show, #items.attn #item-label { opacity: 1; }
-/* PC: a quiet key hint just below the bar, no words: the wheel (only once there's more than one item to pick) | Space.
+/* PC: a quiet key hint, no words: the wheel (only once there's more than one item to pick) | Space. It sits left of
+   the bar (out of the flow, so the tools alone stay centred); Drop gem's key sits below its pill.
    Plain, no container: a soft dark shadow keeps it legible over snow or sand. */
-#item-keys, #btn-drop kbd { position: absolute; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); display: flex; align-items: center; gap: 7px; white-space: nowrap; pointer-events: none; color: rgba(255, 255, 255, .85); filter: drop-shadow(0 0 3px rgba(0, 0, 0, .6)); }
+#item-keys { position: absolute; right: calc(100% + 12px); top: 50%; transform: translateY(-50%); }
+#btn-drop kbd { position: absolute; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); }
+#item-keys, #btn-drop kbd { display: flex; align-items: center; gap: 7px; white-space: nowrap; pointer-events: none; color: rgba(255, 255, 255, .85); filter: drop-shadow(0 0 3px rgba(0, 0, 0, .6)); }
 #item-keys kbd, #btn-drop kbd { font: 700 10px Inter, sans-serif; color: #fff; padding: 2px 5px; border-radius: 5px; background: rgba(255, 255, 255, .15); }
 #btn-drop kbd { display: block; }
 #item-keys .sep { width: 1px; height: 11px; background: rgba(255, 255, 255, .45); }

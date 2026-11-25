@@ -112,7 +112,7 @@ export function createMenuScene({ worlds, quality }) {
   const sparks = [];
   worlds.forEach((def, i) => {
     const s = portalSpot(i);
-    const p = createPortal({ dest: def, destIndex: i, x: s.x, y: s.y, z: s.z, showLabel: false, beacon: false });
+    const p = createPortal({ dest: def, destIndex: i, x: s.x, y: s.y, z: s.z, beacon: false });
     p.setQuota(0);
     p.activate();
     scene.add(p.group);

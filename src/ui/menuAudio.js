@@ -16,8 +16,8 @@ const MUSIC = {
 
 const AMBIENT = {
   layers: [
-    { type: 'noise', filter: 'bandpass', freq: 900, q: 0.6, gain: 0.035, lfoRate: 0.05, lfoDepth: 300 },
-    { type: 'noise', filter: 'highpass', freq: 5200, q: 0.5, gain: 0.006, lfoRate: 0.09, lfoDepth: 1200 },
+    { type: 'noise', filter: 'bandpass', freq: 900, q: 0.6, gain: 0.012, lfoRate: 0.05, lfoDepth: 300 },
+    { type: 'noise', filter: 'highpass', freq: 5200, q: 0.5, gain: 0.002, lfoRate: 0.09, lfoDepth: 1200 },
   ],
 };
 

@@ -80,7 +80,6 @@ export const GLACIER = {
   waypointReach: 5,         // metres: close enough to a search waypoint to pick the next one
   devices: 10,              // hidden storm devices on the map
   reach: 15,                // trigger radius of a device
-  deviceHumLead: 6,         // the device hum starts only this many metres before its reach radius, and swells until you cross it
   deviceAvoidPortal: 45,    // devices stay this far from the portal…
   deviceAvoidBase: 55,      // …from where you spawn
   deviceGemClearance: 6,    // …and from any gem on the ground by this much MORE than their trigger radius (so no gem sits inside a trigger zone)

@@ -91,8 +91,6 @@ export default {
     dropped: { one: '{count} gem dropped', other: '{count} gems dropped' },
   },
 
-  portal: { home: 'The Way Home' },
-
   map: {
     you: 'You',
     gems: 'Gems',

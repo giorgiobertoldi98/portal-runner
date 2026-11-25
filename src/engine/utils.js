@@ -166,29 +166,6 @@ export function softTexture() {
   return _soft;
 }
 
-export function labelTexture(text, color = '#ffffff') {
-  const c = document.createElement('canvas');
-  c.width = 1024; c.height = 192;
-  const g = c.getContext('2d');
-  // shrink to fit: names run longer in some languages
-  let size = 84;
-  g.font = `700 ${size}px Cinzel, Georgia, serif`;
-  const w = g.measureText(text).width;
-  if (w > 940) { size = Math.floor(size * 940 / w); g.font = `700 ${size}px Cinzel, Georgia, serif`; }
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
-  g.shadowColor = color;
-  g.shadowBlur = 28;
-  g.fillStyle = '#ffffff';
-  g.fillText(text, 512, 96);
-  g.shadowBlur = 0;
-  g.globalAlpha = 0.9;
-  g.fillText(text, 512, 96);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
 // Scatter helper: tries `count` random points within radius R that pass `accept(x, z)`
 export function scatterPoints(rng, count, R, accept, maxTries = count * 8) {
   const out = [];

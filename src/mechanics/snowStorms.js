@@ -6,21 +6,15 @@
 // centred where you stood. Inside it the fog closes in (you can still see a little) and the Yeti knows where you are.
 // Leave the circle and the storm dies; walking back into a device's reach later starts a new one.
 // Devices always stay farther from every gem than their trigger radius, so picking up a gem never forces a storm.
-// Devices are invisible: the only warning is a hum that starts a few metres before their reach and swells as you close in.
+// Devices are invisible and silent: nothing warns you before a storm breaks out.
 // They are spread evenly over the map (best-candidate sampling), clear of the portal, the spawn point and the gems.
 import * as THREE from 'three';
 import { GLACIER } from '../config.js';
-import { findSpot, insideColliders, clamp, fogColor, damp } from '../engine/utils.js';
+import { findSpot, insideColliders, fogColor, damp } from '../engine/utils.js';
 import { tr } from '../i18n/i18n.js';
 
 const STORM_COLOR = 0xd3deea;
 
-// a glassy, slowly pulsing tone — kept above ~400 Hz so phone speakers can play it
-const HUM = { layers: [
-  { type: 'osc', wave: 'sine', freq: 587.3, gain: 0.5, filterFreq: 2400, vibrato: { rate: 0.3, depth: 3 }, swell: 0.7 },
-  { type: 'osc', wave: 'sine', freq: 591.5, gain: 0.35, filterFreq: 2400 },
-  { type: 'osc', wave: 'triangle', freq: 880.0, gain: 0.12, filterFreq: 2400, swell: 0.45 },
-] };
 const WIND = { layers: [
   { type: 'noise', filter: 'bandpass', freq: 650, q: 0.7, gain: 0.55, lfoRate: 0.23, lfoDepth: 380 },
   { type: 'noise', filter: 'bandpass', freq: 2300, q: 3, gain: 0.12, lfoRate: 0.41, lfoDepth: 900 },
@@ -36,7 +30,7 @@ export function createSnowStorms({ scene, heightAt, createParticles, density = 1
   let intensity = 0;    // 0..1 visual/audio blend of the storm
   const cfg = GLACIER;
   let world = null, rng = Math.random, toldStorm = false, cooldown = 0, shiftWait = 0;
-  let hum = null, wind = null;
+  let wind = null;
 
   // ── visuals ──
   // the storm's edge: a swirling curtain of snow plus a faint line on the ground
@@ -158,7 +152,6 @@ export function createSnowStorms({ scene, heightAt, createParticles, density = 1
     signals.storm = false;
     intensity = 0;
     applyVisuals();
-    if (hum) hum.set(0, 0.1);
     if (wind) wind.set(0, 0.3);
   }
 
@@ -208,7 +201,7 @@ export function createSnowStorms({ scene, heightAt, createParticles, density = 1
     update(dt, t, ctx) {
       const P = ctx.player;
       const audio = ctx.audio;
-      if (audio && audio.ready && !hum) { hum = audio.loop(HUM); wind = audio.loop(WIND); }
+      if (audio && audio.ready && !wind) wind = audio.loop(WIND);
       if (shiftWait > 0) shiftWait -= dt;
 
       if (storm) {
@@ -232,19 +225,11 @@ export function createSnowStorms({ scene, heightAt, createParticles, density = 1
         }
       }
 
-      // hum: silent until you are a few metres from a device's reach, then it swells (the device inside a storm stays quiet)
-      let near = 0;
-      if (!storm) for (const dev of devices) {
-        const dd = Math.hypot(P.x - dev.x, P.z - dev.z);
-        near = Math.max(near, clamp(1 - (dd - cfg.reach) / GLACIER.deviceHumLead, 0, 1));
-      }
-      if (hum) hum.set(near < 0.02 ? 0 : 0.04 + 0.12 * Math.pow(near, 1.2), 0.12);
-
       intensity = damp(intensity, storm ? 1 : 0, storm ? 2.2 : 1.6, dt);
       if (!storm && intensity < 0.003) intensity = 0;
       applyVisuals();
       wallMat.uniforms.uTime.value = t;
-      if (wind) wind.set(0.5 * intensity, 0.15);
+      if (wind) wind.set(0.35 * intensity, 0.15);
       if (blizzard.points.visible) blizzard.update(dt, { x: P.x, y: P.y, z: P.z }, t);
       if (ctx.camera) dome.position.copy(ctx.camera.position);
     },
