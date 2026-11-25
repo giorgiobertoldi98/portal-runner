@@ -135,7 +135,6 @@ body.touch .icon-btn { width: 40px; height: 40px; }
 
 /* screens */
 .screen { position: fixed; inset: 0; display: grid; place-items: center; padding: 20px; z-index: 10; background: radial-gradient(ellipse at center, rgba(5, 6, 12, .25), rgba(5, 6, 12, .75)); overflow-y: auto; }
-#screen-loading { background: #05060c; }
 .loader { display: flex; flex-direction: column; align-items: center; gap: 14px; font-family: Cinzel, serif; letter-spacing: .1em; opacity: .85; }
 .spinner { width: 42px; height: 42px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .15); border-top-color: var(--accent); animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -217,54 +216,66 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 #call-chip .bar { width: 70px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.15); overflow: hidden; }
 #call-chip .bar i { display: block; height: 100%; width: 0; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 
-/* settings screen */
-.card.settings { width: min(520px, 100%); }
-.card.settings h2 { margin: 0 0 14px; }
-.seg.tabs { grid-template-columns: 1fr 1fr; margin-bottom: 10px; }
-#set-lang .seg { padding: 3px; } #set-lang .seg button { padding: 7px 14px; }
-#set-levels { margin-bottom: 12px; }
-#set-levels button { font-size: 13px; }
-.set-head { font: 700 12px Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 4px 2px 10px; }
 .setting.stepper { align-items: center; }
 .setting .txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .setting .txt small { font-weight: 500; font-size: 12px; opacity: .6; line-height: 1.35; }
 .setting .ctl { display: flex; align-items: center; gap: 6px; flex: none; }
-.setting .ctl b { min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; color: var(--accent); }
-.setting .ctl .step { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.08); color: #fff; font: 700 20px Inter, sans-serif; line-height: 1; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
-.setting .ctl .step:active { background: var(--accent); color: #0a0c18; }
-.card.settings .hint { text-align: center; margin: 4px 0 12px; }
 
-/* ── landing view: the 3D void between worlds fills the screen; the words sit low and to the left ── */
+/* ── drawn pages (loading, menu, Settings): the explorers' paper, as in the note. Ink on a warm sheet with a fine grain
+   and a darker rim; the held note shares the same sheet (--paper-sheet). ── */
+:root {
+  --ink: #3a2c20; --ink-soft: rgba(58, 44, 32, .68); --ink-line: rgba(90, 60, 30, .26);
+  --paper-sheet: radial-gradient(ellipse at 30% 20%, rgba(255, 250, 238, .7), transparent 60%), radial-gradient(ellipse at 85% 85%, rgba(170, 120, 60, .12), transparent 50%), linear-gradient(160deg, #f2e7cf, #e6d6b4);
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .25 0 0 0 0 .15 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.screen.paper { color: var(--ink); background: var(--paper-grain), var(--paper-sheet); box-shadow: inset 0 0 clamp(60px, 14vmin, 140px) rgba(120, 86, 40, .3); }
+.screen.paper .spinner { border-color: var(--ink-line); border-top-color: var(--ink); }
+.paper button.primary { border: 1.5px solid var(--ink); background: var(--ink); color: #f6eedb; box-shadow: 0 3px 0 rgba(58, 44, 32, .22); }
+.paper button.primary:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(58, 44, 32, .22); }
+.paper button.ghost { background: rgba(255, 250, 238, .35); color: var(--ink); border: 1.5px solid rgba(58, 44, 32, .55); }
+.paper button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+@media (hover: hover) { .paper button.ghost:hover { background: rgba(255, 250, 238, .7); } .paper button.primary:hover { background: #2a1f16; } }
+
+/* ── landing view: the words on the left, the drawn void between worlds on the right (ui/menuArt.js) ── */
 #screen-menu.landing {
-  place-items: center start;
-  padding: max(24px, env(safe-area-inset-top)) clamp(20px, 6vw, 88px) max(26px, env(safe-area-inset-bottom));
-  padding-left: max(clamp(20px, 6vw, 88px), env(safe-area-inset-left));
-  /* the words sit on the left over a dark wash; the portals are framed to their right */
-  background: linear-gradient(to right, rgba(6, 4, 18, .9) 0%, rgba(6, 4, 18, .55) 34%, rgba(6, 4, 18, 0) 58%);
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); place-items: center stretch; column-gap: clamp(8px, 3vw, 48px);
+  padding: max(24px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(26px, env(safe-area-inset-bottom)) max(clamp(20px, 6vw, 88px), env(safe-area-inset-left));
   overflow: hidden; /* the menu never scrolls: the short-screen rules make the copy fit */
 }
-.landing-copy { width: min(440px, 56vw); position: relative; isolation: isolate; } /* leaves the right side to the portals on narrow screens */
-.landing .lead, .landing .loop, .landing .controls { text-shadow: 0 1px 2px rgba(6, 4, 18, .9), 0 0 14px rgba(6, 4, 18, .85); }
+.landing-copy { width: min(440px, 50vw); position: relative; z-index: 1; }
+.landing-art { align-self: stretch; height: 100%; min-height: 0; position: relative; }
+.landing-art .menu-art { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .landing .title {
   font-size: clamp(44px, 13vw, 92px); line-height: .95; letter-spacing: .04em; margin: 0 0 14px;
-  background: linear-gradient(100deg, var(--worlds, #8fe8ff, #e07bff, #ffc35c, #8fe8ff));
+  /* the worlds' colours, darkened into ink so they read on paper */
+  background: linear-gradient(100deg, color-mix(in srgb, var(--w0, #8fe8ff) 45%, var(--ink)), color-mix(in srgb, var(--w1, #e07bff) 50%, var(--ink)), color-mix(in srgb, var(--w2, #ffc35c) 55%, var(--ink)), color-mix(in srgb, var(--w0, #8fe8ff) 45%, var(--ink)));
   background-size: 300% 100%;
   -webkit-background-clip: text; background-clip: text; color: transparent;
-  text-shadow: none; filter: drop-shadow(0 2px 3px rgba(6, 4, 18, .9)) drop-shadow(0 0 18px rgba(190, 160, 255, .28));
+  text-shadow: none; filter: drop-shadow(0 1px 0 rgba(58, 44, 32, .25));
   animation: worlds-drift 18s linear infinite;
 }
 @keyframes worlds-drift { from { background-position: 0% 50%; } to { background-position: 300% 50%; } }
-.landing .lead { font-size: 15.5px; line-height: 1.55; margin: 0 0 16px; max-width: 38ch; color: #eee8ff; }
-.landing .loop { list-style: none; margin: 0 0 22px; padding: 0; display: grid; gap: 9px; font-size: 13.5px; line-height: 1.4; color: #ddd5f4; }
+.landing .lead { font-size: 15.5px; line-height: 1.55; margin: 0 0 16px; max-width: 38ch; color: var(--ink); opacity: .88; }
+/* the loop as a few handwritten lines in the margin */
+.landing .loop { list-style: none; margin: 0 0 22px; padding: 0; display: grid; gap: 4px; font: 600 clamp(19px, 2.4vw, 23px)/1.2 Caveat, 'Segoe Print', cursive; color: #2f2219; }
 .landing .loop li { display: flex; align-items: center; gap: 10px; }
-.landing .loop svg { flex: none; width: 18px; height: 18px; fill: currentColor; color: var(--w0, #8fe8ff); }
-.landing .loop li:nth-child(2) svg { color: var(--w1, #e07bff); }
-.landing .loop li:nth-child(3) svg { color: var(--w2, #ffc35c); }
+.landing .loop svg { flex: none; width: 18px; height: 18px; fill: currentColor; color: color-mix(in srgb, var(--w0, #8fe8ff) 60%, var(--ink)); }
+.landing .loop li:nth-child(2) svg { color: color-mix(in srgb, var(--w1, #e07bff) 60%, var(--ink)); }
+.landing .loop li:nth-child(3) svg { color: color-mix(in srgb, var(--w2, #ffc35c) 60%, var(--ink)); }
 .landing .actions { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
-.landing .actions .ghost { margin-top: 0; padding-inline: 22px; background: rgba(255, 255, 255, .04); }
-.landing button.primary { background: #f1ecff; color: #120c26; box-shadow: 0 0 34px rgba(200, 180, 255, .35); }
-.landing button:focus-visible { outline: 2px solid #f1ecff; outline-offset: 3px; }
-.landing .controls { text-align: left; margin-top: 14px; }
+.landing .actions .ghost { margin-top: 0; padding-inline: 22px; }
+.landing .controls { text-align: left; margin-top: 14px; color: var(--ink); opacity: .62; }
+/* the drawing's motion: islands bob, portals swirl, gems drift and now and then glint, stars twinkle */
+.menu-art .bob { animation: art-bob 6s ease-in-out infinite; }
+.menu-art .swirl { transform-origin: 0 0; animation: art-spin 18s linear infinite; }
+.menu-art .drift { animation: art-drift 7s ease-in-out infinite; }
+.menu-art .glint { transform-origin: 0 0; transform: scale(0); animation: art-glint 9s ease-in-out infinite; }
+.menu-art .twinkle { animation: art-twinkle 5s ease-in-out infinite; }
+@keyframes art-bob { 50% { transform: translateY(-6px); } }
+@keyframes art-spin { to { transform: rotate(360deg); } }
+@keyframes art-drift { 0%, 100% { transform: translate(0, 0) rotate(-4deg); } 50% { transform: translate(3px, -8px) rotate(5deg); } }
+@keyframes art-glint { 0%, 86%, 100% { transform: scale(0) rotate(0); } 91% { transform: scale(1) rotate(45deg); } }
+@keyframes art-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
 
 @media (max-height: 640px) {
   .landing .loop { display: none; }
@@ -277,7 +288,53 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
   .landing .lead { font-size: 14px; line-height: 1.45; margin-bottom: 12px; }
   .landing .controls { margin-top: 10px; }
 }
-@media (prefers-reduced-motion: reduce) { .landing .title { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .landing .title, .menu-art * { animation: none !important; } }
+
+/* ── Settings: a landscape page. The tabs and the page's buttons in a column on the left, the chosen tab's settings
+   on the right in as many columns as fit; only that side scrolls, never the page. ── */
+#screen-settings { place-items: stretch; overflow: hidden;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+#screen-settings .settings { width: min(1100px, 100%); height: 100%; min-height: 0; margin: 0 auto; display: grid; grid-template-columns: clamp(170px, 24vw, 250px) minmax(0, 1fr); gap: clamp(14px, 3vw, 36px); }
+.set-side { display: flex; flex-direction: column; min-height: 0; padding-top: clamp(4px, 2vh, 20px); }
+.set-side h2 { font-size: clamp(24px, 3.6vw, 34px); margin: 0 0 clamp(8px, 2.4vh, 20px); color: var(--ink); }
+.set-tabs { display: flex; flex-direction: column; gap: 4px; }
+.set-tabs button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; border: 0; border-left: 3px solid transparent; border-radius: 4px 10px 10px 4px; background: transparent; color: var(--ink-soft); font: 600 15px Inter, sans-serif; text-align: left; cursor: pointer; }
+.set-tabs .dab { flex: none; width: 12px; height: 12px; border-radius: 50% 40% 55% 45%; background: var(--tab); box-shadow: 0 0 0 1px rgba(58, 44, 32, .45); }
+.set-tabs button.sel { color: var(--ink); border-left-color: var(--ink); background: color-mix(in srgb, var(--tab, #8a7356) 22%, rgba(255, 250, 238, .5)); }
+@media (hover: hover) { .set-tabs button:not(.sel):hover { color: var(--ink); background: rgba(255, 250, 238, .4); } }
+.set-foot { margin-top: auto; padding-top: 12px; }
+.set-foot .hint { margin: 0 0 10px; font-size: 12px; color: var(--ink-soft); opacity: 1; }
+.set-foot button.primary, .set-foot button.ghost { padding: 11px; border-radius: 12px; font-size: 14px; }
+.set-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; padding: clamp(4px, 2vh, 20px) 6px 12px 0;
+  scrollbar-width: thin; scrollbar-color: rgba(58, 44, 32, .35) transparent; }
+.set-head { margin: 0 0 12px; font: 700 clamp(18px, 2.4vw, 24px) Cinzel, serif; letter-spacing: .04em; color: var(--ink);
+  padding-bottom: 6px; border-bottom: 1.5px solid color-mix(in srgb, var(--tab, #3a2c20) 55%, rgba(58, 44, 32, .5)); }
+.set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 10px; align-items: start; }
+#set-general:not(.hidden), #set-list { display: contents; }
+#screen-settings .setting { margin: 0; min-height: 100%; padding: 10px 12px; color: var(--ink); background: rgba(255, 250, 238, .5); border: 1px solid var(--ink-line); border-radius: 8px 11px 9px 12px; }
+#screen-settings .setting .txt small { color: var(--ink); opacity: .66; }
+#screen-settings .switch { background: rgba(58, 44, 32, .22); }
+#screen-settings .switch i { background: #fffaf0; box-shadow: 0 1px 2px rgba(58, 44, 32, .35); }
+#screen-settings .switch[aria-checked=true] { background: var(--ink); }
+#screen-settings .setting .ctl b { min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; color: var(--ink); }
+#screen-settings .setting .ctl .step { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid rgba(58, 44, 32, .55); background: rgba(255, 250, 238, .6); color: var(--ink); font: 700 20px Inter, sans-serif; line-height: 1; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+#screen-settings .setting .ctl .step:active { background: var(--ink); color: #f6eedb; }
+#screen-settings .seg { background: rgba(58, 44, 32, .08); padding: 3px; }
+#screen-settings .seg button { color: var(--ink); padding: 7px 14px; }
+#screen-settings .seg button.sel { background: var(--ink); color: #f6eedb; }
+/* phones held sideways: tighter everywhere so the left column fits without scrolling */
+@media (max-height: 500px) {
+  .set-side h2 { font-size: 22px; margin-bottom: 6px; }
+  .set-tabs { gap: 2px; }
+  .set-tabs button { padding: 6px 10px; font-size: 14px; }
+  .set-foot .hint { font-size: 11px; margin-bottom: 6px; }
+  .set-foot button.primary, .set-foot button.ghost { padding: 8px; font-size: 13px; }
+  .set-foot button.ghost { margin-top: 6px; }
+  .set-head { font-size: 17px; margin-bottom: 8px; }
+  #screen-settings .setting { padding: 8px 10px; font-size: 13px; }
+  #screen-settings .setting .ctl .step { width: 32px; height: 32px; }
+  #screen-settings .setting .ctl b { min-width: 56px; }
+}
 
 /* the map tool's glow when it first appears */
 @keyframes mapfresh { 0% { box-shadow: 0 0 0 0 rgba(255, 196, 107, .8); } 100% { box-shadow: 0 0 0 14px rgba(255, 196, 107, 0); } }
@@ -351,7 +408,7 @@ body.holding #toast { z-index: 5; top: calc(max(var(--held-m), env(safe-area-ins
 #briefing.hidden { display: none; }
 #briefing .brief-page { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: center; column-gap: clamp(14px, 3vw, 40px);
   padding: clamp(12px, 3vmin, 30px) clamp(14px, 3.4vmin, 36px); border-radius: 6px 10px 8px 12px; color: #3a2c20;
-  background: radial-gradient(ellipse at 30% 20%, rgba(255, 250, 238, .7), transparent 60%), radial-gradient(ellipse at 85% 85%, rgba(170, 120, 60, .12), transparent 50%), linear-gradient(160deg, #f2e7cf, #e6d6b4);
+  background: var(--paper-sheet);
   box-shadow: 0 18px 50px rgba(0, 0, 0, .5), inset 0 0 50px rgba(120, 86, 40, .24), inset 0 0 0 1px rgba(90, 60, 30, .25); }
 #briefing .brief-image { height: 100%; min-height: 0; overflow: hidden; display: grid; place-items: center; border-radius: 4px; }
 #briefing .brief-image svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 3px 6px rgba(80, 56, 28, .28)); transform: rotate(-.8deg); }

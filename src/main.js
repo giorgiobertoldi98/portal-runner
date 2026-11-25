@@ -18,7 +18,7 @@ import { gemIconURL } from './ui/gemIcon.js';
 import { MapView } from './ui/mapView.js';
 import { Briefing } from './ui/briefing.js';
 import { SettingsScreen } from './ui/settingsScreen.js';
-import { createMenuScene } from './ui/menuScene.js';
+import { menuIllustration } from './ui/menuArt.js';
 import { MENU_AUDIO } from './ui/menuAudio.js';
 import { load as loadSettings } from './settings.js';
 
@@ -85,15 +85,13 @@ class Game {
     document.addEventListener('visibilitychange', () => { if (document.hidden && this.state === 'playing') this.pause(); });
     this.renderer.setAnimationLoop(() => this.frame());
 
-    // every world lends its colour to the landing view (title, sky, portals)
+    // every world lends its colour to the landing view (title, illustration)
     WORLDS.forEach((def, i) => document.documentElement.style.setProperty(`--w${i}`, def.theme.css));
     document.documentElement.style.setProperty('--worlds', WORLDS.map((d) => d.theme.css).concat(WORLDS[0].theme.css).join(', '));
 
-    // build the landing view and the first world behind the loading screen, then show the menu
+    // draw the landing view and build the first world behind the loading screen, then show the menu
+    document.getElementById('menu-art').innerHTML = menuIllustration(WORLDS);
     setTimeout(() => {
-      this.menu = createMenuScene({ worlds: WORLDS, quality: QUALITY });
-      this.menu.update(0.016, 0, this.camera);
-      this.renderer.compile(this.menu.scene, this.camera);
       this.getWorld(0);
       this.showMenu();
     }, 50);
@@ -558,28 +556,12 @@ class Game {
 
   // ---------- Loop ----------
 
-  // the landing copy's right edge, as a fraction of the screen width, so the menu scene can frame the portals beside it.
-  // Re-measured a few times a second: fonts loading or the device's text size can change it after startup.
-  trackMenuCopy(t) {
-    if (t - (this._copyT || 0) < 0.25) return;
-    this._copyT = t;
-    const el = document.querySelector('#screen-menu .landing-copy');
-    if (!el || !el.offsetParent) return; // hidden (e.g. Settings is open): keep the last framing
-    this.menu.setCopyRect(el.getBoundingClientRect().right / innerWidth);
-  }
-
   frame() {
     const dt = Math.min(this.clock.getDelta(), 0.05);
     const t = performance.now() / 1000;
     // held upright (or a window taller than wide): the rotate notice covers the screen, so pause and draw nothing
     if (PORTRAIT.matches) { if (this.state === 'playing') this.pause(); return; }
-    if (this.state === 'menu' && this.menu) {
-      this.trackMenuCopy(t);
-      this.menu.update(dt, t, this.camera);
-      this.renderer.render(this.menu.scene, this.camera);
-      return;
-    }
-    if (this.menu && (this.camera.zoom !== 1 || (this.camera.view && this.camera.view.enabled))) this.menu.release(this.camera);
+    if (this.state === 'menu') return; // the menu and Settings are drawn pages that cover the canvas: nothing to render
     if (!this.world) return;
     if (this.state === 'playing' && this.heldItem()?.hold.pauses) { this.state = 'frozen'; this.clock.getDelta(); }
     if (this.state === 'playing') this.update(dt, t);

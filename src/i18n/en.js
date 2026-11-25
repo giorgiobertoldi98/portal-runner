@@ -18,7 +18,6 @@ export default {
   settings: {
     title: 'Settings',
     general: 'General',
-    worlds: 'Worlds',
     language: 'Language',
     footsteps: 'Footstep sounds',
     debug: 'Debug mode',

@@ -79,11 +79,11 @@
 </div>
 <div id="fade"></div>
 
-<div id="screen-loading" class="screen">
+<div id="screen-loading" class="screen paper">
   <div class="loader"><div class="spinner"></div><div data-i18n="loading"></div></div>
 </div>
 
-<div id="screen-menu" class="screen landing hidden">
+<div id="screen-menu" class="screen paper landing hidden">
   <div class="landing-copy">
     <h1 class="title" data-i18n="title"></h1>
     <p class="lead" data-i18n="menu.lead"></p>
@@ -101,22 +101,34 @@
       <div class="mob" data-i18n="menu.controlsTouch"></div>
     </div>
   </div>
+  <!-- the void between worlds, drawn in ink and wash (ui/menuArt.js) -->
+  <div class="landing-art" id="menu-art"></div>
 </div>
 
-<div id="screen-settings" class="screen hidden">
-  <div class="card settings">
-    <h2 data-i18n="settings.title"></h2>
-    <div class="seg tabs" id="set-tabs"><button data-t="general" data-i18n="settings.general"></button><button data-t="levels" data-i18n="settings.worlds"></button></div>
-    <div class="seg" id="set-levels"></div>
-    <div id="set-general">
-      <div class="setting"><span data-i18n="settings.footsteps"></span><button class="switch opt-steps" role="switch" aria-checked="true" data-i18n-aria="settings.footsteps"><i></i></button></div>
-      <div class="setting"><div class="txt"><span data-i18n="settings.debug"></span><small data-i18n="settings.debugHint"></small></div><button class="switch opt-debug" role="switch" aria-checked="false" data-i18n-aria="settings.debug"><i></i></button></div>
-      <div class="setting hidden" id="set-lang"><span data-i18n="settings.language"></span><div class="seg"></div></div>
-    </div>
-    <div id="set-list"></div>
-    <p class="hint" data-i18n="settings.applyNext"></p>
-    <button class="primary" id="set-done" data-i18n="settings.done"></button>
-    <button class="ghost" id="set-reset" data-i18n="settings.reset"></button>
+<!-- Settings: a page in the same drawn style as the menu. The tabs (General, then one per world) and the page's own
+     buttons stay on the left; the settings of the chosen tab fill the right and scroll there if they don't fit -->
+<div id="screen-settings" class="screen paper hidden">
+  <div class="settings">
+    <aside class="set-side">
+      <h2 data-i18n="settings.title"></h2>
+      <nav class="set-tabs" id="set-tabs"></nav>
+      <div class="set-foot">
+        <p class="hint" data-i18n="settings.applyNext"></p>
+        <button class="primary" id="set-done" data-i18n="settings.done"></button>
+        <button class="ghost" id="set-reset" data-i18n="settings.reset"></button>
+      </div>
+    </aside>
+    <section class="set-body" id="set-body">
+      <h3 class="set-head" id="set-head"></h3>
+      <div class="set-grid">
+        <div id="set-general">
+          <div class="setting"><span data-i18n="settings.footsteps"></span><button class="switch opt-steps" role="switch" aria-checked="true" data-i18n-aria="settings.footsteps"><i></i></button></div>
+          <div class="setting"><div class="txt"><span data-i18n="settings.debug"></span><small data-i18n="settings.debugHint"></small></div><button class="switch opt-debug" role="switch" aria-checked="false" data-i18n-aria="settings.debug"><i></i></button></div>
+          <div class="setting hidden" id="set-lang"><span data-i18n="settings.language"></span><div class="seg"></div></div>
+        </div>
+        <div id="set-list"></div>
+      </div>
+    </section>
   </div>
 </div>
 
