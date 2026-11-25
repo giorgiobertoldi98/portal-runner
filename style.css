@@ -280,7 +280,7 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 
 /* ── held items (the map, a note): held up almost full screen, inset by a thin border of world (--held-m),
    so their proportions follow the screen's. While one is open the HUD and both pads step aside and toasts sit on
-   the item's top edge. Only the item's own controls take the pointer (the corner button, the map's chart and turn pad). */
+   the item's top edge. Only the item's own controls take the pointer (the corner button, the map's chart and turn slider). */
 :root { --held-m: clamp(10px, 2.8vmin, 28px); }
 .held-item { position: absolute; z-index: 3; pointer-events: none;
   top: max(var(--held-m), env(safe-area-inset-top)); bottom: max(var(--held-m), env(safe-area-inset-bottom));
@@ -335,17 +335,17 @@ body.holding #toast { z-index: 5; top: calc(max(var(--held-m), env(safe-area-ins
 #map-view .map-turn { display: flex; flex-direction: column; align-items: center; gap: clamp(2px, .8vmin, 6px); color: #3a2a1c; }
 #map-view .map-turn-label { font: 700 clamp(15px, 2.6vmin, 20px)/1 Caveat, 'Segoe Print', cursive; color: #5a4632; }
 #map-view .map-turn svg { width: 1.1em; height: 1.1em; flex: none; }
-/* touch: a pad inked on the parchment; its wooden knob (the rods' wood) slides sideways and springs back */
-#map-view .map-pad { pointer-events: auto; touch-action: none; position: relative; width: clamp(76px, 22vmin, 116px); aspect-ratio: 1; border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 250, 238, .5), rgba(170, 120, 60, .16) 70%);
-  box-shadow: inset 0 0 0 1.5px rgba(70, 48, 28, .6), inset 0 0 0 5px rgba(246, 236, 214, .7), inset 0 0 0 6px rgba(70, 48, 28, .3), inset 0 2px 8px rgba(80, 56, 28, .2);
+/* touch: a slider groove inked on the parchment; its wooden knob (the rods' wood) slides sideways and springs back */
+#map-view .map-slider { pointer-events: auto; touch-action: none; position: relative; width: clamp(90px, 28vmin, 132px); height: clamp(34px, 9.5vmin, 46px); border-radius: 999px;
+  background: linear-gradient(rgba(70, 48, 28, .45), rgba(70, 48, 28, .45)) center / calc(100% - 2.4em) 1.5px no-repeat, linear-gradient(rgba(255, 250, 238, .5), rgba(170, 120, 60, .16));
+  box-shadow: inset 0 0 0 1.5px rgba(70, 48, 28, .6), inset 0 0 0 4px rgba(246, 236, 214, .7), inset 0 0 0 5px rgba(70, 48, 28, .3), inset 0 2px 6px rgba(80, 56, 28, .2);
   -webkit-tap-highlight-color: transparent; }
-#map-view .map-pad i { position: absolute; top: 50%; transform: translateY(-50%); font-size: clamp(16px, 4.4vmin, 22px); line-height: 0; color: #5a4632; opacity: .7; transition: opacity .15s, color .15s; }
-#map-view .map-pad .pad-l { left: 11%; } #map-view .map-pad .pad-r { right: 11%; }
-#map-view .map-pad.turn-l .pad-l, #map-view .map-pad.turn-r .pad-r { opacity: 1; color: #2a1c10; }
-#map-view .pad-knob { position: absolute; left: 50%; top: 50%; width: 36%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%); transition: transform .18s cubic-bezier(.3, 1.4, .5, 1);
+#map-view .map-slider i { position: absolute; top: 50%; transform: translateY(-50%); font-size: clamp(15px, 4vmin, 20px); line-height: 0; color: #5a4632; opacity: .7; transition: opacity .15s, color .15s; }
+#map-view .map-slider .slider-l { left: 9px; } #map-view .map-slider .slider-r { right: 9px; }
+#map-view .map-slider.turn-l .slider-l, #map-view .map-slider.turn-r .slider-r { opacity: 1; color: #2a1c10; }
+#map-view .slider-knob { position: absolute; left: 50%; top: 50%; height: 78%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%); transition: transform .18s cubic-bezier(.3, 1.4, .5, 1);
   background: radial-gradient(circle at 38% 32%, #e0ad72, #9a6534 55%, #5a3818); box-shadow: inset 0 0 0 1px rgba(30, 16, 6, .5), 0 2px 5px rgba(60, 40, 20, .35); }
-#map-view .map-pad.active .pad-knob { transition: none; }
+#map-view .map-slider.active .slider-knob { transition: none; }
 /* PC: the A / D keys, inked like little keycaps */
 #map-view .map-keys { display: flex; gap: 8px; }
 #map-view .map-keys .key { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border: 1.5px solid rgba(70, 48, 28, .6); border-bottom-width: 3px; border-radius: 6px; font: 700 clamp(12px, 2vmin, 15px)/1 Inter, sans-serif; color: #3a2a1c; background: rgba(255, 250, 238, .4); }

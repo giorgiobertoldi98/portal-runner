@@ -3,7 +3,7 @@
 //   their proportions follow the screen's; each one fills its own shape with its own background (the map sits on
 //   a scroll, the sketch on a note);
 // - while one is open the game's own controls are off: no pads, no walking, no camera (main.js → input.setHold);
-//   an item that needs gestures of its own (the map: zoom, pan, its turn pad) handles them on its own element;
+//   an item that needs gestures of its own (the map: zoom, pan, its turn slider) handles them on its own element;
 // - each says, in its `hold` settings, whether the game stops while it's open: { pauses };
 // - each has a close button in its top-right corner (heldControls).
 

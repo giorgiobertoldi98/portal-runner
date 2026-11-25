@@ -8,7 +8,7 @@
 // view gets a small pointer at the chart's edge.
 // Its gestures are its own and work only on the chart: pinch (touch) or the mouse wheel (PC) zoom around the fingers /
 // the cursor, a drag moves the chart, a double tap / double-click goes back to the whole map. Turning is on the right
-// page: a turn pad on touch (read by main.js with turnInput()), A / D on PC (read by main.js). The left page says how,
+// page: a turn slider on touch (read by main.js with turnInput()), A / D on PC (read by main.js). The left page says how,
 // in a few handwritten words, for the controls in use.
 // The world supplies what's drawn through `world.mapInfo`:
 //   { kind(x, z) -> 'lake' | 'rock' | 'ground', landmarks: [{ x, z, label }], trees: [{ x, z }], title }
@@ -47,7 +47,7 @@ const HOW = {
 const TURN_ARROW = (d) => `<svg viewBox="-12 -12 24 24" aria-hidden="true"><path d="${d > 0 ? 'M6 -5A7.5 7.5 0 1 0 7 3' : 'M-6 -5A7.5 7.5 0 1 1 -7 3'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`
   + `<path d="${d > 0 ? 'M2.6 -7.6 6.4 -4.6 2.4 -2.2' : 'M-2.6 -7.6 -6.4 -4.6 -2.4 -2.2'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const TURN = {
-  touch: `<div class="map-pad" aria-label="Turn"><i class="pad-l">${TURN_ARROW(-1)}</i><i class="pad-r">${TURN_ARROW(1)}</i><b class="pad-knob"></b></div>`,
+  touch: `<div class="map-slider" aria-label="Turn"><i class="slider-l">${TURN_ARROW(-1)}</i><i class="slider-r">${TURN_ARROW(1)}</i><b class="slider-knob"></b></div>`,
   pc: `<div class="map-keys"><span class="key">${TURN_ARROW(-1)}A</span><span class="key">D${TURN_ARROW(1)}</span></div>`,
 };
 
@@ -91,8 +91,8 @@ export class MapView {
     addEventListener('resize', () => { if (this.open) this.layout(); });
     this.bindChart(this.el.querySelector('.map-chart'));
     this.turn = 0;
-    const pad = this.el.querySelector('.map-pad');
-    if (pad) this.bindPad(pad);
+    const slider = this.el.querySelector('.map-slider');
+    if (slider) this.bindSlider(slider);
   }
 
   // the chart's own gestures: a drag moves it, two fingers pinch, the wheel zooms, a double tap / click resets
@@ -160,19 +160,19 @@ export class MapView {
   }
   resetZoom() { this.anchor = null; this.zoom.target = 1; }
 
-  // the turn pad (touch): hold the knob to one side to keep turning, faster the further out; it springs back
-  bindPad(pad) {
-    const knob = pad.querySelector('.pad-knob');
+  // the turn slider (touch): hold the knob to one side to keep turning, faster the further out; it springs back
+  bindSlider(pad) {
+    const knob = pad.querySelector('.slider-knob');
     let id = null;
     const set = (e) => {
-      const r = pad.getBoundingClientRect(), R = r.width * 0.32;
+      const r = pad.getBoundingClientRect(), R = Math.max(1, (r.width - knob.offsetWidth) / 2 - 3);
       const x = Math.max(-R, Math.min(R, e.clientX - (r.left + r.width / 2)));
       knob.style.transform = `translate(calc(-50% + ${x}px), -50%)`;
       const f = x / R;
       this.turn = Math.sign(f) * Math.pow(Math.abs(f), 1.5);   // fine aim near the middle
       pad.classList.toggle('turn-l', f < -0.15); pad.classList.toggle('turn-r', f > 0.15);
     };
-    const end = (e) => { if (e.pointerId !== id) return; id = null; this.releasePad(); };
+    const end = (e) => { if (e.pointerId !== id) return; id = null; this.releaseSlider(); };
     pad.addEventListener('pointerdown', (e) => {
       e.preventDefault(); e.stopPropagation();
       if (id !== null) return;
@@ -181,19 +181,19 @@ export class MapView {
     pad.addEventListener('pointermove', (e) => { if (e.pointerId === id) set(e); });
     pad.addEventListener('pointerup', end);
     pad.addEventListener('pointercancel', end);
-    this.releasePad = () => {
+    this.releaseSlider = () => {
       id = null; this.turn = 0; knob.style.transform = '';
       pad.classList.remove('active', 'turn-l', 'turn-r');
     };
   }
-  // -1 (left) … 1 (right) from the turn pad, 0 when it's let go
+  // -1 (left) … 1 (right) from the turn slider, 0 when it's let go
   turnInput() { return this.open ? this.turn : 0; }
 
   show(on) {
     this.open = on;
     this.el.classList.toggle('show', on);
     if (on) { this.layout(); this.lastT = null; this.recentre = true; this.anchor = null; }
-    else { this.releasePad?.(); this.chartPtrs?.clear(); this.el.querySelector('.map-chart').classList.remove('dragging'); }
+    else { this.releaseSlider?.(); this.chartPtrs?.clear(); this.el.querySelector('.map-chart').classList.remove('dragging'); }
   }
 
   // fit the square chart into the scroll: as tall as the sheet allows, keeping room beside it for the legend and compass
