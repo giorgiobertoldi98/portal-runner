@@ -17,7 +17,6 @@ export default {
     title: 'Settings',
     general: 'General',
     language: 'Language',
-    footsteps: 'Footstep sounds',
     debug: 'Debug mode',
     debugHint: 'Start every world already holding all its items (the note, the map).',
     applyNext: 'Changes apply from the next run.',
