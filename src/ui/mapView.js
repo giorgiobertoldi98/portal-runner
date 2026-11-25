@@ -6,8 +6,8 @@
 // gem lying on the ground. Gems lying close together (e.g. the ones you lose when caught) share one diamond with a
 // count, so a pile never reads as a single gem. It opens centred on you (stopping at the map's edge); anything out of
 // view gets a small pointer at the chart's edge.
-// Its gestures are its own and work only on the chart: pinch (touch) or the mouse wheel (PC) zoom around the fingers /
-// the cursor, a drag moves the chart, a double tap / double-click goes back to the whole map. Turning is on the right
+// Its gestures are its own: pinch (touch) or the mouse wheel (PC) zoom, anywhere on screen; a drag on the chart moves
+// it; a double tap / double-click on it goes back to the whole map. Turning is on the right
 // page: a turn pad on touch (read by main.js with turnInput()), A / D on PC (read by main.js). The left page says how,
 // in a few handwritten words, for the controls in use.
 // The world supplies what's drawn through `world.mapInfo`:
@@ -95,37 +95,41 @@ export class MapView {
     if (pad) this.bindPad(pad);
   }
 
-  // the chart's own gestures: a drag moves it, two fingers pinch, the wheel zooms, a double tap / click resets
+  // the map's own gestures. Zooming works anywhere on screen: two fingers pinch, the wheel zooms, around the fingers /
+  // the cursor when they're over the chart, else around its middle. Moving the chart (a drag) and going back to the
+  // whole map (a double tap / click) start on the chart. Touches on the turn pad and close button never reach here.
   bindChart(el) {
     const ptrs = new Map();
     let pinch = null, lastTap = null;
     const at = (e) => { const r = el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    const onChart = (p) => p.x >= 0 && p.y >= 0 && p.x <= this.cs && p.y <= this.cs;
+    const focus = (p) => (onChart(p) ? p : { x: this.cs / 2, y: this.cs / 2 });
     const k = () => this.cs / (2 * this.view.half);
     const toWorld = (p) => ({ x: this.view.cx + (p.x - this.cs / 2) / k(), z: this.view.cz + (p.y - this.cs / 2) / k() });
     const mid = () => { const [a, b] = [...ptrs.values()]; return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)) }; };
-    const startPinch = () => { const m = mid(); pinch = { d: m.d, z: this.zoom.v, w: toWorld(m) }; };
-    el.addEventListener('pointerdown', (e) => {
+    // the point zoomed around stays where it is on screen (between the fingers while they also move)
+    const startPinch = () => { const m = mid(), f = focus(m); pinch = { d: m.d, z: this.zoom.v, w: toWorld(f), f, m }; };
+    addEventListener('pointerdown', (e) => {
       if (!this.open || !this.view) return;
-      e.preventDefault(); e.stopPropagation();
-      try { el.setPointerCapture(e.pointerId); } catch (_) { /* not a live pointer */ }
-      const p = at(e);
-      ptrs.set(e.pointerId, { ...p, x0: p.x, y0: p.y, t0: performance.now() });
+      const p = at(e), chart = el.contains(e.target);
+      if (chart) e.preventDefault();
+      ptrs.set(e.pointerId, { ...p, x0: p.x, y0: p.y, t0: performance.now(), chart });
       this.anchor = null;
       if (ptrs.size === 2) startPinch();
-      el.classList.add('dragging');
+      if (ptrs.size === 1 && chart) el.classList.add('dragging');
     });
-    el.addEventListener('pointermove', (e) => {
+    addEventListener('pointermove', (e) => {
       const q = ptrs.get(e.pointerId);
       if (!q || !this.view) return;
       const p = at(e), dx = p.x - q.x, dy = p.y - q.y;
       q.x = p.x; q.y = p.y;
       if (ptrs.size >= 2 && pinch) {
-        // the point between the fingers stays under them while they spread or move
         const m = mid();
         this.zoom.set(pinch.z * m.d / pinch.d);
         const kk = this.cs * this.zoom.v / (2 * this.view.S);
-        this.c = { x: pinch.w.x - (m.x - this.cs / 2) / kk, z: pinch.w.z - (m.y - this.cs / 2) / kk };
-      } else if (ptrs.size === 1) {
+        const sx = pinch.f.x + (m.x - pinch.m.x), sy = pinch.f.y + (m.y - pinch.m.y);
+        this.c = { x: pinch.w.x - (sx - this.cs / 2) / kk, z: pinch.w.z - (sy - this.cs / 2) / kk };
+      } else if (ptrs.size === 1 && q.chart) {
         this.c = { x: this.c.x - dx / k(), z: this.c.z - dy / k() };
       }
     });
@@ -136,23 +140,22 @@ export class MapView {
       pinch = null;
       if (ptrs.size === 2) startPinch();
       if (!ptrs.size) el.classList.remove('dragging');
-      // a quick touch that didn't move is a tap; two in a row reset the zoom (a mouse uses dblclick)
-      if (e.type !== 'pointerup' || e.pointerType === 'mouse') return;
+      // a quick touch on the chart that didn't move is a tap; two in a row reset the zoom (a mouse uses dblclick)
+      if (e.type !== 'pointerup' || e.pointerType === 'mouse' || !q.chart) return;
       const tap = performance.now() - q.t0 < 250 && Math.hypot(q.x - q.x0, q.y - q.y0) < 10;
       if (!tap) { lastTap = null; return; }
       const now = performance.now();
       if (lastTap && now - lastTap.t < TAP.ms && Math.hypot(q.x - lastTap.x, q.y - lastTap.y) < TAP.px) { this.resetZoom(); lastTap = null; }
       else lastTap = { t: now, x: q.x, y: q.y };
     };
-    el.addEventListener('pointerup', up);
-    el.addEventListener('pointercancel', up);
+    addEventListener('pointerup', up);
+    addEventListener('pointercancel', up);
     el.addEventListener('dblclick', (e) => { e.preventDefault(); this.resetZoom(); });
-    // the wheel zooms around the cursor, and only over the chart
-    el.addEventListener('wheel', (e) => {
+    addEventListener('wheel', (e) => {
       if (!this.open || !this.view) return;
-      e.preventDefault(); e.stopPropagation();
+      e.preventDefault();
       const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
-      const p = at(e), w = toWorld(p);
+      const p = focus(at(e)), w = toWorld(p);
       this.anchor = { wx: w.x, wz: w.z, sx: p.x, sy: p.y };
       this.zoom.by(Math.exp(-Math.max(-300, Math.min(300, dy)) * 0.0018));
     }, { passive: false });
