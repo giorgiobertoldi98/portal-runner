@@ -358,6 +358,7 @@ class Game {
     this.catches = 0;
     this.level = 0;
     this.callTaught = false;
+    this.toldSlowed = false;  // "this gem is slowing me down": once per run, in the first world
     this.hud.setLives(this.lives, GAME.lives);
     this.hud.showScreen(null);
     this.input.enabled = true;
@@ -374,7 +375,6 @@ class Game {
       if (this.world && this.world !== w) { this.world.monster.active = false; this.world.mechanics?.reset(); }
       this.world = w;
       this.level = idx;
-      this.toldSlowed = false;  // "this gem is slowing me down" once per world
       this.setupLevel(w);
       w.scene.add(this.player.object);
       w.scene.add(this.resonance.group);
@@ -683,8 +683,9 @@ class Game {
       this.hud.setCall(this.resonance.charging, this.resonance.radius, this.resonance.radius / CALL.maxRadius, inRing, !!this.resonance.trailTarget);
     }
 
-    // gems on the ground: proximity glimmer and hum, pickup. Until you have a way to find gems (the call, or the
-    // world's map) they only glimmer from right next to them, and stay silent
+    // gems on the ground: proximity glimmer and hum, pickup. Rule for every world: until you hold a way to find gems
+    // (a gem-finding tool: the Resonance Call, or the Glacier's map) they stay silent and only glimmer from right
+    // next to them; the tool brings the hum and the wider glimmer
     const canFind = callOk || this.hasMap();
     const humR = canFind ? GEMS.humRadius : GEMS.humRadiusBlind;
     let near = 0;
@@ -702,7 +703,7 @@ class Game {
         this.player.setCarried(this.carried.length);
         this.audio.pickup();
         this.updateGemHud();
-        if (!this.toldSlowed) { this.toldSlowed = true; this.hud.toast(tr('toast.firstGem'), 3600); }
+        if (this.level === 0 && !this.toldSlowed) { this.toldSlowed = true; this.hud.toast(tr('toast.firstGem'), 3600); }
       }
       g.update(dt, t);
     }

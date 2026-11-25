@@ -26,6 +26,7 @@ General principles that guide every design decision. New ones are added here as 
 - Items you hold up to read are kept per world and picked from one place; adding a new kind of item never takes another item's place.
 - Anything you hold up to read (a map, a note, future documents) is a held item (see Held items).
 - The map's arrow always shows the explorer's heading, never the camera's.
+- Gems are heard only with a gem-finding tool: without one, in any world, they are silent and only glimmer when you're right next to them (see Gems).
 - Toasts are rare and terse; see Design principles and the list under Toasts.
 
 ## Screens and orientation
@@ -90,7 +91,7 @@ General principles that guide every design decision. New ones are added here as 
 ## Toasts
 Every toast in the game (see Design principles: anything that can be shown instead isn't a toast):
 - **"Let go of the stick to send a Resonance Call"** (touch) / **"Stand still to send a Resonance Call"** (PC): once per run, 3.8 s after the first world that allows the call opens (the Alien world in a full run). A world's own intro hint replaces it; a world where the call is silent (the Glacier) skips it.
-- **"This gem is slowing me down..."**: the first time you pick up a gem in each world.
+- **"This gem is slowing me down..."**: the first time you pick up a gem in the first world, once per run (not again after dropping it or being caught).
 - **"<Hunter> caught you — n lives left · m gems dropped"**: after a catch with lives left; the gems part only if you were carrying some (plus a world's own respawn note, if it has one).
 - **"Winds are changing…"** (Glacier): whenever the storm devices shift (taking the map; a gem going into the portal, at most once every 10 s, never the gem that opens it).
 - **"Snow storms... make the Yeti so hungry!"** (Glacier): the first storm each time the Glacier is set up.
@@ -137,7 +138,7 @@ Why these values:
 
 ## Gems
 - Dark gems are hidden. In most worlds they are found by **standing still** (the Resonance Call): a ring of light illuminates nearby gems, and a trail points toward the closest one. A world can silence the call: in the Glacier it never works, and the explorers' map shows the gems instead (see below).
-- **Proximity hum**: a gem on the ground hums and glimmers faintly as you come near, louder and brighter as you close in. It depends on whether you have a way to find gems in that world. With one (a world where the call works, or once you hold the explorers' map in the Glacier) it hums and glimmers from within 14 m. Without one (the Glacier before the map) it is silent and glimmers only within 4 m, barely beyond the 1.9 m pickup reach, so you can't find gems by wandering around; the glimmer only confirms a gem you're practically touching. In the Glacier the map is what makes gems audible.
+- **Proximity hum**, the same rule in every world: a gem only hums once you hold a gem-finding tool. Without one, a gem on the ground is silent and glimmers (turning its colour) only within 4 m, barely beyond the 1.9 m pickup reach, so you can't find gems by wandering around; the glimmer only confirms a gem you're practically touching. With one, it hums and glimmers from within 14 m, louder and brighter as you close in. The tools: the explorers' map in the Glacier, and the Resonance Call in the worlds where it works (for now the call counts as a tool you always hold there).
 - The first hint explaining how to send the call appears the first time the call is available in a run (see Toasts).
 - Gems can be carried, at the speed cost above. A carried gem can be dropped (Q, or the Drop gem tool) and picked up again. It is set down about 1 m behind you.
 - If the hunter catches you, the gems you were carrying drop around where you were caught, about 2.5 m apart. Every dropped gem lands on ground you can walk back to: never inside a prop, off the map, or past a height step of more than 1 m (into the ice hole, onto a cliff); if no spot nearby qualifies, it lands where you stood. Gems already in the portal stay there. Since there are no spares, a dropped gem must be fetched again. Dropped gems keep a faint glow.
@@ -170,7 +171,7 @@ Why these values:
 - Plain chase: always know where you are and head for you; in the portal safe zone they walk away from the portal. Custom behaviours to be designed.
 
 ## Glacier — the ice hole and the explorers' map
-- **The Resonance Call is silent in the Glacier**: standing still never sends a ring or a trail here. Nothing says so: you find out by standing still. Until you hold the map, gems only hum from within 4 m (see Gems), so the map is effectively the way to find them.
+- **The Resonance Call is silent in the Glacier**: standing still never sends a ring or a trail here. Nothing says so: you find out by standing still. Until you hold the map, gems are silent and only glimmer from within 4 m (see Gems), so the map is effectively the way to find them.
 - **The note**: a handwritten page lying in the snow a few steps from where you start (about 4.5 m ahead, a little to one side): a sheet of amber paper that stands out against the snow, floating about a metre up, bobbing and turning slowly, with a glow around it and no shadow. Within reach a glowing "Take the note" action appears; taking it makes the note your first item and holds it up straight away. No toast. After that it opens only by hand and, like the map, stays among your items for the whole world.
   - The page shows a quick hand-drawn sketch (ink and blue wash) of a ring of blue ice spikes standing in the snow, seen from almost ground level, with four spires a little above the rest, and mountains and pines behind; and one handwritten line: "Thought I saw ice spikes in a circle somewhere...". No title, no figure, nothing else.
   - It deliberately gives nothing away: no opening, no way in, no map, no hole: only what the spikes look like, never where they are or what they are.
