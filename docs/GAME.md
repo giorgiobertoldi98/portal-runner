@@ -69,6 +69,7 @@ General principles that guide every design decision. New ones are added here as 
 - Standing still (letting go of the joystick, or no movement key held) is what sends the Resonance Call in worlds that allow it.
 
 ## HUD and camera
+- **Pause and end screens** are paper cards in the menu's drawn style (ink on paper, an inked flourish under the title), held up over the dimmed world like the note. The end title is inked amber for a win and deep red for a loss. On a phone held sideways the card goes wide and short: the stats in one row, the buttons side by side.
 - The HUD, the arrival banner and the end screen name the world only (e.g. "The Frozen Peaks"). The end screen shows time, gems delivered and catches, plus the world you were caught in (on a loss) or the lives left (on a win).
 - **Top left**: one compact chip, the same design on every screen: the world name, then the gem icon (a snapshot of that world's own gem in its revealed colours, with a soft glow) with "0 / 3 in the portal" (the label always stays, so it is clear the count is gems already inserted). The gems you carry are counted only on Drop gem. The portal opening is shown by the chip's glowing border (no toast). Your lives (hearts) sit just right of the chip, outside it, aligned with its top.
 - **Top right**: sound and pause only (system buttons, not game tools).

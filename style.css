@@ -311,17 +311,53 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
   padding-bottom: 6px; border-bottom: 1.5px solid color-mix(in srgb, var(--tab, #3a2c20) 55%, rgba(58, 44, 32, .5)); }
 .set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 10px; align-items: start; }
 #set-general:not(.hidden), #set-list { display: contents; }
-#screen-settings .setting { margin: 0; min-height: 100%; padding: 10px 12px; color: var(--ink); background: rgba(255, 250, 238, .5); border: 1px solid var(--ink-line); border-radius: 8px 11px 9px 12px; }
-#screen-settings .setting .txt small { color: var(--ink); opacity: .66; }
-#screen-settings .switch { background: rgba(58, 44, 32, .22); }
-#screen-settings .switch i { background: #fffaf0; box-shadow: 0 1px 2px rgba(58, 44, 32, .35); }
-#screen-settings .switch[aria-checked=true] { background: var(--ink); }
+/* a setting row on paper (Settings, and the pause card's footsteps switch) */
+.paper .setting { padding: 10px 12px; color: var(--ink); background: rgba(255, 250, 238, .5); border: 1px solid var(--ink-line); border-radius: 8px 11px 9px 12px; }
+#screen-settings .setting { margin: 0; min-height: 100%; }
+.paper .setting .txt small { color: var(--ink); opacity: .66; }
+.paper .switch { background: rgba(58, 44, 32, .22); }
+.paper .switch i { background: #fffaf0; box-shadow: 0 1px 2px rgba(58, 44, 32, .35); }
+.paper .switch[aria-checked=true] { background: var(--ink); }
 #screen-settings .setting .ctl b { min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; color: var(--ink); }
 #screen-settings .setting .ctl .step { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid rgba(58, 44, 32, .55); background: rgba(255, 250, 238, .6); color: var(--ink); font: 700 20px Inter, sans-serif; line-height: 1; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
 #screen-settings .setting .ctl .step:active { background: var(--ink); color: #f6eedb; }
-#screen-settings .seg { background: rgba(58, 44, 32, .08); padding: 3px; }
-#screen-settings .seg button { color: var(--ink); padding: 7px 14px; }
-#screen-settings .seg button.sel { background: var(--ink); color: #f6eedb; }
+.paper .seg { background: rgba(58, 44, 32, .08); padding: 3px; }
+.paper .seg button { color: var(--ink); padding: 7px 14px; }
+.paper .seg button.sel { background: var(--ink); color: #f6eedb; }
+/* ── Pause and End: a paper card held up over the dimmed world, like the note ── */
+#screen-pause, #screen-end { background: radial-gradient(ellipse at center, rgba(20, 14, 8, .3), rgba(20, 14, 8, .72)); }
+.card.paper { color: var(--ink); background: var(--paper-grain), var(--paper-sheet); border: 0; border-radius: 6px 10px 8px 12px; backdrop-filter: none; -webkit-backdrop-filter: none;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .5), inset 0 0 40px rgba(120, 86, 40, .24), inset 0 0 0 1px rgba(90, 60, 30, .25); transform: rotate(-.4deg); }
+.card.paper h2 { color: var(--ink); text-shadow: none; margin-bottom: 14px; }
+/* an inked flourish under the title */
+.card.paper h2::after { content: ''; display: block; width: 120px; height: 10px; margin: 6px auto 0; opacity: .55;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 10'%3E%3Cpath d='M4 6 Q30 1 58 5 T116 4' fill='none' stroke='%233a2c20' stroke-width='1.6' stroke-linecap='round'/%3E%3Ccircle cx='60' cy='5' r='2' fill='%233a2c20'/%3E%3C/svg%3E") center / contain no-repeat; }
+#screen-end.win .card.paper h2 { color: #8a5a12; text-shadow: none; }
+#screen-end:not(.win) .card.paper h2 { color: #8e2a2a; }
+.card.paper .lead { color: var(--ink); opacity: .85; }
+.card.paper .setting { margin-bottom: 14px; }
+.card.paper .stats div { background: rgba(255, 250, 238, .5); border: 1px solid var(--ink-line); border-radius: 8px 11px 9px 12px; }
+.card.paper .stats span { color: var(--ink); opacity: .65; }
+.card.paper .stats b { font: 700 20px Cinzel, serif; color: var(--ink); }
+@media (max-height: 500px) {
+  #screen-pause, #screen-end { padding-block: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-bottom)); }
+  .card.paper { padding: 16px 20px 14px; }
+  .card.paper h2 { font-size: 24px; margin-bottom: 8px; }
+  .card.paper .lead { margin-bottom: 10px; font-size: 13.5px; }
+  .card.paper .stats { margin-bottom: 10px; gap: 6px; }
+  .card.paper .stats div { padding: 6px 8px; }
+  .card.paper .stats b { font-size: 17px; }
+  .card.paper button.primary, .card.paper button.ghost { padding: 10px; }
+  /* landscape phones: wider and shorter, the stats in one row and the two buttons side by side */
+  .card.small.paper { width: min(600px, 100%); display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; }
+  .card.paper > :not(button) { grid-column: 1 / -1; }
+  #screen-pause .card.small.paper { width: min(460px, 100%); }
+  .card.paper > button.ghost { margin-top: 0; }
+  .card.paper .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .card.paper .stats b { font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) { .card.paper { transform: none; } }
+
 /* phones held sideways: tighter everywhere so the left column fits without scrolling */
 @media (max-height: 500px) {
   .set-side h2 { font-size: 22px; margin-bottom: 6px; }
