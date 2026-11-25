@@ -135,7 +135,6 @@ body.touch .icon-btn { width: 40px; height: 40px; }
 
 /* screens */
 .screen { position: fixed; inset: 0; display: grid; place-items: center; padding: 20px; z-index: 10; background: radial-gradient(ellipse at center, rgba(5, 6, 12, .25), rgba(5, 6, 12, .75)); overflow-y: auto; }
-#screen-loading { background: #05060c; }
 .loader { display: flex; flex-direction: column; align-items: center; gap: 14px; font-family: Cinzel, serif; letter-spacing: .1em; opacity: .85; }
 .spinner { width: 42px; height: 42px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .15); border-top-color: var(--accent); animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -158,8 +157,6 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 button.primary, button.ghost { display: block; width: 100%; border-radius: 14px; padding: 14px; font: 700 15px Inter, sans-serif; cursor: pointer; letter-spacing: .02em; }
 button.primary { border: 0; background: var(--accent); color: #0a0c18; box-shadow: 0 0 26px color-mix(in srgb, var(--accent) 55%, transparent); }
 button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1px solid var(--line); }
-.controls { margin-top: 16px; font-size: 12px; opacity: .65; text-align: center; line-height: 1.5; }
-.controls .mob { display: none; } body.touch .controls .mob { display: block; } body.touch .controls .desk { display: none; }
 .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
 .stats div { background: rgba(255, 255, 255, .06); border-radius: 12px; padding: 10px; }
 .stats span { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .12em; opacity: .6; }
@@ -217,67 +214,173 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 #call-chip .bar { width: 70px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.15); overflow: hidden; }
 #call-chip .bar i { display: block; height: 100%; width: 0; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 
-/* settings screen */
-.card.settings { width: min(520px, 100%); }
-.card.settings h2 { margin: 0 0 14px; }
-.seg.tabs { grid-template-columns: 1fr 1fr; margin-bottom: 10px; }
-#set-lang .seg { padding: 3px; } #set-lang .seg button { padding: 7px 14px; }
-#set-levels { margin-bottom: 12px; }
-#set-levels button { font-size: 13px; }
-.set-head { font: 700 12px Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 4px 2px 10px; }
 .setting.stepper { align-items: center; }
 .setting .txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .setting .txt small { font-weight: 500; font-size: 12px; opacity: .6; line-height: 1.35; }
 .setting .ctl { display: flex; align-items: center; gap: 6px; flex: none; }
-.setting .ctl b { min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; color: var(--accent); }
-.setting .ctl .step { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.08); color: #fff; font: 700 20px Inter, sans-serif; line-height: 1; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
-.setting .ctl .step:active { background: var(--accent); color: #0a0c18; }
-.card.settings .hint { text-align: center; margin: 4px 0 12px; }
 
-/* ── landing view: the 3D void between worlds fills the screen; the words sit low and to the left ── */
+/* ── drawn surfaces. Held items (the note, the map) are dark ink on warm paper (--ink, --paper-sheet). Screens
+   (loading, menu, Settings, pause, end, the rotate notice) are the same drawing done at dusk: pale ink on a deep violet
+   sheet (the --page-* tokens). Every page surface redefines --ink and friends to its own (.page-ink below), so the
+   shared inked controls and anything mixed from var(--ink) follow either palette. ── */
+:root {
+  --ink: #3a2c20; --ink-soft: rgba(58, 44, 32, .68); --ink-line: rgba(90, 60, 30, .26);
+  --paper-sheet: radial-gradient(ellipse at 30% 20%, rgba(255, 250, 238, .7), transparent 60%), radial-gradient(ellipse at 85% 85%, rgba(170, 120, 60, .12), transparent 50%), linear-gradient(160deg, #f2e7cf, #e6d6b4);
+  /* the screens' paper: its two tones (top-left → bottom-right; change these to make the screens lighter or darker),
+     the tone the menu drawing fades into and its ink (ui/menuArt.js reads both), the faint fill of rows, tiles and
+     ghost buttons, the shaded rim, and the colour of text on an inked button */
+  --page-1: #3d3753; --page-2: #262233; --page-base: #302b42; --page-ink: #ece2cb; --on-page-ink: #241f31;
+  --page-fill: rgba(255, 246, 226, .06); --page-fill-hi: rgba(255, 246, 226, .13); --page-rim: rgba(8, 6, 18, .5);
+  --page-sheet: radial-gradient(ellipse at 28% 18%, rgba(170, 150, 220, .16), transparent 60%), radial-gradient(ellipse at 85% 90%, rgba(255, 170, 90, .06), transparent 50%), linear-gradient(160deg, var(--page-1), var(--page-2));
+  --page-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .95 0 0 0 0 .85 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .25 0 0 0 0 .15 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* every page surface inks with the page palette */
+.screen.paper, .card.paper, #rotate { --ink: var(--page-ink); --ink-soft: color-mix(in srgb, var(--page-ink) 70%, transparent); --ink-line: color-mix(in srgb, var(--page-ink) 18%, transparent); --on-ink: var(--on-page-ink); }
+.screen.paper { color: var(--ink); background: var(--page-grain), var(--page-sheet); box-shadow: inset 0 0 clamp(60px, 14vmin, 140px) var(--page-rim); }
+.screen.paper .spinner { border-color: var(--ink-line); border-top-color: var(--ink); }
+.paper button.primary { border: 1.5px solid var(--ink); background: var(--ink); color: var(--on-ink); box-shadow: 0 3px 0 rgba(0, 0, 0, .3); }
+.paper button.primary:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, .3); }
+.paper button.ghost { background: var(--page-fill); color: var(--ink); border: 1.5px solid color-mix(in srgb, var(--ink) 50%, transparent); }
+.paper button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+@media (hover: hover) { .paper button.ghost:hover { background: var(--page-fill-hi); } .paper button.primary:hover { background: color-mix(in srgb, var(--ink) 85%, #fff); } }
+
+/* ── landing view: the words on the left, the drawn void between worlds on the right (ui/menuArt.js) ── */
 #screen-menu.landing {
-  place-items: center start;
-  padding: max(24px, env(safe-area-inset-top)) clamp(20px, 6vw, 88px) max(26px, env(safe-area-inset-bottom));
-  padding-left: max(clamp(20px, 6vw, 88px), env(safe-area-inset-left));
-  /* the words sit on the left over a dark wash; the portals are framed to their right */
-  background: linear-gradient(to right, rgba(6, 4, 18, .9) 0%, rgba(6, 4, 18, .55) 34%, rgba(6, 4, 18, 0) 58%);
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); place-items: center stretch; column-gap: clamp(8px, 3vw, 48px);
+  padding: max(24px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(26px, env(safe-area-inset-bottom)) max(clamp(20px, 6vw, 88px), env(safe-area-inset-left));
   overflow: hidden; /* the menu never scrolls: the short-screen rules make the copy fit */
 }
-.landing-copy { width: min(440px, 56vw); position: relative; isolation: isolate; } /* leaves the right side to the portals on narrow screens */
-.landing .lead, .landing .loop, .landing .controls { text-shadow: 0 1px 2px rgba(6, 4, 18, .9), 0 0 14px rgba(6, 4, 18, .85); }
+.landing-copy { width: min(440px, 50vw); position: relative; z-index: 1; }
+.landing-art { align-self: stretch; height: 100%; min-height: 0; position: relative; }
+.landing-art .menu-art { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .landing .title {
   font-size: clamp(44px, 13vw, 92px); line-height: .95; letter-spacing: .04em; margin: 0 0 14px;
-  background: linear-gradient(100deg, var(--worlds, #8fe8ff, #e07bff, #ffc35c, #8fe8ff));
+  /* the worlds' colours, mixed into the ink so they sit on the page like the rest of the drawing */
+  background: linear-gradient(100deg, color-mix(in srgb, var(--w0, #8fe8ff) 70%, var(--ink)), color-mix(in srgb, var(--w1, #e07bff) 70%, var(--ink)), color-mix(in srgb, var(--w2, #ffc35c) 75%, var(--ink)), color-mix(in srgb, var(--w0, #8fe8ff) 70%, var(--ink)));
   background-size: 300% 100%;
   -webkit-background-clip: text; background-clip: text; color: transparent;
-  text-shadow: none; filter: drop-shadow(0 2px 3px rgba(6, 4, 18, .9)) drop-shadow(0 0 18px rgba(190, 160, 255, .28));
+  text-shadow: none; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .35));
   animation: worlds-drift 18s linear infinite;
 }
 @keyframes worlds-drift { from { background-position: 0% 50%; } to { background-position: 300% 50%; } }
-.landing .lead { font-size: 15.5px; line-height: 1.55; margin: 0 0 16px; max-width: 38ch; color: #eee8ff; }
-.landing .loop { list-style: none; margin: 0 0 22px; padding: 0; display: grid; gap: 9px; font-size: 13.5px; line-height: 1.4; color: #ddd5f4; }
+/* the tagline, handwritten like a line in the explorer's journal */
+.landing .lead { font: 600 clamp(24px, 3vw, 32px)/1.15 Caveat, 'Segoe Print', cursive; margin: 0 0 18px; max-width: 28ch; color: var(--ink); }
+/* the loop: three plain steps, each marked in a world's colour */
+.landing .loop { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 8px; font-size: 14px; line-height: 1.35; color: var(--ink); opacity: .9; }
 .landing .loop li { display: flex; align-items: center; gap: 10px; }
 .landing .loop svg { flex: none; width: 18px; height: 18px; fill: currentColor; color: var(--w0, #8fe8ff); }
 .landing .loop li:nth-child(2) svg { color: var(--w1, #e07bff); }
 .landing .loop li:nth-child(3) svg { color: var(--w2, #ffc35c); }
 .landing .actions { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
-.landing .actions .ghost { margin-top: 0; padding-inline: 22px; background: rgba(255, 255, 255, .04); }
-.landing button.primary { background: #f1ecff; color: #120c26; box-shadow: 0 0 34px rgba(200, 180, 255, .35); }
-.landing button:focus-visible { outline: 2px solid #f1ecff; outline-offset: 3px; }
-.landing .controls { text-align: left; margin-top: 14px; }
+.landing .actions .ghost { margin-top: 0; padding-inline: 22px; }
+/* the drawing's motion: islands bob, portals swirl, gems drift and now and then glint, stars twinkle */
+.menu-art .bob { animation: art-bob 6s ease-in-out infinite; }
+.menu-art .swirl { transform-origin: 0 0; animation: art-spin 18s linear infinite; }
+.menu-art .drift { animation: art-drift 7s ease-in-out infinite; }
+.menu-art .glint { transform-origin: 0 0; transform: scale(0); animation: art-glint 9s ease-in-out infinite; }
+.menu-art .twinkle { animation: art-twinkle 5s ease-in-out infinite; }
+@keyframes art-bob { 50% { transform: translateY(-6px); } }
+@keyframes art-spin { to { transform: rotate(360deg); } }
+@keyframes art-drift { 0%, 100% { transform: translate(0, 0) rotate(-4deg); } 50% { transform: translate(3px, -8px) rotate(5deg); } }
+@keyframes art-glint { 0%, 86%, 100% { transform: scale(0) rotate(0); } 91% { transform: scale(1) rotate(45deg); } }
+@keyframes art-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
 
 @media (max-height: 640px) {
-  .landing .loop { display: none; }
   .landing .title { font-size: clamp(36px, 10vw, 60px); }
+  .landing .loop { gap: 5px; margin-bottom: 18px; font-size: 13px; }
 }
 /* phones held sideways: very little height, so the title follows the height and the spacing tightens */
 @media (max-height: 480px) {
   #screen-menu.landing { padding-block: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-bottom)); }
   .landing .title { font-size: clamp(28px, 11vh, 60px); margin-bottom: 8px; }
-  .landing .lead { font-size: 14px; line-height: 1.45; margin-bottom: 12px; }
-  .landing .controls { margin-top: 10px; }
+  .landing .lead { font-size: 23px; margin-bottom: 16px; }
+  .landing .loop { display: none; } /* the tagline already says it; longer languages wouldn't fit both */
 }
-@media (prefers-reduced-motion: reduce) { .landing .title { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .landing .title, .menu-art * { animation: none !important; } }
+
+/* ── Settings: a landscape page. The tabs and the page's buttons in a column on the left, the chosen tab's settings
+   on the right in as many columns as fit; only that side scrolls, never the page. ── */
+#screen-settings { place-items: stretch; overflow: hidden;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+#screen-settings .settings { width: min(1100px, 100%); height: 100%; min-height: 0; margin: 0 auto; display: grid; grid-template-columns: clamp(170px, 24vw, 250px) minmax(0, 1fr); gap: clamp(14px, 3vw, 36px); }
+.set-side { display: flex; flex-direction: column; min-height: 0; padding-top: clamp(4px, 2vh, 20px); }
+.set-side h2 { font-size: clamp(24px, 3.6vw, 34px); margin: 0 0 clamp(8px, 2.4vh, 20px); color: var(--ink); }
+.set-tabs { display: flex; flex-direction: column; gap: 4px; }
+.set-tabs button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; border: 0; border-left: 3px solid transparent; border-radius: 4px 10px 10px 4px; background: transparent; color: var(--ink-soft); font: 600 15px Inter, sans-serif; text-align: left; cursor: pointer; }
+.set-tabs .dab { flex: none; width: 12px; height: 12px; border-radius: 50% 40% 55% 45%; background: var(--tab); box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 45%, transparent); }
+.set-tabs button.sel { color: var(--ink); border-left-color: var(--ink); background: color-mix(in srgb, var(--tab, #8a7356) 26%, var(--page-fill)); }
+@media (hover: hover) { .set-tabs button:not(.sel):hover { color: var(--ink); background: var(--page-fill); } }
+.set-foot { margin-top: auto; padding-top: 12px; }
+.set-foot .hint { margin: 0 0 10px; font-size: 12px; color: var(--ink-soft); opacity: 1; }
+.set-foot button.primary, .set-foot button.ghost { padding: 11px; border-radius: 12px; font-size: 14px; }
+.set-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; padding: clamp(4px, 2vh, 20px) 6px 12px 0;
+  scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--ink) 35%, transparent) transparent; }
+.set-head { margin: 0 0 12px; font: 700 clamp(18px, 2.4vw, 24px) Cinzel, serif; letter-spacing: .04em; color: var(--ink);
+  padding-bottom: 6px; border-bottom: 1.5px solid color-mix(in srgb, var(--tab, var(--ink)) 60%, transparent); }
+.set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 10px; align-items: start; }
+#set-general:not(.hidden), #set-list { display: contents; }
+/* a setting row on paper (Settings, and the pause card's footsteps switch) */
+.paper .setting { padding: 10px 12px; color: var(--ink); background: var(--page-fill); border: 1px solid var(--ink-line); border-radius: 8px 11px 9px 12px; }
+#screen-settings .setting { margin: 0; min-height: 100%; }
+.paper .setting .txt small { color: var(--ink); opacity: .66; }
+.paper .switch { background: color-mix(in srgb, var(--ink) 22%, transparent); }
+.paper .switch i { background: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .35); }
+.paper .switch[aria-checked=true] { background: var(--ink); }
+.paper .switch[aria-checked=true] i { background: var(--on-ink); }
+#screen-settings .setting .ctl b { min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; color: var(--ink); }
+#screen-settings .setting .ctl .step { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid color-mix(in srgb, var(--ink) 50%, transparent); background: var(--page-fill); color: var(--ink); font: 700 20px Inter, sans-serif; line-height: 1; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+#screen-settings .setting .ctl .step:active { background: var(--ink); color: var(--on-ink); }
+.paper .seg { background: var(--page-fill); padding: 3px; }
+.paper .seg button { color: var(--ink); padding: 7px 14px; }
+.paper .seg button.sel { background: var(--ink); color: var(--on-ink); }
+/* ── Pause and End: a paper card held up over the dimmed world, like the note ── */
+#screen-pause, #screen-end { background: radial-gradient(ellipse at center, rgba(12, 10, 22, .35), rgba(12, 10, 22, .75)); }
+.card.paper { color: var(--ink); background: var(--page-grain), var(--page-sheet); border: 0; border-radius: 6px 10px 8px 12px; backdrop-filter: none; -webkit-backdrop-filter: none;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .5), inset 0 0 40px var(--page-rim), inset 0 0 0 1px var(--ink-line); transform: rotate(-.4deg); }
+.card.paper h2 { color: var(--ink); text-shadow: none; margin-bottom: 14px; }
+/* an inked flourish under the title (a mask, so it takes the ink colour) */
+.card.paper h2::after { content: ''; display: block; width: 120px; height: 10px; margin: 6px auto 0; opacity: .55; background: var(--ink);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 10'%3E%3Cpath d='M4 6 Q30 1 58 5 T116 4' fill='none' stroke='%233a2c20' stroke-width='1.6' stroke-linecap='round'/%3E%3Ccircle cx='60' cy='5' r='2' fill='%233a2c20'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 10'%3E%3Cpath d='M4 6 Q30 1 58 5 T116 4' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'/%3E%3Ccircle cx='60' cy='5' r='2' fill='%23000'/%3E%3C/svg%3E") center / contain no-repeat; }
+#screen-end.win .card.paper h2 { color: #f2c66e; text-shadow: none; }
+#screen-end:not(.win) .card.paper h2 { color: #f08a80; }
+.card.paper .lead { color: var(--ink); opacity: .85; }
+.card.paper .setting { margin-bottom: 14px; }
+.card.paper .stats div { background: var(--page-fill); border: 1px solid var(--ink-line); border-radius: 8px 11px 9px 12px; }
+.card.paper .stats span { color: var(--ink); opacity: .65; }
+.card.paper .stats b { font: 700 20px Cinzel, serif; color: var(--ink); }
+@media (max-height: 500px) {
+  #screen-pause, #screen-end { padding-block: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-bottom)); }
+  .card.paper { padding: 16px 20px 14px; }
+  .card.paper h2 { font-size: 24px; margin-bottom: 8px; }
+  .card.paper .lead { margin-bottom: 10px; font-size: 13.5px; }
+  .card.paper .stats { margin-bottom: 10px; gap: 6px; }
+  .card.paper .stats div { padding: 6px 8px; }
+  .card.paper .stats b { font-size: 17px; }
+  .card.paper button.primary, .card.paper button.ghost { padding: 10px; }
+  /* landscape phones: wider and shorter, the stats in one row and the two buttons side by side */
+  .card.small.paper { width: min(600px, 100%); display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; }
+  .card.paper > :not(button) { grid-column: 1 / -1; }
+  #screen-pause .card.small.paper { width: min(460px, 100%); }
+  .card.paper > button.ghost { margin-top: 0; }
+  .card.paper .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .card.paper .stats b { font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) { .card.paper { transform: none; } }
+
+/* phones held sideways: tighter everywhere so the left column fits without scrolling */
+@media (max-height: 500px) {
+  .set-side h2 { font-size: 22px; margin-bottom: 6px; }
+  .set-tabs { gap: 2px; }
+  .set-tabs button { padding: 6px 10px; font-size: 14px; }
+  .set-foot .hint { font-size: 11px; margin-bottom: 6px; }
+  .set-foot button.primary, .set-foot button.ghost { padding: 8px; font-size: 13px; }
+  .set-foot button.ghost { margin-top: 6px; }
+  .set-head { font-size: 17px; margin-bottom: 8px; }
+  #screen-settings .setting { padding: 8px 10px; font-size: 13px; }
+  #screen-settings .setting .ctl .step { width: 32px; height: 32px; }
+  #screen-settings .setting .ctl b { min-width: 56px; }
+}
 
 /* the map tool's glow when it first appears */
 @keyframes mapfresh { 0% { box-shadow: 0 0 0 0 rgba(255, 196, 107, .8); } 100% { box-shadow: 0 0 0 14px rgba(255, 196, 107, 0); } }
@@ -351,7 +454,7 @@ body.holding #toast { z-index: 5; top: calc(max(var(--held-m), env(safe-area-ins
 #briefing.hidden { display: none; }
 #briefing .brief-page { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: center; column-gap: clamp(14px, 3vw, 40px);
   padding: clamp(12px, 3vmin, 30px) clamp(14px, 3.4vmin, 36px); border-radius: 6px 10px 8px 12px; color: #3a2c20;
-  background: radial-gradient(ellipse at 30% 20%, rgba(255, 250, 238, .7), transparent 60%), radial-gradient(ellipse at 85% 85%, rgba(170, 120, 60, .12), transparent 50%), linear-gradient(160deg, #f2e7cf, #e6d6b4);
+  background: var(--paper-sheet);
   box-shadow: 0 18px 50px rgba(0, 0, 0, .5), inset 0 0 50px rgba(120, 86, 40, .24), inset 0 0 0 1px rgba(90, 60, 30, .25); }
 #briefing .brief-image { height: 100%; min-height: 0; overflow: hidden; display: grid; place-items: center; border-radius: 4px; }
 #briefing .brief-image svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 3px 6px rgba(80, 56, 28, .28)); transform: rotate(-.8deg); }
@@ -363,13 +466,12 @@ body.holding #toast { z-index: 5; top: calc(max(var(--held-m), env(safe-area-ins
 
 /* landscape only: a screen taller than it is wide is covered by this notice (and a run in progress pauses) */
 #rotate { display: none; position: fixed; inset: 0; z-index: 100; place-items: center; padding: max(24px, env(safe-area-inset-top)) 28px max(24px, env(safe-area-inset-bottom)); text-align: center;
-  background: radial-gradient(ellipse at 50% 40%, #151030 0%, #05060c 70%); pointer-events: auto; touch-action: none; }
+  color: var(--ink); background: var(--page-grain), var(--page-sheet); box-shadow: inset 0 0 clamp(60px, 14vmin, 140px) var(--page-rim); pointer-events: auto; touch-action: none; }
 @media (orientation: portrait) { #rotate { display: grid; } }
 #rotate .rot-box { max-width: 340px; }
-#rotate .rot-phone { width: 76px; height: 76px; color: #e6defc; fill: #e6defc; filter: drop-shadow(0 0 14px rgba(200, 180, 255, .45)); animation: rot-turn 2.6s ease-in-out infinite; }
+#rotate .rot-phone { width: 76px; height: 76px; color: var(--ink); fill: var(--ink); animation: rot-turn 2.6s ease-in-out infinite; }
 @keyframes rot-turn { 0%, 20% { transform: rotate(0); } 50%, 75% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
-#rotate h2 { margin: 18px 0 8px; font-size: clamp(22px, 6.5vw, 28px); line-height: 1.15;
-  background: linear-gradient(100deg, var(--worlds, #8fe8ff, #e07bff, #ffc35c, #8fe8ff)); background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; }
-#rotate p { margin: 0; font-size: 15px; line-height: 1.5; color: #ddd5f4; }
+#rotate h2 { margin: 18px 0 8px; font-size: clamp(22px, 6.5vw, 28px); line-height: 1.15; color: var(--ink); }
+#rotate p { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink); opacity: .8; }
 #rotate .mob { display: none; } body.touch #rotate .mob { display: block; } body.touch #rotate .desk { display: none; }
 @media (prefers-reduced-motion: reduce) { #rotate .rot-phone { animation: none; transform: rotate(-90deg); } }

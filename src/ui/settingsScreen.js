@@ -1,4 +1,5 @@
-// Settings screen (from the main menu): General tab + Levels tab with one sub-tab per world.
+// Settings screen (from the main menu): one tab for the general settings, then one per world, side by side in a
+// column on the left; the chosen tab's settings fill the right.
 import { WORLDS } from '../worlds/registry.js';
 import { GENERAL, levelSettings, setValue, resetDefaults } from '../settings.js';
 import { tr, has, num, lang, LANGUAGES, setLanguage } from '../i18n/i18n.js';
@@ -11,19 +12,22 @@ const fmt = (s, v) => { const n = num(v, s.step < 1 ? 1 : 0); return s.unit ? tr
 
 export class SettingsScreen {
   constructor({ onBack, onSound }) {
-    this.tab = 'general';
-    this.level = 0;
+    this.tab = 'general'; // 'general' or a world's index
     this.onSound = onSound || (() => {});
     this.rows = [];
     this.tabs = $('set-tabs');
-    this.levels = $('set-levels');
+    this.body = $('set-body');
+    this.head = $('set-head');
     this.list = $('set-list');
     this.general = $('set-general');
-    this.levels.style.gridTemplateColumns = `repeat(${WORLDS.length}, 1fr)`;
-    this.levels.innerHTML = WORLDS.map((d, i) => `<button data-l="${i}">${tr(`${d.id}.tab`)}</button>`).join('');
+    // each world's tab carries a dab of its colour
+    this.tabs.innerHTML = `<button data-t="general">${tr('settings.general')}</button>`
+      + WORLDS.map((d, i) => `<button data-t="${i}" style="--tab:${d.theme.css}"><i class="dab"></i>${tr(`${d.id}.tab`)}</button>`).join('');
     this.bindLanguage();
-    this.tabs.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; this.onSound(); this.tab = b.dataset.t; this.render(); });
-    this.levels.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; this.onSound(); this.level = +b.dataset.l; this.render(); });
+    this.tabs.addEventListener('click', (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      this.onSound(); this.tab = b.dataset.t; this.body.scrollTop = 0; this.render();
+    });
     $('set-reset').addEventListener('click', () => { this.onSound(); resetDefaults(); this.refresh(); });
     $('set-done').addEventListener('click', () => { this.onSound(); onBack(); });
   }
@@ -42,13 +46,13 @@ export class SettingsScreen {
   }
 
   render() {
-    this.tabs.querySelectorAll('button').forEach((b) => b.classList.toggle('sel', b.dataset.t === this.tab));
-    this.levels.querySelectorAll('button').forEach((b) => b.classList.toggle('sel', +b.dataset.l === this.level));
-    this.general.classList.toggle('hidden', this.tab !== 'general');
-    this.levels.classList.toggle('hidden', this.tab !== 'levels');
-    const items = this.tab === 'general' ? GENERAL : levelSettings(this.level);
-    const head = this.tab === 'levels' ? `<div class="set-head">${tr(`${WORLDS[this.level].id}.name`)}</div>` : '';
-    this.list.innerHTML = head + items.map((s, i) => `
+    const general = this.tab === 'general';
+    this.tabs.querySelectorAll('button').forEach((b) => { const on = b.dataset.t === this.tab; b.classList.toggle('sel', on); b.setAttribute('aria-current', on); });
+    this.general.classList.toggle('hidden', !general);
+    this.head.textContent = general ? tr('settings.general') : tr(`${WORLDS[+this.tab].id}.name`);
+    this.head.style.setProperty('--tab', general ? '' : WORLDS[+this.tab].theme.css);
+    const items = general ? GENERAL : levelSettings(+this.tab);
+    this.list.innerHTML = items.map((s, i) => `
       <div class="setting stepper">
         <div class="txt"><span>${labelOf(s)}</span>${hasHint(s) ? `<small data-h="${i}">${hintOf(s)}</small>` : ''}</div>
         <div class="ctl">

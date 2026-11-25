@@ -4,21 +4,18 @@ export default {
   loading: 'Shaping worlds…',
 
   menu: {
-    lead: 'Every portal opens onto a world no one has mapped. Each hides dark gems, and something lives there that won\'t let you take them easily.',
+    lead: 'Explore worlds, hunt gems, jump into portals… but be careful on your way',
     loopLabel: 'How a world works',
     loop1: 'Hunt the dark gems hidden in every world.',
     loop2: 'Carry them to the portal. Each one slows you down.',
     loop3: 'Fill the portal and step through to the next world.',
     start: 'Begin the expedition',
     settings: 'Settings',
-    controlsPc: '<b>{key:wasd}</b> to move, <b>{key:shift}</b> to run, drag to look, <b>{key:q}</b> to drop a gem, <b>{key:space}</b> to take things, <b>wheel</b> to pick and <b>{key:space}</b> to read what you find, <b>{key:esc}</b> to pause',
-    controlsTouch: 'Left thumb moves (push to the edge to run), right thumb looks, the tool buttons above the right thumb drop a gem, take things and open what you find',
   },
 
   settings: {
     title: 'Settings',
     general: 'General',
-    worlds: 'Worlds',
     language: 'Language',
     footsteps: 'Footstep sounds',
     debug: 'Debug mode',

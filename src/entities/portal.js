@@ -67,6 +67,19 @@ function safeAlphaMap() {
   return safeAlpha;
 }
 
+// Where the sockets sit in their cluster (local to its centre): one gem alone in the middle, two side by side, three
+// or more evenly round a ring starting at the top. The ring grows with the count until it would crowd the arch, then
+// the gems shrink instead, so any quota fits.
+const SOCKET_SCALE = 2, SOCKET_GAP = 1.35;
+function clusterLayout(q, W) {
+  if (q <= 1) return { spots: [new THREE.Vector3()], r: 0, scale: SOCKET_SCALE };
+  if (q === 2) return { spots: [-1, 1].map((s) => new THREE.Vector3(s * SOCKET_GAP / 2, 0, 0)), r: 0, scale: SOCKET_SCALE };
+  const want = SOCKET_GAP / (2 * Math.sin(Math.PI / q)), maxR = W / 2 - 0.75;
+  const r = Math.min(want, maxR), scale = SOCKET_SCALE * Math.min(1, r / want);
+  const spots = Array.from({ length: q }, (_, i) => { const a = Math.PI / 2 - (i / q) * Math.PI * 2; return new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r, 0); });
+  return { spots, r, scale };
+}
+
 // heightAt (optional) = the world's ground height; when given, the portal draws its safe-zone ring on the ground.
 export function createPortal({ dest, gem = undefined, destIndex, x, y, z, beacon = true, heightAt = null }) {
   const W = PORTAL.width, H = PORTAL.height;
@@ -171,17 +184,19 @@ export function createPortal({ dest, gem = undefined, destIndex, x, y, z, beacon
     }
   }
 
-  // gem sockets along the inside of the arch
+  // gem sockets: one cluster floating in the middle of the opening, above head height, so the gems read as one group
+  // and you walk through beneath them. A faint ring of light threads them and brightens as they fill.
   const sockets = new THREE.Group();
-  sockets.position.z = 0.55;
+  sockets.position.set(0, H * 0.56, 0.55);
   group.add(sockets);
+  const threadMat = new THREE.MeshBasicMaterial({ color: th.glow, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+  let thread = null;
   // an empty socket is a hole in the shape of this world's gem: near-black, with a thin pale rim so it reads against
   // the frame whatever the portal's colour
   const holeMat = new THREE.MeshBasicMaterial({ color: 0x030306, side: THREE.DoubleSide });
   const rimMat = new THREE.MeshBasicMaterial({ color: 0x9a9aa8, side: THREE.BackSide, toneMapped: false });
-  const { pts: socketPath } = archPath(W, H, -0.45, 200);
   let socketMeshes = [];
-  let filled = 0, quota = 0;
+  let filled = 0, quota = 0, sockScale = 1;
   let open = 0; // 0 = dormant, animates to 1 when activated
   const hue = new THREE.Color();
 
@@ -195,22 +210,25 @@ export function createPortal({ dest, gem = undefined, destIndex, x, y, z, beacon
     // reset for a new attempt at this level
     setQuota(q) {
       for (const m of socketMeshes) sockets.remove(m, m.userData.hole);
+      if (thread) { sockets.remove(thread); thread.geometry.dispose(); thread = null; }
       socketMeshes = [];
       quota = q; filled = 0; open = 0;
       surface.visible = false;
       buildSafeRing(); // the radius may have changed in Settings
+      const { spots, r, scale } = clusterLayout(q, W);
+      sockScale = scale;
+      if (r > 0) { thread = new THREE.Mesh(new THREE.TorusGeometry(r, 0.035, 6, 64), threadMat); sockets.add(thread); }
       for (let i = 0; i < q; i++) {
-        const f = q === 1 ? 0.5 : 0.14 + (0.72 * i) / (q - 1);
-        const p = socketPath[Math.round(f * (socketPath.length - 1))];
+        const p = spots[i];
         const m = createMiniGem(gem); // this world's gem shape, in the socket
-        m.scale.setScalar(1.6);
+        m.scale.setScalar(scale);
         m.position.copy(p);
         m.visible = false;            // shown (spinning) once a gem is put in
         const hole = new THREE.Group();
         hole.position.copy(p);
         const cavity = new THREE.Mesh(m.geometry, holeMat), rim = new THREE.Mesh(m.geometry, rimMat);
-        cavity.scale.set(1.6, 1.6, 0.3);
-        rim.scale.set(1.9, 1.9, 0.2);
+        cavity.scale.set(scale, scale, scale * 0.2);
+        rim.scale.set(scale * 1.18, scale * 1.18, scale * 0.12);
         rim.position.z = -0.05;
         hole.add(rim, cavity);
         m.userData.hole = hole;
@@ -236,6 +254,8 @@ export function createPortal({ dest, gem = undefined, destIndex, x, y, z, beacon
       const fillK = quota ? filled / quota : 0;
       light.intensity = (10 + fillK * 15 + e * 25) + Math.sin(t * 3.1) * 4 * (0.3 + e);
       moteMat.opacity = 0.25 + fillK * 0.3 + e * 0.4;
+      threadMat.opacity = 0.14 + fillK * 0.3 + Math.sin(t * 2.2) * 0.04;
+      sockets.position.y = H * 0.56 + Math.sin(t * 1.1) * 0.08; // the cluster floats
       beamMat.uniforms.uOpacity.value = 0.3 + e * 0.35;
       if (safeRing) {
         safeMat.opacity = (0.28 + Math.sin(t * 1.6) * 0.06) * (1 - e); // gentle breathing; gone once the portal is open
@@ -243,7 +263,7 @@ export function createPortal({ dest, gem = undefined, destIndex, x, y, z, beacon
       }
       socketMeshes.forEach((m, i) => {
         m.rotation.y = t * 1.2 + i;
-        if (m.userData.pop) { m.userData.pop = Math.max(0, m.userData.pop - dt * 2); m.scale.setScalar(1.6 + m.userData.pop * 1.4); }
+        if (m.userData.pop) { m.userData.pop = Math.max(0, m.userData.pop - dt * 2); m.scale.setScalar(sockScale * (1 + m.userData.pop * 0.9)); }
       });
       for (let i = 0; i < MOTES; i++) {
         const s = (moteSeeds[i] + t * 0.05 * (0.5 + moteSeeds[i])) % 1;
