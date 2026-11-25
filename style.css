@@ -320,7 +320,7 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
   padding-bottom: 6px; border-bottom: 1.5px solid color-mix(in srgb, var(--tab, var(--ink)) 60%, transparent); }
 .set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 10px; align-items: start; }
 #set-general:not(.hidden), #set-list { display: contents; }
-/* a setting row on paper (Settings, and the pause card's footsteps switch) */
+/* a setting row on paper */
 .paper .setting { padding: 10px 12px; color: var(--ink); background: var(--page-fill); border: 1px solid var(--ink-line); border-radius: 8px 11px 9px 12px; }
 #screen-settings .setting { margin: 0; min-height: 100%; }
 .paper .setting .txt small { color: var(--ink); opacity: .66; }

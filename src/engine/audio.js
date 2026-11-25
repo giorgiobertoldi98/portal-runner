@@ -6,7 +6,6 @@ export class AudioEngine {
   constructor() {
     this.ctx = null;
     this.muted = false;
-    this.footstepsOn = true;
     this.footstepVolume = 0.35; // relative to each world's footstep gain
     this.ambient = null;
     this.sparkleTimer = 2;
@@ -248,7 +247,7 @@ export class AudioEngine {
   // ---------- Sound effects ----------
 
   footstep(p, intensity = 1) {
-    if (!this.ctx || !p || !this.footstepsOn) return;
+    if (!this.ctx || !p) return;
     const v = this.footstepVolume * intensity;
     this.noiseBurst({ type: p.filter || 'bandpass', freq: p.freq * (0.85 + Math.random() * 0.3), q: p.q ?? 1, dur: p.decay, gain: p.gain * v });
     if (p.blip) this.tone({ freq: p.blip * (0.9 + Math.random() * 0.2), type: 'sine', dur: p.decay * 1.2, gain: p.gain * 0.5 * v, glideTo: p.blip * 0.5 });

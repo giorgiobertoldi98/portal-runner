@@ -112,8 +112,7 @@ class Game {
     document.getElementById('btn-quit').addEventListener('click', toMenu);
     document.getElementById('btn-menu').addEventListener('click', toMenu);
     document.getElementById('btn-pause').addEventListener('click', (e) => { e.stopPropagation(); if (this.state === 'playing') this.pause(); else if (this.state === 'paused') this.resume(); });
-    // settings switches, remembered in this browser when storage is available: footstep sounds (on by default) and
-    // debug mode (off by default; read at each level start)
+    // settings switches, remembered in this browser when storage is available: debug mode (off by default; read at each level start)
     const bindSwitch = (cls, key, on, apply) => {
       try { const v = localStorage.getItem(key); if (v) on = v === 'on'; } catch (_) {}
       const btns = document.querySelectorAll(cls);
@@ -124,7 +123,6 @@ class Game {
       }));
       show();
     };
-    bindSwitch('.opt-steps', 'pr-footsteps', true, (on) => { this.audio.footstepsOn = on; });
     bindSwitch('.opt-debug', 'pr-debug', false, (on) => { this.debug = on; });
 
     // menu track: browsers only allow sound after a gesture, so it starts on the first touch, click or key at the menu
