@@ -70,10 +70,16 @@ export class HUD {
     this.el.itemName.textContent = sel ? this.itemBtns[sel].getAttribute('aria-label') : '';
     if (sel && sel !== prevSel) this.flashItemLabel();
   }
-  flashItemLabel() {
+  flashItemLabel(ms = 2600) {
     this.el.itemLabel.classList.add('show');
     clearTimeout(this.labelTimer);
-    this.labelTimer = setTimeout(() => this.el.itemLabel.classList.remove('show'), 2600);
+    this.labelTimer = setTimeout(() => this.el.itemLabel.classList.remove('show'), ms);
+  }
+  // an item met for the first time: its name above the bar for a few seconds and a short glow on its button
+  introduce(btn) {
+    this.el.itemName.textContent = btn.getAttribute('aria-label');
+    this.flashItemLabel(3600);
+    this.fresh(btn);
   }
   // a tool calling for attention until it's used (a new item that couldn't be held up the moment it was found):
   // a slow glow, and its name stays shown above the slot bar while it's selected

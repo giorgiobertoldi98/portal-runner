@@ -63,6 +63,7 @@ class Game {
       { id: 'map', btn: this.hud.el.mapBtn, has: () => this.hasMap(), isOpen: () => this.mapView.open, open: () => { if (!this.mapView.open) this.toggleMap(); } },
     ];
     this.items = [];     // ids, in the order found
+    this.unseen = new Set();   // items opened by themselves when found, not yet introduced in the HUD
     this.itemSel = 0;    // the selected one (PC: the wheel or 1-9 picks it, Space opens it)
     this.rig = new CameraRig(this.camera);
     this.shot = new FixedShot();   // small rooms' fixed camera shots
@@ -185,18 +186,20 @@ class Game {
 
   // keep the items in step with what the world says you have: a new one joins the end, gets selected and is held up
   // straight away, as if tapped (it glows until then, in case it can't open yet). Debug mode hands everything over at
-  // the start, quietly: no glow, nothing opens.
+  // the start, quietly: no glow, nothing opens, and the first item stays selected.
   syncItems() {
     const found = [];
     for (const d of this.ITEMS) {
       const i = this.items.indexOf(d.id), has = this.world ? d.has() : false;
       if (has && i < 0) {
-        this.items.push(d.id); this.itemSel = this.items.length - 1;
-        if (!this.debug) { this.hud.attention(d.btn, true); found.push(d.id); }
+        this.items.push(d.id);
+        if (!this.debug) { this.itemSel = this.items.length - 1; this.hud.attention(d.btn, true); found.push(d.id); }
       } else if (!has && i >= 0) { this.items.splice(i, 1); this.hud.attention(d.btn, false); }
     }
     this.itemSel = clamp(this.itemSel, 0, Math.max(0, this.items.length - 1));
     this.hud.setItems(this.items, this.items[this.itemSel] ?? null);
+    // held up at once, so its name and glow are kept for the moment it's first put away (syncHolding)
+    for (const id of found) this.unseen.add(id);
     if (found.length && this.state === 'playing') this.useItem(found[found.length - 1]);
   }
   selectItem(i) {
@@ -233,6 +236,12 @@ class Game {
     this.input.setHold(item ? { move, look, zoom: !!h.zoom } : null);
     if (item) { this.relock = this.input.locked || this.relock; this.input.releaseLock(); }
     else if (this.relock) { this.relock = false; if (!isTouch && (this.state === 'playing' || this.state === 'frozen')) this.input.requestLock(); }   // put it away and the mouse looks again, no extra click
+    // a new item opened by itself the moment you found it, so the HUD was away: it introduces itself (its name and a
+    // glow on its button) the first time it's put away
+    if (!item && this.unseen.size) {
+      for (const d of this.ITEMS) if (this.unseen.has(d.id) && this.items.includes(d.id)) this.hud.introduce(d.btn);
+      this.unseen.clear();
+    }
   }
 
   // the world's briefing card (the glacier: a note with a sketch), one of your items (see ITEMS)
@@ -386,7 +395,7 @@ class Game {
       this.audio.setAmbient(w.audio.ambient, w.audio.music);
       this.hud.setAccent(def.theme.css);
       for (const d of this.ITEMS) this.hud.attention(d.btn, false);
-      this.items = []; this.itemSel = 0;   // each world's items stay behind when you leave it
+      this.items = []; this.itemSel = 0; this.unseen.clear();   // each world's items stay behind when you leave it
       this.input.consumeWheel();
       this.syncItems();
       this.updateGemHud();
