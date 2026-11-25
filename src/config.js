@@ -90,6 +90,6 @@ export const GLACIER = {
   stormCooldown: 4,         // seconds after a storm ends before any device can trigger again
   stormFogNear: 1,          // fog inside a storm (outside: the world's normal fog)
   stormFogFar: 34,
-  caveMinDist: 110,         // the ice hole (with the explorers' map) never opens closer than this to the portal or the spawn point
+  caveMinDist: 180,         // the ice hole (with the explorers' map) never opens closer than this to the portal or the spawn point
 };
 
