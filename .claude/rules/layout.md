@@ -9,6 +9,7 @@ paths:
 
 How every screen is laid out so it works on a phone held sideways and on a PC. This spans the markup, the stylesheet and the UI modules, so it lives here rather than in one folder.
 
+- **Drawn look** (GAME.md, One drawn look): every screen or card outside the in-game HUD is a page surface (`.screen.paper`, `.card.paper`, `#rotate`) built from the tokens in `style.css`. Page surfaces redefine `--ink`, `--ink-soft`, `--ink-line` and `--on-ink` to the dusk palette (`--page-ink` on `--page-1` / `--page-2`, which set how light or dark the screens are), so anything coloured from `var(--ink)` (the shared `.paper …` controls, mixes via `color-mix`) works on both page and held-item paper. Never hard-code an ink or paper colour; mix from the tokens. `ui/menuArt.js` reads `--page-ink` and `--page-base`.
 - **Landscape only.** Portrait has no layouts: the rotate notice (`#rotate`, shown by an `orientation: portrait` media query) covers everything, and `main.js` pauses a run and draws nothing while it matches. That query is the only orientation rule; every other responsive rule is written by height and width.
 - **Responsive by screen height first.** Phones held sideways are short, not narrow: their rules use `max-height: 500px`. Reuse the breakpoints already in `style.css` before adding a new one.
 - **Relative and safe-area aware**: sizes in `clamp()`, `vmin` and the like rather than fixed assumptions; anything at an edge adds the matching `env(safe-area-inset-*)`.
