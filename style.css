@@ -157,8 +157,6 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 button.primary, button.ghost { display: block; width: 100%; border-radius: 14px; padding: 14px; font: 700 15px Inter, sans-serif; cursor: pointer; letter-spacing: .02em; }
 button.primary { border: 0; background: var(--accent); color: #0a0c18; box-shadow: 0 0 26px color-mix(in srgb, var(--accent) 55%, transparent); }
 button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1px solid var(--line); }
-.controls { margin-top: 16px; font-size: 12px; opacity: .65; text-align: center; line-height: 1.5; }
-body.touch .controls.desk { display: none; }
 .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
 .stats div { background: rgba(255, 255, 255, .06); border-radius: 12px; padding: 10px; }
 .stats span { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .12em; opacity: .6; }
@@ -265,7 +263,6 @@ body.touch .controls.desk { display: none; }
 .landing .loop li:nth-child(3) svg { color: color-mix(in srgb, var(--w2, #ffc35c) 60%, var(--ink)); }
 .landing .actions { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
 .landing .actions .ghost { margin-top: 0; padding-inline: 22px; }
-.landing .controls { text-align: left; margin-top: 16px; max-width: 46ch; color: var(--ink); opacity: .62; }
 /* the drawing's motion: islands bob, portals swirl, gems drift and now and then glint, stars twinkle */
 .menu-art .bob { animation: art-bob 6s ease-in-out infinite; }
 .menu-art .swirl { transform-origin: 0 0; animation: art-spin 18s linear infinite; }
@@ -288,7 +285,6 @@ body.touch .controls.desk { display: none; }
   .landing .title { font-size: clamp(28px, 11vh, 60px); margin-bottom: 8px; }
   .landing .lead { font-size: 23px; margin-bottom: 16px; }
   .landing .loop { display: none; } /* the tagline already says it; longer languages wouldn't fit both */
-  .landing .controls { margin-top: 10px; }
 }
 @media (prefers-reduced-motion: reduce) { .landing .title, .menu-art * { animation: none !important; } }
 

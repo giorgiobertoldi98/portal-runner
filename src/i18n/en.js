@@ -11,7 +11,6 @@ export default {
     loop3: 'Fill the portal and step through to the next world.',
     start: 'Begin the expedition',
     settings: 'Settings',
-    controlsPc: '<b>{key:wasd}</b> to move, <b>{key:shift}</b> to run, drag to look, <b>{key:q}</b> to drop a gem, <b>{key:space}</b> to take things, <b>wheel</b> to pick and <b>{key:space}</b> to read what you find, <b>{key:esc}</b> to pause',
   },
 
   settings: {
