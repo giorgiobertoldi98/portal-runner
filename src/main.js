@@ -306,7 +306,7 @@ class Game {
     const last = idx === WORLDS.length - 1;
     const dest = last ? def : WORLDS[idx + 1];
     const spot = w.portalSpots[0];
-    w.portal = createPortal({ dest, gem: def.gem, destIndex: last ? -1 : idx + 1, x: spot.x, y: w.heightAt(spot.x, spot.z), z: spot.z, label: tr(last ? 'portal.home' : `${dest.id}.name`), heightAt: w.heightAt });
+    w.portal = createPortal({ dest, gem: def.gem, destIndex: last ? -1 : idx + 1, x: spot.x, y: w.heightAt(spot.x, spot.z), z: spot.z, heightAt: w.heightAt });
     w.scene.add(w.portal.group);
     w.colliders.push(...w.portal.colliders);
     w.gems = [];
@@ -374,6 +374,7 @@ class Game {
       if (this.world && this.world !== w) { this.world.monster.active = false; this.world.mechanics?.reset(); }
       this.world = w;
       this.level = idx;
+      this.toldSlowed = false;  // "this gem is slowing me down" once per world
       this.setupLevel(w);
       w.scene.add(this.player.object);
       w.scene.add(this.resonance.group);
@@ -682,15 +683,16 @@ class Game {
       this.hud.setCall(this.resonance.charging, this.resonance.radius, this.resonance.radius / CALL.maxRadius, inRing, !!this.resonance.trailTarget);
     }
 
-    // gems on the ground: proximity hum, pickup. Until you have a way to find gems (the call, or the world's map)
-    // they only hum from right next to them
-    const humR = callOk || this.hasMap() ? GEMS.humRadius : GEMS.humRadiusBlind;
+    // gems on the ground: proximity glimmer and hum, pickup. Until you have a way to find gems (the call, or the
+    // world's map) they only glimmer from right next to them, and stay silent
+    const canFind = callOk || this.hasMap();
+    const humR = canFind ? GEMS.humRadius : GEMS.humRadiusBlind;
     let near = 0;
     for (const g of ground) {
       const gp = g.group.position;
       const gd = Math.hypot(gp.x - P.x, gp.z - P.z);
       g.near = clamp(1 - gd / humR, 0, 1);
-      near = Math.max(near, g.near);
+      if (canFind) near = Math.max(near, g.near);
       if (g.blockPickup && gd > GEMS.pickupRadius + 1.5) g.blockPickup = false;
       if (!g.blockPickup && gd < GEMS.pickupRadius && Math.abs(gp.y - P.y - 1) < 2.5) {
         g.state = 'carried';
@@ -700,7 +702,7 @@ class Game {
         this.player.setCarried(this.carried.length);
         this.audio.pickup();
         this.updateGemHud();
-        if (this.delivered === 0 && this.carried.length === 1 && this.level === 0) this.hud.toast(tr('toast.firstGem'), 3600);
+        if (!this.toldSlowed) { this.toldSlowed = true; this.hud.toast(tr('toast.firstGem'), 3600); }
       }
       g.update(dt, t);
     }

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { PORTAL } from '../config.js';
 import { archPath } from '../engine/shapes.js';
-import { labelTexture, flatMat } from '../engine/utils.js';
+import { flatMat } from '../engine/utils.js';
 import { createMiniGem } from './gem.js';
 
 const SURFACE_FRAG = /* glsl */`
@@ -68,7 +68,7 @@ function safeAlphaMap() {
 }
 
 // heightAt (optional) = the world's ground height; when given, the portal draws its safe-zone ring on the ground.
-export function createPortal({ dest, gem = undefined, destIndex, x, y, z, label: labelText, showLabel = true, beacon = true, heightAt = null }) {
+export function createPortal({ dest, gem = undefined, destIndex, x, y, z, beacon = true, heightAt = null }) {
   const W = PORTAL.width, H = PORTAL.height;
   const th = dest.theme;
   const group = new THREE.Group();
@@ -114,14 +114,6 @@ export function createPortal({ dest, gem = undefined, destIndex, x, y, z, label:
   const beam = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 2.4, 260, 20, 1, true), beamMat);
   beam.position.y = H + 132;
   if (beacon) group.add(beam);
-
-  // destination label (the caller passes it in the player's language)
-  if (showLabel && labelText) {
-    const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTexture(labelText, th.css), transparent: true, depthWrite: false, fog: false, toneMapped: false }));
-    label.scale.set(11, 2.06, 1);
-    label.position.y = H + 4.2;
-    group.add(label);
-  }
 
   // orbiting motes along the arch
   const MOTES = 70;
