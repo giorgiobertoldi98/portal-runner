@@ -36,6 +36,23 @@ export default {
 
   pause: { title: 'Paused', resume: 'Resume', quit: 'Quit to menu' },
 
+  // the controls card (the ? button): the main controls only, for the device in use
+  help: {
+    title: 'Controls',
+    move: 'Move',
+    run: 'Run',
+    lookPc: 'Look around (click to lock the mouse)',
+    use: 'Take what\'s in reach, or open your item',
+    pick: 'Pick an item',
+    pause: 'Pause',
+    sound: 'Sound on / off',
+    moveTouch: 'Left side: move. Push to the edge to run',
+    lookTouch: 'Right side: drag to look around',
+    useTouch: 'Tap the buttons on the right to take things and open your items',
+    pauseTouch: 'Top left: pause and sound',
+    close: 'Back to the game',
+  },
+
   end: {
     win: 'You made it home',
     lose: 'Caught',
@@ -61,6 +78,7 @@ export default {
     inPortal: 'in the portal',
     sound: 'Sound',
     pause: 'Pause',
+    help: 'Controls',
     action: 'Action',
     note: 'Note',
     map: 'Map',

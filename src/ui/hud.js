@@ -16,7 +16,7 @@ export class HUD {
       hud: $('hud'), gemCount: $('gem-count'), dropN: $('drop-n'), act: $('btn-act'), actLabel: $('act-label'), actIcon: $('btn-act').querySelector('.ico'), gemIcon: $('gem-icon'), dropIcon: $('drop-icon'), lives: $('lives'), level: $('level'), drop: $('btn-drop'), callChip: $('call-chip'), callText: $('call-text'), callBar: $('call-bar'),
       banner: $('banner'), bannerName: $('banner-name'),
       bannerTag: $('banner-tag'), toast: $('toast'), vignette: $('vignette'), fade: $('fade'),
-      menu: $('screen-menu'), settings: $('screen-settings'), pause: $('screen-pause'), end: $('screen-end'), loading: $('screen-loading'),
+      menu: $('screen-menu'), settings: $('screen-settings'), pause: $('screen-pause'), end: $('screen-end'), help: $('screen-help'), loading: $('screen-loading'),
       items: $('items'), itemLabel: $('item-label'), itemName: $('item-name'),
       mapBtn: $('btn-map'), noteBtn: $('btn-note'), endTitle: $('end-title'), endText: $('end-text'), endStats: $('end-stats'), joystick: $('joystick'),
     };
@@ -26,8 +26,8 @@ export class HUD {
   }
 
   showScreen(name) {
-    for (const k of ['menu', 'settings', 'pause', 'end', 'loading']) this.el[k].classList.toggle('hidden', k !== name);
-    this.el.hud.classList.toggle('hidden', name !== null && name !== 'pause');
+    for (const k of ['menu', 'settings', 'pause', 'end', 'help', 'loading']) this.el[k].classList.toggle('hidden', k !== name);
+    this.el.hud.classList.toggle('hidden', name !== null && name !== 'pause' && name !== 'help');   // pause and controls cards sit over the dimmed run
   }
 
   setAccent(css) { document.documentElement.style.setProperty('--accent', css); }

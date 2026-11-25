@@ -112,6 +112,9 @@ class Game {
     document.getElementById('btn-quit').addEventListener('click', toMenu);
     document.getElementById('btn-menu').addEventListener('click', toMenu);
     document.getElementById('btn-pause').addEventListener('click', (e) => { e.stopPropagation(); if (this.state === 'playing') this.pause(); else if (this.state === 'paused') this.resume(); });
+    // the controls card: pauses the run like the pause button; Back (or Esc / P) resumes
+    document.getElementById('btn-help').addEventListener('click', (e) => { e.stopPropagation(); if (this.state === 'playing') this.pause('help'); });
+    document.getElementById('btn-help-close').addEventListener('click', () => this.resume());
     // settings switches, remembered in this browser when storage is available: debug mode (off by default; read at each level start)
     const bindSwitch = (cls, key, on, apply) => {
       try { const v = localStorage.getItem(key); if (v) on = v === 'on'; } catch (_) {}
@@ -277,11 +280,12 @@ class Game {
     this.renderer.setSize(innerWidth, innerHeight);
   }
 
-  pause() {
+  // screen: the card shown over the paused run (the pause card, or the controls card)
+  pause(screen = 'pause') {
     this.state = 'paused';
     this.input.releaseLock();
     this.input.reset();
-    this.hud.showScreen('pause');
+    this.hud.showScreen(screen);
     if (this.audio.ctx) this.audio.ctx.suspend();
   }
 
