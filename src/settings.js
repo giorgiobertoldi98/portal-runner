@@ -1,7 +1,9 @@
 // Game settings, editable from the menu. Each setting reads and writes the live tuning objects in config.js,
 // so the game picks up changes the next time a run starts. Values are remembered in this browser when possible.
 //
-// A setting: { id, label, hint?, unit?, min, max, step, get() -> number, set(number) }   (hint may be a function, for hints quoting live values)
+// A setting: { id, text, unit?, min, max, step, get() -> number, set(number), vars?() }
+//   text = the i18n key holding its { label, hint? } (see i18n/); vars() = live values its hint quotes
+//   unit = 'm' | 's' | 'mps' | 'pct' (i18n units)
 // General settings live here; per-level settings are "gems needed" plus whatever a world module exports
 // as `settings` (see worlds/registry.js), so adding a world never touches this file.
 import { PLAYER, GAME, PORTAL, GEMS, carryText } from './config.js';
@@ -11,23 +13,21 @@ const STORE_KEY = 'pr-settings-v1';
 
 export const GENERAL = [
   {
-    id: 'runSpeed', label: 'Base speed V', unit: 'm/s', min: 5, max: 16, step: 0.5,
-    hint: 'Your running speed. Walking (V/2) and every hunter speed scale with it.',
+    id: 'runSpeed', text: 'settings.runSpeed', unit: 'mps', min: 5, max: 16, step: 0.5,
     get: () => PLAYER.runSpeed,
     set: (v) => { PLAYER.runSpeed = v; PLAYER.walkSpeed = v / 2; },
   },
   {
-    id: 'slowPerGem', label: 'Speed lost per gem', unit: '%', min: 0, max: 30, step: 1,
-    hint: () => `Each gem you carry removes this share of V, never below ${Math.round(GEMS.minSpeedFactor * 100)}%. Now: ${carryText()} with 1 / 2 / 3 gems.`,
+    id: 'slowPerGem', text: 'settings.slowPerGem', unit: 'pct', min: 0, max: 30, step: 1,
+    vars: () => ({ min: Math.round(GEMS.minSpeedFactor * 100), carry: carryText() }),
     get: () => Math.round(GEMS.slowPerGem * 100), set: (v) => { GEMS.slowPerGem = v / 100; },
   },
   {
-    id: 'safeRadius', label: 'Portal safe radius', unit: 'm', min: 0, max: 40, step: 1,
-    hint: 'In every world, inside this distance from the portal (the faint ring) hunters can\'t follow you or come in. 0 = no safe zone.',
+    id: 'safeRadius', text: 'settings.safeRadius', unit: 'm', min: 0, max: 40, step: 1,
     get: () => PORTAL.safeRadius, set: (v) => { PORTAL.safeRadius = v; },
   },
   {
-    id: 'lives', label: 'Lives', min: 1, max: 9, step: 1,
+    id: 'lives', text: 'settings.lives', min: 1, max: 9, step: 1,
     get: () => GAME.lives, set: (v) => { GAME.lives = v; },
   },
 ];
@@ -35,8 +35,7 @@ export const GENERAL = [
 export function levelSettings(index) {
   const def = WORLDS[index];
   const gems = {
-    id: 'gems', label: 'Gems needed', min: 1, max: 12, step: 1,
-    hint: 'Gems to bring to the portal. Exactly this many are hidden in the world.',
+    id: 'gems', text: 'settings.gems', min: 1, max: 12, step: 1,
     get: () => GAME.quotas[index], set: (v) => { GAME.quotas[index] = v; },
   };
   return [gems, ...(def.settings || [])];

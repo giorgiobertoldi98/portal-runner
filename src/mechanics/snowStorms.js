@@ -11,6 +11,7 @@
 import * as THREE from 'three';
 import { GLACIER } from '../config.js';
 import { findSpot, insideColliders, clamp, fogColor, damp } from '../engine/utils.js';
+import { tr } from '../i18n/i18n.js';
 
 const STORM_COLOR = 0xd3deea;
 
@@ -191,7 +192,7 @@ export function createSnowStorms({ scene, heightAt, createParticles, density = 1
       placeAll(ctx);
       const audio = ctx.audio;
       if (audio) [1760, 1318.5, 987.8, 740].forEach((f, i) => audio.tone({ freq: f, type: 'sine', dur: 0.7, gain: 0.035, when: soundAt + i * 0.09 }));
-      if (ctx.hud) setTimeout(() => ctx.hud.toast('Winds are changing…', 3000), toastAt * 1000);
+      if (ctx.hud) setTimeout(() => ctx.hud.toast(tr('glacier.windsChanging'), 3000), toastAt * 1000);
     },
 
     // end the current storm right away (e.g. you went down into the ice hole); its device stays where it is
@@ -225,7 +226,7 @@ export function createSnowStorms({ scene, heightAt, createParticles, density = 1
               [1568, 2093, 2637].forEach((f, i) => audio.tone({ freq: f, type: 'triangle', dur: 0.5, gain: 0.05, when: 0.05 + i * 0.06 }));
               if (ctx.growl) setTimeout(() => audio.growl(ctx.growl, 1), 450);
             }
-            if (!toldStorm && ctx.hud) { toldStorm = true; ctx.hud.toast('Snow storms... make the Yeti so hungry!', 3800); }
+            if (!toldStorm && ctx.hud) { toldStorm = true; ctx.hud.toast(tr('glacier.firstStorm'), 3800); }
             break;
           }
         }

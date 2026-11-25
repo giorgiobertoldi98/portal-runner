@@ -1,6 +1,7 @@
 import * as THREE from 'three';
+import { tr, applyDom } from './i18n/i18n.js';
 import { GAME, PORTAL, GEMS, PLAYER, CALL, AUDIO, carryFactor } from './config.js';
-import { WORLDS } from './worlds/registry.js';
+import { WORLDS, worldText } from './worlds/registry.js';
 import { Input } from './engine/input.js';
 import { AudioEngine } from './engine/audio.js';
 import { CameraRig } from './engine/cameraRig.js';
@@ -22,13 +23,14 @@ import { MENU_AUDIO } from './ui/menuAudio.js';
 import { load as loadSettings } from './settings.js';
 
 loadSettings(); // saved settings override the defaults in config.js
+applyDom();     // the static markup's text, in the player's language
 
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 const QUALITY = isTouch
   ? { pixelRatio: Math.min(devicePixelRatio, 1.5), shadowMap: 1024, density: 0.6, terrainSegments: 150 }
   : { pixelRatio: Math.min(devicePixelRatio, 2), shadowMap: 2048, density: 1, terrainSegments: 200 };
 
-const CALL_HINT = () => (isTouch ? 'Let go of the stick to send a Resonance Call' : 'Stand still to send a Resonance Call');
+const CALL_HINT = () => tr(isTouch ? 'toast.callTouch' : 'toast.callPc');
 const MAP_TURN = 2.2;   // rad/s: how fast A / D turn the explorer and the camera with the map open
 const MAP_AIM = 7;      // rad/s at most: how fast they turn to face where the map's dial points
 const MENU_ACCENT = '#e6defc'; // starlight: the landing view belongs to no single world
@@ -304,7 +306,7 @@ class Game {
     const last = idx === WORLDS.length - 1;
     const dest = last ? def : WORLDS[idx + 1];
     const spot = w.portalSpots[0];
-    w.portal = createPortal({ dest, gem: def.gem, destIndex: last ? -1 : idx + 1, x: spot.x, y: w.heightAt(spot.x, spot.z), z: spot.z, label: last ? 'The Way Home' : null, heightAt: w.heightAt });
+    w.portal = createPortal({ dest, gem: def.gem, destIndex: last ? -1 : idx + 1, x: spot.x, y: w.heightAt(spot.x, spot.z), z: spot.z, label: tr(last ? 'portal.home' : `${dest.id}.name`), heightAt: w.heightAt });
     w.scene.add(w.portal.group);
     w.colliders.push(...w.portal.colliders);
     w.gems = [];
@@ -399,7 +401,7 @@ class Game {
         this.hud.fade(false);
         this.state = 'playing';
         this.clock.getDelta();
-        this.hud.showBanner(def.name, def.tagline);
+        this.hud.showBanner(worldText(def, 'name'), worldText(def, 'tagline'));
         this.syncItems();
         // the first hint of a run: the world's own (introHint), otherwise how to send a Resonance Call
         // (never in a world where the call is silent)
@@ -443,7 +445,7 @@ class Game {
 
   updateGemHud() {
     const p = this.world.portal;
-    this.hud.setWorld(this.world.def.name);
+    this.hud.setWorld(worldText(this.world.def, 'name'));
     this.hud.setGems(p.filled, p.quota, this.carried.length, p.active);
     this.hud.setDrop(this.carried.length > 0);
     this.player.speedMul = carryFactor(this.carried.length);
@@ -514,14 +516,17 @@ class Game {
       this.audio.stopMusic(1.5);
       this.hud.setDanger(0);
       this.hud.setDrop(false); this.hud.setAction(null);
-      setTimeout(() => this.hud.showEnd(false, `${this.world.def.monsterName[0].toUpperCase() + this.world.def.monsterName.slice(1)} got you in ${this.world.def.name}.`, this.stats()), 700);
+      setTimeout(() => this.hud.showEnd(false, tr('end.loseText', { hunter: worldText(this.world.def, 'hunter'), world: worldText(this.world.def, 'name') }), this.stats()), 700);
       return;
     }
     this.state = 'transition';
     this.hud.fade(true, '#7a0010');
     setTimeout(() => {
       this.spawnPlayerAndMonster();
-      this.hud.toast(`${this.world.def.monsterName} caught you — ${this.lives} ${this.lives === 1 ? 'life' : 'lives'} left${lost ? ` · ${lost} gem${lost === 1 ? '' : 's'} dropped` : ''}${this.respawnNote ? ` · ${this.respawnNote}` : ''}`, 3600);
+      const parts = [tr('toast.caught', { hunter: worldText(this.world.def, 'hunter'), count: this.lives })];
+      if (lost) parts.push(tr('toast.dropped', { count: lost }));
+      if (this.respawnNote) parts.push(this.respawnNote);
+      this.hud.toast(parts.join(' · '), 3600);
       this.hud.fade(false);
       this.state = 'playing';
       this.clock.getDelta();
@@ -537,16 +542,16 @@ class Game {
     this.audio.stopMusic(2.5);
     this.hud.setDanger(0);
     this.hud.setDrop(false); this.hud.setAction(null);
-    setTimeout(() => this.hud.showEnd(true, 'Three worlds crossed. The way home closes behind you.', this.stats(true)), 900);
+    setTimeout(() => this.hud.showEnd(true, tr('end.winText'), this.stats(true)), 900);
   }
 
   stats(win = false) {
     const m = Math.floor(this.time / 60), s = Math.floor(this.time % 60);
     return [
-      ['Time', `${m}:${String(s).padStart(2, '0')}`],
-      win ? ['Lives left', this.lives ?? '—'] : ['World', this.world ? this.world.def.name : '—'],
-      ['Gems delivered', this.delivered],
-      ['Caught', this.catches],
+      [tr('end.time'), `${m}:${String(s).padStart(2, '0')}`],
+      win ? [tr('end.livesLeft'), this.lives ?? tr('end.none')] : [tr('end.world'), this.world ? worldText(this.world.def, 'name') : tr('end.none')],
+      [tr('end.delivered'), this.delivered],
+      [tr('end.caught'), this.catches],
     ];
   }
 
@@ -695,7 +700,7 @@ class Game {
         this.player.setCarried(this.carried.length);
         this.audio.pickup();
         this.updateGemHud();
-        if (this.delivered === 0 && this.carried.length === 1 && this.level === 0) this.hud.toast('This gem is slowing me down...', 3600);
+        if (this.delivered === 0 && this.carried.length === 1 && this.level === 0) this.hud.toast(tr('toast.firstGem'), 3600);
       }
       g.update(dt, t);
     }

@@ -617,9 +617,10 @@ const MUSIC = {
 
 export default {
   id: 'alien',
-  name: 'Xenoterra',
-  tagline: 'A ringed sky. Glowing, quiet ground.',
-  monsterName: 'the Void Jelly',
+  // this world's text, per language (see i18n/CLAUDE.md)
+  strings: {
+    en: { name: 'Xenoterra', tab: 'Alien', tagline: 'A ringed sky. Glowing, quiet ground.', hunter: 'The Void Jelly' },
+  },
   theme,
   // the gems here: geodes, dark rock outside with a pink crystal lining seen through small holes all around
   gem: { style: 'geode', dark: 0x2c2533, col: 0x453a50, glow: 0xff5ee0, innerDark: 0x3a2a44, inner: 0xe04fc8 },

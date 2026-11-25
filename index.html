@@ -24,23 +24,23 @@
       <div id="level" class="lvl"></div>
       <div class="gems">
         <img class="gem-icon" id="gem-icon" alt="">
-        <span id="gem-count">0 / 0</span><span class="unit">in the portal</span>
+        <span id="gem-count">0 / 0</span><span class="unit" data-i18n="hud.inPortal"></span>
       </div>
     </div>
     <div id="lives"></div>
   </div>
   <div class="hud-tr">
-    <button id="btn-mute" class="icon-btn" aria-label="Sound">
+    <button id="btn-mute" class="icon-btn" data-i18n-aria="hud.sound">
       <svg class="on" viewBox="0 0 24 24" width="20" height="20"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       <svg class="off" viewBox="0 0 24 24" width="20" height="20"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="m16 9 6 6m0-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     </button>
-    <button id="btn-pause" class="icon-btn" aria-label="Pause">
+    <button id="btn-pause" class="icon-btn" data-i18n-aria="hud.pause">
       <svg viewBox="0 0 24 24" width="20" height="20"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
     </button>
   </div>
   <div id="banner"><div id="banner-name"></div><div id="banner-tag"></div></div>
   <div id="toast"></div>
-  <div id="call-chip"><span id="call-text">Calling</span><div class="bar"><i id="call-bar"></i></div></div>
+  <div id="call-chip"><span id="call-text" data-i18n="hud.calling"></span><div class="bar"><i id="call-bar"></i></div></div>
   <!-- the explorer's tools, on PC and touch alike: your items as a slot bar at the bottom centre, Drop gem as a
        separate round button (beside the bar on PC, above the look pad on touch) and the contextual action (top half) -->
   <div id="tools">
@@ -49,22 +49,22 @@
     <div id="items" class="none">
     <!-- PC only: a quiet key hint under the bar: the wheel (once there are several items) | Space -->
     <div id="item-keys" aria-hidden="true">
-      <svg class="pick" viewBox="0 0 24 24" width="13" height="13"><rect x="7" y="3" width="10" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="sep pick"></span><kbd>Space</kbd>
+      <svg class="pick" viewBox="0 0 24 24" width="13" height="13"><rect x="7" y="3" width="10" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="sep pick"></span><kbd data-i18n="keys.space"></kbd>
     </div>
     <div id="item-label"><span id="item-name"></span></div>
-    <button id="btn-note" class="tool item" aria-label="Note" title="Note">
+    <button id="btn-note" class="tool item" data-i18n-aria="hud.note" data-i18n-title="hud.note">
       <svg viewBox="0 0 24 24" width="21" height="21"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 7.5h6M9 10.5h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".7"/></svg>
     </button>
-    <button id="btn-map" class="tool item" aria-label="Map" title="Map">
+    <button id="btn-map" class="tool item" data-i18n-aria="hud.map" data-i18n-title="hud.map">
       <svg viewBox="0 0 24 24" width="21" height="21"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 4v13.5M15 6.5V20" stroke="currentColor" stroke-width="1.5" opacity=".7"/></svg>
     </button>
     </div>
     <!-- Drop gem: this world's gem, with the number you carry; on PC its key (Q) sits just below it -->
-    <button id="btn-drop" class="tool" aria-label="Drop a gem" title="Drop a gem (Q)">
-      <img class="gem-icon" id="drop-icon" alt=""><span class="tl">Drop gem</span><kbd>Q</kbd><b class="n" id="drop-n"></b>
+    <button id="btn-drop" class="tool" data-i18n-aria="hud.dropGemAria" data-i18n-title="hud.dropGemTitle">
+      <img class="gem-icon" id="drop-icon" alt=""><span class="tl" data-i18n="hud.dropGem"></span><kbd data-i18n="keys.q"></kbd><b class="n" id="drop-n"></b>
     </button>
-    <button id="btn-act" class="tool act" aria-label="Action">
-      <span class="ico"></span><span class="tl" id="act-label"></span><kbd id="act-key">Space</kbd>
+    <button id="btn-act" class="tool act" data-i18n-aria="hud.action">
+      <span class="ico"></span><span class="tl" id="act-label"></span><kbd id="act-key" data-i18n="keys.space"></kbd>
     </button>
   </div>
   <div id="joystick">
@@ -80,51 +80,52 @@
 <div id="fade"></div>
 
 <div id="screen-loading" class="screen">
-  <div class="loader"><div class="spinner"></div><div>Shaping worlds…</div></div>
+  <div class="loader"><div class="spinner"></div><div data-i18n="loading"></div></div>
 </div>
 
 <div id="screen-menu" class="screen landing hidden">
   <div class="landing-copy">
-    <h1 class="title">Portal Runner</h1>
-    <p class="lead">Every portal opens onto a world no one has mapped. Each hides dark gems, and something lives there that won't let you take them easily.</p>
-    <ul class="loop" aria-label="How a world works">
-      <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".6"/></svg>Hunt the dark gems hidden in every world.</li>
-      <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 6 10l6 11 6-11z"/></svg>Carry them to the portal. Each one slows you down.</li>
-      <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V10a6 6 0 0 1 12 0v11" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 21v-9a3 3 0 0 1 6 0v9z" opacity=".55"/></svg>Fill the portal and step through to the next world.</li>
+    <h1 class="title" data-i18n="title"></h1>
+    <p class="lead" data-i18n="menu.lead"></p>
+    <ul class="loop" data-i18n-aria="menu.loopLabel">
+      <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".6"/></svg><span data-i18n="menu.loop1"></span></li>
+      <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 6 10l6 11 6-11z"/></svg><span data-i18n="menu.loop2"></span></li>
+      <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V10a6 6 0 0 1 12 0v11" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 21v-9a3 3 0 0 1 6 0v9z" opacity=".55"/></svg><span data-i18n="menu.loop3"></span></li>
     </ul>
     <div class="actions">
-      <button class="primary" id="btn-start">Begin the expedition</button>
-      <button class="ghost" id="btn-settings">Settings</button>
+      <button class="primary" id="btn-start" data-i18n="menu.start"></button>
+      <button class="ghost" id="btn-settings" data-i18n="menu.settings"></button>
     </div>
     <div class="controls">
-      <div class="desk"><b>WASD</b> to move, <b>Shift</b> to run, drag to look, <b>Q</b> to drop a gem, <b>Space</b> to take things, <b>wheel</b> to pick and <b>Space</b> to read what you find, <b>Esc</b> to pause</div>
-      <div class="mob">Left thumb moves (push to the edge to run), right thumb looks, the tool buttons above the right thumb drop a gem, take things and open what you find</div>
+      <div class="desk" data-i18n-html="menu.controlsPc"></div>
+      <div class="mob" data-i18n="menu.controlsTouch"></div>
     </div>
   </div>
 </div>
 
 <div id="screen-settings" class="screen hidden">
   <div class="card settings">
-    <h2>Settings</h2>
-    <div class="seg tabs" id="set-tabs"><button data-t="general">General</button><button data-t="levels">Worlds</button></div>
+    <h2 data-i18n="settings.title"></h2>
+    <div class="seg tabs" id="set-tabs"><button data-t="general" data-i18n="settings.general"></button><button data-t="levels" data-i18n="settings.worlds"></button></div>
     <div class="seg" id="set-levels"></div>
     <div id="set-general">
-      <div class="setting"><span>Footstep sounds</span><button class="switch opt-steps" role="switch" aria-checked="true" aria-label="Footstep sounds"><i></i></button></div>
-      <div class="setting"><div class="txt"><span>Debug mode</span><small>Start every world already holding all its items (the note, the map).</small></div><button class="switch opt-debug" role="switch" aria-checked="false" aria-label="Debug mode"><i></i></button></div>
+      <div class="setting"><span data-i18n="settings.footsteps"></span><button class="switch opt-steps" role="switch" aria-checked="true" data-i18n-aria="settings.footsteps"><i></i></button></div>
+      <div class="setting"><div class="txt"><span data-i18n="settings.debug"></span><small data-i18n="settings.debugHint"></small></div><button class="switch opt-debug" role="switch" aria-checked="false" data-i18n-aria="settings.debug"><i></i></button></div>
+      <div class="setting hidden" id="set-lang"><span data-i18n="settings.language"></span><div class="seg"></div></div>
     </div>
     <div id="set-list"></div>
-    <p class="hint">Changes apply from the next run.</p>
-    <button class="primary" id="set-done">Done</button>
-    <button class="ghost" id="set-reset">Reset to defaults</button>
+    <p class="hint" data-i18n="settings.applyNext"></p>
+    <button class="primary" id="set-done" data-i18n="settings.done"></button>
+    <button class="ghost" id="set-reset" data-i18n="settings.reset"></button>
   </div>
 </div>
 
 <div id="screen-pause" class="screen hidden">
   <div class="card small">
-    <h2>Paused</h2>
-    <div class="setting"><span>Footstep sounds</span><button class="switch opt-steps" role="switch" aria-checked="true" aria-label="Footstep sounds"><i></i></button></div>
-    <button class="primary" id="btn-resume">Resume</button>
-    <button class="ghost" id="btn-quit">Quit to menu</button>
+    <h2 data-i18n="pause.title"></h2>
+    <div class="setting"><span data-i18n="settings.footsteps"></span><button class="switch opt-steps" role="switch" aria-checked="true" data-i18n-aria="settings.footsteps"><i></i></button></div>
+    <button class="primary" id="btn-resume" data-i18n="pause.resume"></button>
+    <button class="ghost" id="btn-quit" data-i18n="pause.quit"></button>
   </div>
 </div>
 
@@ -133,8 +134,8 @@
     <h2 id="end-title"></h2>
     <p class="lead" id="end-text"></p>
     <div class="stats" id="end-stats"></div>
-    <button class="primary" id="btn-again">Play again</button>
-    <button class="ghost" id="btn-menu">Menu</button>
+    <button class="primary" id="btn-again" data-i18n="end.again"></button>
+    <button class="ghost" id="btn-menu" data-i18n="end.menu"></button>
   </div>
 </div>
 
@@ -142,9 +143,9 @@
 <div id="rotate" role="alert" aria-live="assertive">
   <div class="rot-box">
     <svg class="rot-phone" viewBox="0 0 64 64" aria-hidden="true"><rect x="20" y="8" width="24" height="44" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="32" cy="46" r="2"/></svg>
-    <h2>Portal Runner plays sideways</h2>
-    <p class="mob">Turn your device to landscape. If it doesn't rotate, switch off rotation lock.</p>
-    <p class="desk">Make the window wider than it is tall.</p>
+    <h2 data-i18n="rotate.title"></h2>
+    <p class="mob" data-i18n="rotate.touch"></p>
+    <p class="desk" data-i18n="rotate.pc"></p>
   </div>
 </div>
 

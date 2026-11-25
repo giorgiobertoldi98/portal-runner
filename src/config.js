@@ -62,7 +62,8 @@ export const hunterSpeed = (k) => k * PLAYER.runSpeed;
 // your speed factor (fraction of V) while carrying n gems
 export const carryFactor = (n) => Math.max(GEMS.minSpeedFactor, 1 - GEMS.slowPerGem * n);
 // "89 / 78 / 67%": your running speed with 1 / 2 / 3 gems, for settings hints
-export const carryText = () => [1, 2, 3].map((n) => Math.round(carryFactor(n) * 100)).join(' / ') + '%';
+// your running speed with 1 / 2 / 3 gems, in % of V, as hints quote it (the text around it adds the % sign)
+export const carryText = () => [1, 2, 3].map((n) => Math.round(carryFactor(n) * 100)).join(' / ');
 
 // ── The Frozen Peaks: the Yeti and its snow-storm devices ──
 export const GLACIER = {

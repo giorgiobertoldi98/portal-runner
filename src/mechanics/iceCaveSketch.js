@@ -4,6 +4,7 @@
 // inside. It matches the look of the hole's crown in iceCave.js (outward-leaning blue-ice shards, four spires a little
 // above the rest) so the player can recognise it, but it never shows where it is or what it is.
 import { mulberry32 } from '../engine/noise.js';
+import { tr } from '../i18n/i18n.js';
 
 const INK = '#3a2c20';
 const f = (n) => Math.round(n * 10) / 10;
@@ -39,7 +40,7 @@ export function holeSketch() {
   const strokes = [[40, 248, 60], [120, 270, 44], [300, 262, 70], [380, 276, 50], [70, 226, 36]]
     .map(([x, y, w]) => `<path d="M${x} ${y} q${w / 2} -4 ${w} 0" fill="none" stroke="${INK}" stroke-width=".8" opacity=".35"/>`).join('');
 
-  return `<svg class="sketch" viewBox="0 64 480 236" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sketch of a ring of tall blue ice spikes standing on a snowy rise, with mountains behind">
+  return `<svg class="sketch" viewBox="0 64 480 236" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${tr('glacier.sketch')}">
 <defs>
   <linearGradient id="ice" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3f7ff"/><stop offset="1" stop-color="#78c3ea"/></linearGradient>
 </defs>
