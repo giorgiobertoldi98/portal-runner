@@ -112,9 +112,9 @@ class Game {
     document.getElementById('btn-quit').addEventListener('click', toMenu);
     document.getElementById('btn-menu').addEventListener('click', toMenu);
     document.getElementById('btn-pause').addEventListener('click', (e) => { e.stopPropagation(); if (this.state === 'playing') this.pause(); else if (this.state === 'paused') this.resume(); });
-    // the controls card: pauses the run like the pause button; Back (or Esc / P) resumes
-    document.getElementById('btn-help').addEventListener('click', (e) => { e.stopPropagation(); if (this.state === 'playing') this.pause('help'); });
-    document.getElementById('btn-help-close').addEventListener('click', () => this.resume());
+    // the controls card opens from the pause card and Back (or Esc) returns to it
+    document.getElementById('btn-help').addEventListener('click', () => { if (this.state === 'paused') { this.audio.click(); this.hud.showScreen('help'); } });
+    document.getElementById('btn-help-close').addEventListener('click', () => { this.audio.click(); this.hud.showScreen('pause'); });
     // settings switches, remembered in this browser when storage is available: debug mode (off by default; read at each level start)
     const bindSwitch = (cls, key, on, apply) => {
       try { const v = localStorage.getItem(key); if (v) on = v === 'on'; } catch (_) {}
@@ -154,7 +154,10 @@ class Game {
       }
       // the open map: Esc puts it away (instead of pausing)
       if (this.mapView.open && live && e.code === 'Escape') { e.preventDefault(); this.toggleMap(); return; }
-      if (e.code === 'Escape' || e.code === 'KeyP') { if (this.state === 'playing') this.pause(); else if (this.state === 'paused') this.resume(); }
+      if (e.code === 'Escape') {
+        if (this.state === 'playing') this.pause();
+        else if (this.state === 'paused') { if (this.hud.showing('help')) this.hud.showScreen('pause'); else this.resume(); }
+      }
       if (e.code === 'Escape' && this.state === 'menu' && !document.getElementById('screen-settings').classList.contains('hidden')) this.hud.showScreen('menu');
       if (e.code === 'KeyM') toggleMute();
       if ((e.code === 'KeyQ' || e.code === 'KeyG') && this.state === 'playing' && !this.heldItem()) this.dropQueued = true;   // not while an item is held up: the game's controls are off
@@ -280,12 +283,11 @@ class Game {
     this.renderer.setSize(innerWidth, innerHeight);
   }
 
-  // screen: the card shown over the paused run (the pause card, or the controls card)
-  pause(screen = 'pause') {
+  pause() {
     this.state = 'paused';
     this.input.releaseLock();
     this.input.reset();
-    this.hud.showScreen(screen);
+    this.hud.showScreen('pause');
     if (this.audio.ctx) this.audio.ctx.suspend();
   }
 
