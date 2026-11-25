@@ -2,9 +2,11 @@
 //
 // A catalogue is a nested object of strings. A string may hold {vars}; a value may also be a plural set
 // ({ one, other, ... } per Intl.PluralRules), chosen by vars.count. Keys are dotted paths ('hud.inPortal').
+// {key:name} inserts a key's name (keys.js), the same in every language.
 // The game's own text lives in one file per language (en.js, ...); each world brings its own text in its module
 // (`strings: { en: {...} }`), registered under the world's id, so worlds stay self-contained.
 import en from './en.js';
+import { KEYS } from './keys.js';
 
 // language code -> { name (in that language), strings }. Add a language here and it appears in Settings.
 export const LANGUAGES = {
@@ -62,9 +64,9 @@ export function tr(key, vars = {}) {
   if (v === undefined) v = lookup(FALLBACK, key);
   if (v === undefined) { console.warn(`[i18n] missing: ${key}`); return key; }
   if (typeof v === 'object') v = v[plurals.select(vars.count ?? 0)] ?? v.other;
-  let s = String(v).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? fmtValue(vars[k]) : m));
-  if (lang === PSEUDO) s = pseudo(s);
-  return s;
+  // pseudo-translate the template before filling it, so values (key names, numbers) stay as they are
+  const s = lang === PSEUDO ? pseudo(String(v)) : String(v);
+  return s.replace(/\{(key:)?(\w+)\}/g, (m, isKey, k) => (isKey ? KEYS[k] ?? m : k in vars ? fmtValue(vars[k]) : m));
 }
 
 const numFmt = new Map();
@@ -75,8 +77,8 @@ export function num(n, digits = 0) {
 }
 const fmtValue = (v) => (typeof v === 'number' ? num(v, Number.isInteger(v) ? 0 : 1) : String(v));
 
-// Fill the static markup: data-i18n (text), data-i18n-html (trusted markup from our own catalogue) and
-// data-i18n-aria / data-i18n-title (attributes).
+// Fill the static markup: data-i18n (text), data-i18n-html (trusted markup from our own catalogue),
+// data-i18n-aria / data-i18n-title (attributes) and data-key (a key's name, never translated).
 export function applyDom(root = document) {
   document.documentElement.lang = locale;
   document.title = tr('title');
@@ -84,12 +86,13 @@ export function applyDom(root = document) {
   for (const el of root.querySelectorAll('[data-i18n-html]')) el.innerHTML = tr(el.dataset.i18nHtml);
   for (const el of root.querySelectorAll('[data-i18n-aria]')) el.setAttribute('aria-label', tr(el.dataset.i18nAria));
   for (const el of root.querySelectorAll('[data-i18n-title]')) el.setAttribute('title', tr(el.dataset.i18nTitle));
+  for (const el of root.querySelectorAll('[data-key]')) el.textContent = KEYS[el.dataset.key];
 }
 
 const ACCENT = { a: 'å', e: 'é', i: 'î', o: 'ö', u: 'ü', c: 'ç', n: 'ñ', s: 'š', y: 'ý', A: 'Å', E: 'É', I: 'Î', O: 'Ö', U: 'Ü', C: 'Ç', N: 'Ñ', S: 'Š' };
 function pseudo(s) {
-  // leave markup and unfilled {vars} intact
-  const out = s.split(/(<[^>]*>|\{\w+\})/).map((part, i) => (i % 2 ? part : part.replace(/[a-zA-Z]/g, (c) => ACCENT[c] || c))).join('');
-  const letters = s.replace(/<[^>]*>/g, '').length;
+  // leave markup and {vars} intact
+  const out = s.split(/(<[^>]*>|\{(?:key:)?\w+\})/).map((part, i) => (i % 2 ? part : part.replace(/[a-zA-Z]/g, (c) => ACCENT[c] || c))).join('');
+  const letters = s.replace(/<[^>]*>|\{(?:key:)?\w+\}/g, '').length;
   return `⟦${out}${'·'.repeat(Math.ceil(letters * 0.35))}⟧`;
 }

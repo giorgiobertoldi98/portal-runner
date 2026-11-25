@@ -20,6 +20,7 @@ import * as THREE from 'three';
 import { gemMapColor } from '../entities/gem.js';
 import { heldControls } from './held.js';
 import { tr } from '../i18n/i18n.js';
+import { KEYS as KEY_NAMES } from '../i18n/keys.js';
 
 const MARK = 1.15;     // size of the marks, in CSS px per unit of their original drawing
 const GRID = 256;      // world samples per side
@@ -48,7 +49,7 @@ const HOW = {
 // the A / D keys (PC), drawn as little keycaps with turn arrows
 const TURN_ARROW = (d) => `<svg viewBox="-12 -12 24 24" aria-hidden="true"><path d="${d > 0 ? 'M6 -5A7.5 7.5 0 1 0 7 3' : 'M-6 -5A7.5 7.5 0 1 1 -7 3'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`
   + `<path d="${d > 0 ? 'M2.6 -7.6 6.4 -4.6 2.4 -2.2' : 'M-2.6 -7.6 -6.4 -4.6 -2.4 -2.2'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-const KEYS = () => `<div class="map-keys"><span class="key">${TURN_ARROW(-1)}${tr('keys.a')}</span><span class="key">${tr('keys.d')}${TURN_ARROW(1)}</span></div>`;
+const KEYS = () => `<div class="map-keys"><span class="key">${TURN_ARROW(-1)}${KEY_NAMES.a}</span><span class="key">${KEY_NAMES.d}${TURN_ARROW(1)}</span></div>`;
 
 // The heading dial: a compass (north up, like the chart) whose needle is you, the chart's orange arrow, ending in a
 // wooden bead on the rim (the rods' wood) to show it can be dragged round. The needle points right at 0 and is

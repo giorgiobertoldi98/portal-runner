@@ -11,7 +11,7 @@ export default {
     loop3: 'Fill the portal and step through to the next world.',
     start: 'Begin the expedition',
     settings: 'Settings',
-    controlsPc: '<b>WASD</b> to move, <b>Shift</b> to run, drag to look, <b>Q</b> to drop a gem, <b>Space</b> to take things, <b>wheel</b> to pick and <b>Space</b> to read what you find, <b>Esc</b> to pause',
+    controlsPc: '<b>{key:wasd}</b> to move, <b>{key:shift}</b> to run, drag to look, <b>{key:q}</b> to drop a gem, <b>{key:space}</b> to take things, <b>wheel</b> to pick and <b>{key:space}</b> to read what you find, <b>{key:esc}</b> to pause',
     controlsTouch: 'Left thumb moves (push to the edge to run), right thumb looks, the tool buttons above the right thumb drop a gem, take things and open what you find',
   },
 
@@ -70,7 +70,7 @@ export default {
     map: 'Map',
     dropGem: 'Drop gem',
     dropGemAria: 'Drop a gem',
-    dropGemTitle: 'Drop a gem (Q)',
+    dropGemTitle: 'Drop a gem ({key:q})',
     close: 'Close',
     closeItem: 'Close {item}',
     calling: 'Calling',
@@ -79,8 +79,8 @@ export default {
     nothingInRange: 'Nothing in range — follow the trail',
   },
 
-  // key names as printed on keycaps
-  keys: { space: 'Space', q: 'Q', a: 'A', d: 'D' },
+  // contextual actions shared by every world (a world's own actions go in its `strings`)
+  actions: { takeNote: 'Take the note', takeMap: 'Take the map' },
 
   toast: {
     callTouch: 'Let go of the stick to send a Resonance Call',

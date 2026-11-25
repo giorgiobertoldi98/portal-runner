@@ -691,8 +691,8 @@ function build({ quality }) {
     // read by main.js
     canCall: () => false,          // the gems here never answer the call: the explorers' map shows them instead
     hasMap: () => cave.hasMap,
-    action: () => (note.canTake ? { id: 'take-note', label: tr('glacier.takeNote'), icon: 'note' }
-      : cave.canTake ? { id: 'take-map', label: tr('glacier.takeMap'), icon: 'map' } : null),
+    action: () => (note.canTake ? { id: 'take-note', label: tr('actions.takeNote'), icon: 'note' }
+      : cave.canTake ? { id: 'take-map', label: tr('actions.takeMap'), icon: 'map' } : null),
     // taking the map also reshuffles the storm devices (cues placed after the map's own chime)
     doAction: (ctx) => {
       if (note.canTake) return note.take(ctx);
@@ -784,8 +784,6 @@ const STRINGS = {
     tab: 'Glacier',
     tagline: 'Wind, ice, white silence.',
     hunter: 'The Yeti',
-    takeNote: 'Take the note',
-    takeMap: 'Take the map',
     note: 'Thought I saw ice spikes in a circle somewhere...',
     sketch: 'Sketch of a ring of tall blue ice spikes standing on a snowy rise, with mountains behind',
     windsChanging: 'Winds are changing…',
