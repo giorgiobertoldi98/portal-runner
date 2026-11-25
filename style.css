@@ -219,26 +219,31 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 .setting .txt small { font-weight: 500; font-size: 12px; opacity: .6; line-height: 1.35; }
 .setting .ctl { display: flex; align-items: center; gap: 6px; flex: none; }
 
-/* ── drawn pages (loading, menu, Settings): the explorers' paper, as in the note. Ink on a warm sheet with a fine grain
-   and a darker rim. Screens (loading, menu, Settings, pause, end, the rotate notice) use the page tones below: change
-   --page-1 / --page-2 to make them lighter or darker. Held items (the note, the map) keep the lighter --paper-sheet. ── */
+/* ── drawn surfaces. Held items (the note, the map) are dark ink on warm paper (--ink, --paper-sheet). Screens
+   (loading, menu, Settings, pause, end, the rotate notice) are the same drawing done at dusk: pale ink on a deep violet
+   sheet (the --page-* tokens). Every page surface redefines --ink and friends to its own (.page-ink below), so the
+   shared inked controls and anything mixed from var(--ink) follow either palette. ── */
 :root {
   --ink: #3a2c20; --ink-soft: rgba(58, 44, 32, .68); --ink-line: rgba(90, 60, 30, .26);
   --paper-sheet: radial-gradient(ellipse at 30% 20%, rgba(255, 250, 238, .7), transparent 60%), radial-gradient(ellipse at 85% 85%, rgba(170, 120, 60, .12), transparent 50%), linear-gradient(160deg, #f2e7cf, #e6d6b4);
-  /* the screens' paper: its two tones (top-left → bottom-right), the tone the menu drawing fades into (ui/menuArt.js
-     reads it), the light fill of rows, tiles and ghost buttons, and the dark rim */
-  --page-1: #d8c49c; --page-2: #bea476; --page-base: #cfb98e;
-  --page-fill: rgba(250, 241, 220, .42); --page-rim: rgba(90, 60, 25, .38);
-  --page-sheet: radial-gradient(ellipse at 30% 20%, rgba(248, 236, 208, .4), transparent 60%), radial-gradient(ellipse at 85% 85%, rgba(120, 80, 30, .16), transparent 50%), linear-gradient(160deg, var(--page-1), var(--page-2));
+  /* the screens' paper: its two tones (top-left → bottom-right; change these to make the screens lighter or darker),
+     the tone the menu drawing fades into and its ink (ui/menuArt.js reads both), the faint fill of rows, tiles and
+     ghost buttons, the shaded rim, and the colour of text on an inked button */
+  --page-1: #3d3753; --page-2: #262233; --page-base: #302b42; --page-ink: #ece2cb; --on-page-ink: #241f31;
+  --page-fill: rgba(255, 246, 226, .06); --page-fill-hi: rgba(255, 246, 226, .13); --page-rim: rgba(8, 6, 18, .5);
+  --page-sheet: radial-gradient(ellipse at 28% 18%, rgba(170, 150, 220, .16), transparent 60%), radial-gradient(ellipse at 85% 90%, rgba(255, 170, 90, .06), transparent 50%), linear-gradient(160deg, var(--page-1), var(--page-2));
+  --page-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .95 0 0 0 0 .85 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .25 0 0 0 0 .15 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
-.screen.paper { color: var(--ink); background: var(--paper-grain), var(--page-sheet); box-shadow: inset 0 0 clamp(60px, 14vmin, 140px) var(--page-rim); }
+/* every page surface inks with the page palette */
+.screen.paper, .card.paper, #rotate { --ink: var(--page-ink); --ink-soft: color-mix(in srgb, var(--page-ink) 70%, transparent); --ink-line: color-mix(in srgb, var(--page-ink) 18%, transparent); --on-ink: var(--on-page-ink); }
+.screen.paper { color: var(--ink); background: var(--page-grain), var(--page-sheet); box-shadow: inset 0 0 clamp(60px, 14vmin, 140px) var(--page-rim); }
 .screen.paper .spinner { border-color: var(--ink-line); border-top-color: var(--ink); }
-.paper button.primary { border: 1.5px solid var(--ink); background: var(--ink); color: #f6eedb; box-shadow: 0 3px 0 rgba(58, 44, 32, .22); }
-.paper button.primary:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(58, 44, 32, .22); }
-.paper button.ghost { background: var(--page-fill); color: var(--ink); border: 1.5px solid rgba(58, 44, 32, .55); }
+.paper button.primary { border: 1.5px solid var(--ink); background: var(--ink); color: var(--on-ink); box-shadow: 0 3px 0 rgba(0, 0, 0, .3); }
+.paper button.primary:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, .3); }
+.paper button.ghost { background: var(--page-fill); color: var(--ink); border: 1.5px solid color-mix(in srgb, var(--ink) 50%, transparent); }
 .paper button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
-@media (hover: hover) { .paper button.ghost:hover { background: rgba(250, 241, 220, .7); } .paper button.primary:hover { background: #2a1f16; } }
+@media (hover: hover) { .paper button.ghost:hover { background: var(--page-fill-hi); } .paper button.primary:hover { background: color-mix(in srgb, var(--ink) 85%, #fff); } }
 
 /* ── landing view: the words on the left, the drawn void between worlds on the right (ui/menuArt.js) ── */
 #screen-menu.landing {
@@ -251,22 +256,22 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 .landing-art .menu-art { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .landing .title {
   font-size: clamp(44px, 13vw, 92px); line-height: .95; letter-spacing: .04em; margin: 0 0 14px;
-  /* the worlds' colours, darkened into ink so they read on paper */
-  background: linear-gradient(100deg, color-mix(in srgb, var(--w0, #8fe8ff) 45%, var(--ink)), color-mix(in srgb, var(--w1, #e07bff) 50%, var(--ink)), color-mix(in srgb, var(--w2, #ffc35c) 55%, var(--ink)), color-mix(in srgb, var(--w0, #8fe8ff) 45%, var(--ink)));
+  /* the worlds' colours, mixed into the ink so they sit on the page like the rest of the drawing */
+  background: linear-gradient(100deg, color-mix(in srgb, var(--w0, #8fe8ff) 70%, var(--ink)), color-mix(in srgb, var(--w1, #e07bff) 70%, var(--ink)), color-mix(in srgb, var(--w2, #ffc35c) 75%, var(--ink)), color-mix(in srgb, var(--w0, #8fe8ff) 70%, var(--ink)));
   background-size: 300% 100%;
   -webkit-background-clip: text; background-clip: text; color: transparent;
-  text-shadow: none; filter: drop-shadow(0 1px 0 rgba(58, 44, 32, .25));
+  text-shadow: none; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .35));
   animation: worlds-drift 18s linear infinite;
 }
 @keyframes worlds-drift { from { background-position: 0% 50%; } to { background-position: 300% 50%; } }
 /* the tagline, handwritten like a line in the explorer's journal */
-.landing .lead { font: 600 clamp(24px, 3vw, 32px)/1.15 Caveat, 'Segoe Print', cursive; margin: 0 0 18px; max-width: 28ch; color: #2f2219; }
+.landing .lead { font: 600 clamp(24px, 3vw, 32px)/1.15 Caveat, 'Segoe Print', cursive; margin: 0 0 18px; max-width: 28ch; color: var(--ink); }
 /* the loop: three plain steps, each marked in a world's colour */
 .landing .loop { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 8px; font-size: 14px; line-height: 1.35; color: var(--ink); opacity: .9; }
 .landing .loop li { display: flex; align-items: center; gap: 10px; }
-.landing .loop svg { flex: none; width: 18px; height: 18px; fill: currentColor; color: color-mix(in srgb, var(--w0, #8fe8ff) 60%, var(--ink)); }
-.landing .loop li:nth-child(2) svg { color: color-mix(in srgb, var(--w1, #e07bff) 60%, var(--ink)); }
-.landing .loop li:nth-child(3) svg { color: color-mix(in srgb, var(--w2, #ffc35c) 60%, var(--ink)); }
+.landing .loop svg { flex: none; width: 18px; height: 18px; fill: currentColor; color: var(--w0, #8fe8ff); }
+.landing .loop li:nth-child(2) svg { color: var(--w1, #e07bff); }
+.landing .loop li:nth-child(3) svg { color: var(--w2, #ffc35c); }
 .landing .actions { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
 .landing .actions .ghost { margin-top: 0; padding-inline: 22px; }
 /* the drawing's motion: islands bob, portals swirl, gems drift and now and then glint, stars twinkle */
@@ -303,41 +308,42 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 .set-side h2 { font-size: clamp(24px, 3.6vw, 34px); margin: 0 0 clamp(8px, 2.4vh, 20px); color: var(--ink); }
 .set-tabs { display: flex; flex-direction: column; gap: 4px; }
 .set-tabs button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; border: 0; border-left: 3px solid transparent; border-radius: 4px 10px 10px 4px; background: transparent; color: var(--ink-soft); font: 600 15px Inter, sans-serif; text-align: left; cursor: pointer; }
-.set-tabs .dab { flex: none; width: 12px; height: 12px; border-radius: 50% 40% 55% 45%; background: var(--tab); box-shadow: 0 0 0 1px rgba(58, 44, 32, .45); }
+.set-tabs .dab { flex: none; width: 12px; height: 12px; border-radius: 50% 40% 55% 45%; background: var(--tab); box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 45%, transparent); }
 .set-tabs button.sel { color: var(--ink); border-left-color: var(--ink); background: color-mix(in srgb, var(--tab, #8a7356) 26%, var(--page-fill)); }
 @media (hover: hover) { .set-tabs button:not(.sel):hover { color: var(--ink); background: var(--page-fill); } }
 .set-foot { margin-top: auto; padding-top: 12px; }
 .set-foot .hint { margin: 0 0 10px; font-size: 12px; color: var(--ink-soft); opacity: 1; }
 .set-foot button.primary, .set-foot button.ghost { padding: 11px; border-radius: 12px; font-size: 14px; }
 .set-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; padding: clamp(4px, 2vh, 20px) 6px 12px 0;
-  scrollbar-width: thin; scrollbar-color: rgba(58, 44, 32, .35) transparent; }
+  scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--ink) 35%, transparent) transparent; }
 .set-head { margin: 0 0 12px; font: 700 clamp(18px, 2.4vw, 24px) Cinzel, serif; letter-spacing: .04em; color: var(--ink);
-  padding-bottom: 6px; border-bottom: 1.5px solid color-mix(in srgb, var(--tab, #3a2c20) 55%, rgba(58, 44, 32, .5)); }
+  padding-bottom: 6px; border-bottom: 1.5px solid color-mix(in srgb, var(--tab, var(--ink)) 60%, transparent); }
 .set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 10px; align-items: start; }
 #set-general:not(.hidden), #set-list { display: contents; }
 /* a setting row on paper (Settings, and the pause card's footsteps switch) */
 .paper .setting { padding: 10px 12px; color: var(--ink); background: var(--page-fill); border: 1px solid var(--ink-line); border-radius: 8px 11px 9px 12px; }
 #screen-settings .setting { margin: 0; min-height: 100%; }
 .paper .setting .txt small { color: var(--ink); opacity: .66; }
-.paper .switch { background: rgba(58, 44, 32, .22); }
-.paper .switch i { background: #fffaf0; box-shadow: 0 1px 2px rgba(58, 44, 32, .35); }
+.paper .switch { background: color-mix(in srgb, var(--ink) 22%, transparent); }
+.paper .switch i { background: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .35); }
 .paper .switch[aria-checked=true] { background: var(--ink); }
+.paper .switch[aria-checked=true] i { background: var(--on-ink); }
 #screen-settings .setting .ctl b { min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; color: var(--ink); }
-#screen-settings .setting .ctl .step { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid rgba(58, 44, 32, .55); background: var(--page-fill); color: var(--ink); font: 700 20px Inter, sans-serif; line-height: 1; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
-#screen-settings .setting .ctl .step:active { background: var(--ink); color: #f6eedb; }
-.paper .seg { background: rgba(58, 44, 32, .08); padding: 3px; }
+#screen-settings .setting .ctl .step { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid color-mix(in srgb, var(--ink) 50%, transparent); background: var(--page-fill); color: var(--ink); font: 700 20px Inter, sans-serif; line-height: 1; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+#screen-settings .setting .ctl .step:active { background: var(--ink); color: var(--on-ink); }
+.paper .seg { background: var(--page-fill); padding: 3px; }
 .paper .seg button { color: var(--ink); padding: 7px 14px; }
-.paper .seg button.sel { background: var(--ink); color: #f6eedb; }
+.paper .seg button.sel { background: var(--ink); color: var(--on-ink); }
 /* ── Pause and End: a paper card held up over the dimmed world, like the note ── */
-#screen-pause, #screen-end { background: radial-gradient(ellipse at center, rgba(20, 14, 8, .3), rgba(20, 14, 8, .72)); }
-.card.paper { color: var(--ink); background: var(--paper-grain), var(--page-sheet); border: 0; border-radius: 6px 10px 8px 12px; backdrop-filter: none; -webkit-backdrop-filter: none;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, .5), inset 0 0 40px var(--page-rim), inset 0 0 0 1px rgba(90, 60, 30, .25); transform: rotate(-.4deg); }
+#screen-pause, #screen-end { background: radial-gradient(ellipse at center, rgba(12, 10, 22, .35), rgba(12, 10, 22, .75)); }
+.card.paper { color: var(--ink); background: var(--page-grain), var(--page-sheet); border: 0; border-radius: 6px 10px 8px 12px; backdrop-filter: none; -webkit-backdrop-filter: none;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .5), inset 0 0 40px var(--page-rim), inset 0 0 0 1px var(--ink-line); transform: rotate(-.4deg); }
 .card.paper h2 { color: var(--ink); text-shadow: none; margin-bottom: 14px; }
-/* an inked flourish under the title */
-.card.paper h2::after { content: ''; display: block; width: 120px; height: 10px; margin: 6px auto 0; opacity: .55;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 10'%3E%3Cpath d='M4 6 Q30 1 58 5 T116 4' fill='none' stroke='%233a2c20' stroke-width='1.6' stroke-linecap='round'/%3E%3Ccircle cx='60' cy='5' r='2' fill='%233a2c20'/%3E%3C/svg%3E") center / contain no-repeat; }
-#screen-end.win .card.paper h2 { color: #8a5a12; text-shadow: none; }
-#screen-end:not(.win) .card.paper h2 { color: #8e2a2a; }
+/* an inked flourish under the title (a mask, so it takes the ink colour) */
+.card.paper h2::after { content: ''; display: block; width: 120px; height: 10px; margin: 6px auto 0; opacity: .55; background: var(--ink);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 10'%3E%3Cpath d='M4 6 Q30 1 58 5 T116 4' fill='none' stroke='%233a2c20' stroke-width='1.6' stroke-linecap='round'/%3E%3Ccircle cx='60' cy='5' r='2' fill='%233a2c20'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 10'%3E%3Cpath d='M4 6 Q30 1 58 5 T116 4' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'/%3E%3Ccircle cx='60' cy='5' r='2' fill='%23000'/%3E%3C/svg%3E") center / contain no-repeat; }
+#screen-end.win .card.paper h2 { color: #f2c66e; text-shadow: none; }
+#screen-end:not(.win) .card.paper h2 { color: #f08a80; }
 .card.paper .lead { color: var(--ink); opacity: .85; }
 .card.paper .setting { margin-bottom: 14px; }
 .card.paper .stats div { background: var(--page-fill); border: 1px solid var(--ink-line); border-radius: 8px 11px 9px 12px; }
@@ -460,7 +466,7 @@ body.holding #toast { z-index: 5; top: calc(max(var(--held-m), env(safe-area-ins
 
 /* landscape only: a screen taller than it is wide is covered by this notice (and a run in progress pauses) */
 #rotate { display: none; position: fixed; inset: 0; z-index: 100; place-items: center; padding: max(24px, env(safe-area-inset-top)) 28px max(24px, env(safe-area-inset-bottom)); text-align: center;
-  color: var(--ink); background: var(--paper-grain), var(--page-sheet); box-shadow: inset 0 0 clamp(60px, 14vmin, 140px) var(--page-rim); pointer-events: auto; touch-action: none; }
+  color: var(--ink); background: var(--page-grain), var(--page-sheet); box-shadow: inset 0 0 clamp(60px, 14vmin, 140px) var(--page-rim); pointer-events: auto; touch-action: none; }
 @media (orientation: portrait) { #rotate { display: grid; } }
 #rotate .rot-box { max-width: 340px; }
 #rotate .rot-phone { width: 76px; height: 76px; color: var(--ink); fill: var(--ink); animation: rot-turn 2.6s ease-in-out infinite; }

@@ -1,14 +1,13 @@
 // The landing view's illustration: the void between worlds, drawn like the sketches in the explorers' notes
-// (ink outlines over watercolour washes on paper). A winding chain of floating portals climbs into the distance,
+// (ink outlines over watercolour washes), but at dusk: pale ink on the screens' deep violet paper. A winding chain of floating portals climbs into the distance,
 // one per world in the registry, each washed in the colours of the world it opens onto and fading the farther it is.
 // A dotted route links them like a path on a map; dark gems drift past and glint now and then.
 // Everything is driven by WORLDS, so a new world appears here automatically. Motion is CSS (style.css, .menu-art),
 // so reduced motion stills it.
 import { mulberry32 } from '../engine/noise.js';
 
-const INK = '#3a2c20';
-// the screens' paper tone (--page-base in style.css), which far-off and washed colours fade into
-let PAPER = '#cfb98e';
+// the screens' ink and paper tone (--page-ink / --page-base in style.css): washed and far-off colours fade into the paper
+let INK = '#ece2cb', PAPER = '#302b42';
 const hex = (n) => (typeof n === 'string' ? n : `#${n.toString(16).padStart(6, '0')}`);
 // a colour thinned towards the paper, as a watercolour wash would be
 const wash = (c, k) => {
@@ -24,7 +23,7 @@ function spot(i) {
   const s = 0.6 ** i;
   const y = 470 - 245 * (1 - 0.55 ** i) / 0.45;
   const x = i === 0 ? 300 : 300 + (i % 2 ? 1 : -1) * (130 - 18 * i);
-  return { x, y, s, fade: Math.max(0.4, 1 - 0.22 * i) };
+  return { x, y, s, fade: Math.max(0.5, 1 - 0.15 * i) };
 }
 
 // ── one portal on its floating island, in local units (feet at 0,0; the arch is 108 wide, 170 tall) ──
@@ -39,16 +38,16 @@ function spiral(turns, r0, r1) {
 }
 function portal(def, i, rng) {
   const th = def.theme, { x, y, s, fade } = spot(i), id = `p${i}`;
-  const stone = wash(th.stone, 0.45), glow = hex(th.glow);
+  const stone = wash(th.stone, 0.5), glow = hex(th.glow);
   const crystals = [[-96, 2, 0.8], [-82, 6, 1.1], [88, 4, 1], [100, 0, 0.7]].map(([cx, cy, k]) =>
-    `<path d="M${cx - 6 * k} ${cy} L${cx - 1 * k} ${cy - 22 * k} L${cx + 6 * k} ${cy} Z" fill="${wash(th.glow, 0.35)}" ${line(1.1)}/>`).join('');
+    `<path d="M${cx - 6 * k} ${cy} L${cx - 1 * k} ${cy - 22 * k} L${cx + 6 * k} ${cy} Z" fill="${wash(th.glow, 0.15)}" ${line(1.1)}/>`).join('');
   const hatch = [[-70, 30, -52, 70], [-30, 40, -14, 92], [30, 36, 18, 84], [66, 30, 52, 60]]
     .map(([a, b, c, d]) => `<path d="M${a} ${b}L${c} ${d}" fill="none" ${line(0.9, 0.45)}/>`).join('');
   const bob = 5 + rng() * 3;
   return `<g transform="translate(${f(x)} ${f(y)}) scale(${f(s * 100) / 100})" opacity="${f(fade * 100) / 100}">
   <g class="bob" style="animation-duration:${f(bob)}s;animation-delay:-${f(rng() * bob)}s">
     <defs>
-      <radialGradient id="${id}g" cx=".5" cy=".55" r=".7"><stop offset="0" stop-color="${wash(th.colC, 0.05)}"/><stop offset=".45" stop-color="${wash(th.colB, 0.18)}"/><stop offset="1" stop-color="${wash(th.colA, 0.35)}"/></radialGradient>
+      <radialGradient id="${id}g" cx=".5" cy=".55" r=".7"><stop offset="0" stop-color="${wash(th.colC, 0.05)}"/><stop offset=".45" stop-color="${wash(th.colB, 0.18)}"/><stop offset="1" stop-color="${wash(th.colA, 0.15)}"/></radialGradient>
       <radialGradient id="${id}h"><stop offset="0" stop-color="${glow}" stop-opacity=".55"/><stop offset="1" stop-color="${glow}" stop-opacity="0"/></radialGradient>
       <clipPath id="${id}c"><path d="${INNER}"/></clipPath>
     </defs>
@@ -57,8 +56,8 @@ function portal(def, i, rng) {
     <path d="M-124 6 L-104 42 L-72 54 L-54 94 L-22 106 L0 152 L18 108 L50 88 L74 58 L106 38 L124 6" fill="none" ${line()}/>
     ${hatch}
     <path d="M-40 168 l12 -6 l8 10 l-10 8 z M44 150 l10 -4 l5 8 l-9 5 z" fill="${stone}" ${line(1)}/>
-    <ellipse cx="0" cy="6" rx="124" ry="22" fill="${wash(th.stone, 0.75)}" ${line()}/>
-    <ellipse cx="0" cy="2" rx="80" ry="11" fill="${wash(th.stone, 0.55)}" ${line(1, 0.7)}/>
+    <ellipse cx="0" cy="6" rx="124" ry="22" fill="${wash(th.stone, 0.3)}" ${line()}/>
+    <ellipse cx="0" cy="2" rx="80" ry="11" fill="${wash(th.stone, 0.45)}" ${line(1, 0.7)}/>
     <g clip-path="url(#${id}c)">
       <rect x="-60" y="-176" width="120" height="180" fill="url(#${id}g)"/>
       <g transform="translate(0 -84)"><g class="swirl" style="animation-duration:${f(16 + i * 5)}s">
@@ -93,14 +92,16 @@ function gem(look, rng) {
 const glint = (c) => `<path class="glint-star" d="M0 -9 L1.6 -1.6 L9 0 L1.6 1.6 L0 9 L-1.6 1.6 L-9 0 L-1.6 -1.6Z" fill="${c}" stroke="${INK}" stroke-width=".6" vector-effect="non-scaling-stroke"/>`;
 
 export function menuIllustration(worlds) {
-  PAPER = getComputedStyle(document.documentElement).getPropertyValue('--page-base').trim() || PAPER;
+  const css = getComputedStyle(document.documentElement);
+  INK = css.getPropertyValue('--page-ink').trim() || INK;
+  PAPER = css.getPropertyValue('--page-base').trim() || PAPER;
   const rng = mulberry32(23);
   const spots = worlds.map((_, i) => spot(i));
   const tints = worlds.map((w) => hex(w.theme.glow));
 
   // soft washes of every world's colour drifting through the void
   const blobs = [[120, 180, 170, 120], [480, 330, 190, 150], [260, 560, 230, 90], [520, 90, 150, 100], [90, 450, 120, 110]]
-    .map(([cx, cy, rx, ry], k) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${tints[k % tints.length]}" fill-opacity=".09"/>`).join('');
+    .map(([cx, cy, rx, ry], k) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${tints[k % tints.length]}" fill-opacity=".12"/>`).join('');
   // ink wisps and a scatter of little stars
   const wisps = [[40, 250, 90], [410, 470, 120], [330, 150, 80], [70, 590, 110], [480, 600, 70]]
     .map(([x, y, w]) => `<path d="M${x} ${y} q${w * 0.25} -10 ${w * 0.5} 0 t${w * 0.5} 0" fill="none" ${line(0.9, 0.3)}/>`).join('');
