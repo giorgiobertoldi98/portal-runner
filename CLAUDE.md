@@ -2,7 +2,7 @@
 
 Portal Runner is Giorgio's personal 3D browser game (Three.js): gem hunting across worlds connected by portals.
 
-This repo is the only home of the project: the code and its docs here are the source of truth. There is no claude.ai Project or artifact to keep in sync. Work may happen from Claude Code in VS Code or from the Claude app, so always commit and push finished work, and pull before starting.
+This repo is the only home of the project: the code and its docs here are the source of truth. There is no claude.ai Project or artifact to keep in sync. Work may happen from Claude Code in VS Code or from the Claude app, so always commit and push finished work, and start from the latest dev (see Working style).
 
 ## Read first, every session
 `docs/GAME.md` is the game as designed: concept, design principles, mechanics and tuning. Read it before working on anything, and follow every design principle it lists when designing something new.
@@ -58,6 +58,8 @@ Each kind of knowledge has one home, so no file grows into a dump and each note 
 - As development goes on, notice when something would clearly benefit from being modularised for reuse or decoupling, and do it, without overdoing it: no abstractions for a single use.
 
 ## Working style
+- **Start from the latest dev**, at the start of every session and before every new piece of work, before reading any code or docs: the checkout may be an older copy, and a fetch alone doesn't update it. `git fetch origin`, then `git checkout dev && git pull --ff-only origin dev`, and confirm `git status -sb` shows nothing behind; branch new work from there. Fetch again before opening a PR or merging; if dev has moved, merge it into the branch and test again.
+- When what I describe doesn't match the code, first check we're looking at the same version (branch, latest commit) before arguing from the code.
 - Before a large change, state the plan briefly. Challenge design ideas when they conflict with the rules above or seem likely to make the game less fun.
 - Commit in small, descriptive commits. Run the game and check the browser console for errors before committing.
 - Always keep local and remote aligned: push every commit, and after a merge on GitHub pull it into the local branch, so nothing is left unpushed or behind when a piece of work ends.
