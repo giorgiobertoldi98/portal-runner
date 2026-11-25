@@ -7,7 +7,7 @@ import { AudioEngine } from './engine/audio.js';
 import { CameraRig } from './engine/cameraRig.js';
 import { FixedShot } from './engine/fixedShot.js';
 import { mulberry32 } from './engine/noise.js';
-import { findSpot, dist2D, clamp, insideColliders } from './engine/utils.js';
+import { findSpot, dist2D, clamp, dampAngle, insideColliders } from './engine/utils.js';
 import { Player } from './entities/player.js';
 import { createPortal } from './entities/portal.js';
 import { createGem, gemMapColor } from './entities/gem.js';
@@ -33,6 +33,7 @@ const QUALITY = isTouch
 const CALL_HINT = () => tr(isTouch ? 'toast.callTouch' : 'toast.callPc');
 const MAP_TURN = 2.2;   // rad/s: how fast A / D turn the explorer and the camera with the map open
 const MAP_AIM = 7;      // rad/s at most: how fast they turn to face where the map's dial points
+const MAP_SWING = 12;   // how fast the camera swings behind the explorer as the map opens (higher = quicker)
 const MENU_ACCENT = '#e6defc'; // starlight: the landing view belongs to no single world
 // The game is landscape only. Browsers don't let a page lock the orientation (outside fullscreen), so a screen taller
 // than it is wide shows the #rotate notice (CSS), a run in progress pauses and nothing is rendered behind it.
@@ -175,6 +176,7 @@ class Game {
     if (!this.hasMap()) return;
     if (!this.mapView.open && this.briefing.open) this.briefing.dismiss();
     this.mapView.show(!this.mapView.open);
+    if (this.mapView.open) this.mapSwing = true;   // the camera swings behind the explorer (see update)
     this.syncHolding();
     this.audio.noiseBurst({ type: 'bandpass', freq: 2200, q: 1, dur: 0.22, gain: 0.07, attack: 0.01, sweepTo: this.mapView.open ? 3200 : 1200 });
   }
@@ -628,6 +630,18 @@ class Game {
         this.rig.yaw += d;
         this.player.heading += d;
         this.player.object.rotation.y = this.player.heading;
+      }
+    }
+    // Opening the map swings the camera behind the explorer, so the arrow, the explorer and the way W goes all agree
+    // while you turn and once you close it. Closing before it's done finishes it at once. A room's fixed shot holds
+    // its own view, so there is nothing to swing.
+    if (this.mapSwing) {
+      const want = this.player.heading + Math.PI;
+      if (this.shot.active) this.mapSwing = false;
+      else if (!this.mapView.open) { this.rig.yaw = want; this.mapSwing = false; }
+      else {
+        this.rig.yaw = dampAngle(this.rig.yaw, want, MAP_SWING, dt);
+        if (Math.abs(Math.atan2(Math.sin(want - this.rig.yaw), Math.cos(want - this.rig.yaw))) < 0.003) { this.rig.yaw = want; this.mapSwing = false; }
       }
     }
     if (w.constrainCamera) w.constrainCamera(this.camera, this.rig, P, dt); // e.g. keep it inside the ice hole's cave
