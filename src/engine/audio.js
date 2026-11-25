@@ -228,19 +228,19 @@ export class AudioEngine {
         this.hbTimer = 1.1 - danger * 0.7;
       }
     } else this.hbTimer = 0;
-    // portal hum
-    this.humGain.gain.setTargetAtTime(portalProximity * 0.18, ctx.currentTime, 0.2);
+    // portal hum (kept low: you hear it at every start, respawn and delivery)
+    this.humGain.gain.setTargetAtTime(portalProximity * 0.115, ctx.currentTime, 0.2);
     this.humA.frequency.setTargetAtTime(portalFreq, ctx.currentTime, 0.3);
     this.humB.frequency.setTargetAtTime(portalFreq * 1.5, ctx.currentTime, 0.3);
     // gem hum: louder and higher as you get closer
     const now = ctx.currentTime;
-    const gv = gemNear * gemNear * 0.11;
+    const gv = gemNear * gemNear * 0.088;
     this.gemHum.g.gain.setTargetAtTime(gv, now, 0.15);
     this.gemHumTrem.gain.setTargetAtTime(gv * 0.8, now, 0.15);
     this.gemHum.oscs[0].frequency.setTargetAtTime(520 + gemNear * 320, now, 0.2);
     this.gemHum.oscs[1].frequency.setTargetAtTime((520 + gemNear * 320) * 1.5, now, 0.2);
     // call: a chord that rises with the ring
-    const cv = charging ? 0.05 + call * 0.05 : 0;
+    const cv = charging ? 0.04 + call * 0.04 : 0;
     this.callHum.g.gain.setTargetAtTime(cv, now, charging ? 0.25 : 0.12);
     [1, 1.5, 2].forEach((m, i) => this.callHum.oscs[i].frequency.setTargetAtTime((180 + call * 160) * m, now, 0.2));
   }

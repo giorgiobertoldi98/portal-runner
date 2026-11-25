@@ -736,8 +736,8 @@ function build({ quality }) {
     audio: {
       ambient: {
         layers: [
-          { type: 'noise', filter: 'bandpass', freq: 700, q: 0.8, gain: 0.28, lfoRate: 0.07, lfoDepth: 450 },
-          { type: 'noise', filter: 'highpass', freq: 3500, q: 0.5, gain: 0.035, lfoRate: 0.11, lfoDepth: 1500 },
+          { type: 'noise', filter: 'bandpass', freq: 700, q: 0.8, gain: 0.2, lfoRate: 0.07, lfoDepth: 450 },
+          { type: 'noise', filter: 'highpass', freq: 3500, q: 0.5, gain: 0.025, lfoRate: 0.11, lfoDepth: 1500 },
         ],
       },
       music: MUSIC,

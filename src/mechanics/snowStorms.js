@@ -229,7 +229,7 @@ export function createSnowStorms({ scene, heightAt, createParticles, density = 1
       if (!storm && intensity < 0.003) intensity = 0;
       applyVisuals();
       wallMat.uniforms.uTime.value = t;
-      if (wind) wind.set(0.5 * intensity, 0.15);
+      if (wind) wind.set(0.35 * intensity, 0.15);
       if (blizzard.points.visible) blizzard.update(dt, { x: P.x, y: P.y, z: P.z }, t);
       if (ctx.camera) dome.position.copy(ctx.camera.position);
     },
