@@ -1,9 +1,8 @@
 // Keyboard + mouse + touch. On touch screens a joystick sits bottom-left (it jumps to where your thumb
 // lands anywhere on the left side) and the right side of the screen drags the camera.
-// While an item is held up (the map, a note: `holding`), `hold` says what still works: `move` (the joystick and
-// movement keys), `look` (the camera: right side / turn pad / mouse) and `zoom` (pinching with two fingers anywhere, or
-// the mouse wheel, read with consumeZoom()). Set it with setHold().
-// With nothing held up, the mouse wheel steps through your items instead (consumeWheel(): +1 / -1 per notch).
+// While an item is held up (the map, a note: setHold(true)) none of this moves or turns anything: the item handles
+// its own gestures, and keys are still tracked (`keys`) for the item's own shortcuts (the map's A / D).
+// With nothing held up, the mouse wheel steps through your items (consumeWheel(): +1 / -1 per notch).
 
 export class Input {
   constructor(canvas, joystickEl, knobEl) {
@@ -20,10 +19,6 @@ export class Input {
     this.enabled = false;
     this.locked = false;
     this.holding = false;
-    this.hold = { move: true, look: true, zoom: false };
-    this.touches = new Map();   // touch pointers down, for pinching
-    this.pinchD = 0;
-    this.zoomF = 1;
     this.wheelAcc = 0;          // wheel travel not yet turned into an item step
     this.wheelSteps = 0;
 
@@ -35,16 +30,11 @@ export class Input {
     addEventListener('blur', () => this.keys.clear());
     addEventListener('wheel', (e) => {
       const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
-      if (!this.holding) {
-        // one step per mouse notch; a trackpad's small deltas add up to one (main.js reads them only during a run)
-        this.wheelAcc += dy;
-        if (Math.abs(this.wheelAcc) >= 60) { this.wheelSteps += Math.sign(this.wheelAcc); this.wheelAcc = 0; }
-        return;
-      }
-      if (!this.hold.zoom) return;
-      e.preventDefault();
-      this.zoomF *= Math.exp(-Math.max(-300, Math.min(300, dy)) * 0.0018);
-    }, { passive: false });
+      if (this.holding) return;
+      // one step per mouse notch; a trackpad's small deltas add up to one (main.js reads them only during a run)
+      this.wheelAcc += dy;
+      if (Math.abs(this.wheelAcc) >= 60) { this.wheelSteps += Math.sign(this.wheelAcc); this.wheelAcc = 0; }
+    });
 
     canvas.addEventListener('pointerdown', (e) => this.onDown(e));
     addEventListener('pointermove', (e) => this.onMove(e));
@@ -52,7 +42,7 @@ export class Input {
     addEventListener('pointercancel', (e) => this.onUp(e));
     document.addEventListener('pointerlockchange', () => { this.locked = document.pointerLockElement === canvas; });
     addEventListener('mousemove', (e) => {
-      if (this.locked && this.enabled) { this.mouseLook(e.movementX, e.movementY); }
+      if (this.locked && this.enabled && !this.holding) { this.mouseLook(e.movementX, e.movementY); }
     });
     this.canvas = canvas;
   }
@@ -65,19 +55,12 @@ export class Input {
   mouseLook(dx, dy) { this.addLook(dx, dy); }
 
   onDown(e) {
-    if (!this.enabled) return;
+    if (!this.enabled || this.holding) return;
     if (e.pointerType === 'mouse') {
-      if (this.holding && !this.hold.look) return;
       this.mouseDrag = { x: e.clientX, y: e.clientY };
       return;
     }
     // touch / pen
-    this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (this.holding) {
-      // two fingers pinch an item that zooms; otherwise each side works only if the item lets its pad work
-      if (this.hold.zoom && this.touches.size >= 2) { this.pinchD = this.pinchDist(); this.stopLook(); return; }
-      if (e.clientX < innerWidth * 0.45 ? !this.hold.move : !this.hold.look) return;
-    }
     if (e.clientX < innerWidth * 0.45 && this.joy.id === null) {
       this.joy = { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: 0, y: 0, active: true };
       this.joyRadius = Math.max(36, (this.joystickEl.offsetWidth || 150) * 0.37);   // follows the pad's size (smaller on short screens)
@@ -91,35 +74,11 @@ export class Input {
     }
   }
 
-  pinchDist() {
-    const [a, b] = [...this.touches.values()];
-    return Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
-  }
+  setHold(on) { this.holding = !!on; }
 
-  stopLook() {
-    this.lookPointer = null;
-    if (this.lookpadEl) this.lookpadEl.classList.remove('active');
-  }
-
-  setHold(hold) {
-    this.holding = !!hold;
-    this.hold = hold || { move: true, look: true, zoom: false };
-  }
-
-  consumeZoom() { const f = this.zoomF; this.zoomF = 1; return f; }
   consumeWheel() { const s = this.wheelSteps; this.wheelSteps = 0; return s; }
 
   onMove(e) {
-    const tp = this.touches.get(e.pointerId);
-    if (tp) {
-      tp.x = e.clientX; tp.y = e.clientY;
-      if (this.holding && this.hold.zoom && this.touches.size >= 2) {
-        const d = this.pinchDist();
-        if (this.pinchD) this.zoomF *= d / this.pinchD;
-        this.pinchD = d;
-        return;
-      }
-    }
     if (this.mouseDrag && e.pointerType === 'mouse' && !this.locked) {
       this.mouseLook(e.clientX - this.mouseDrag.x, e.clientY - this.mouseDrag.y);
       this.mouseDrag.x = e.clientX; this.mouseDrag.y = e.clientY;
@@ -138,8 +97,6 @@ export class Input {
 
   onUp(e) {
     if (e.pointerType === 'mouse') this.mouseDrag = null;
-    this.touches.delete(e.pointerId);
-    if (this.touches.size < 2) this.pinchD = 0;
     if (this.joy.id === e.pointerId) {
       this.joy = { id: null, ox: 0, oy: 0, x: 0, y: 0, active: false };
       this.joystickEl.classList.remove('active', 'run');
@@ -167,9 +124,6 @@ export class Input {
     this.lookPointer = null;
     if (this.lookpadEl) this.lookpadEl.classList.remove('active');
     this.mouseDrag = null;
-    this.touches.clear();
-    this.pinchD = 0;
-    this.zoomF = 1;
     this.wheelAcc = 0;
     this.wheelSteps = 0;
   }
@@ -182,7 +136,7 @@ export class Input {
 
   // x: right, y: forward, run: boolean
   getMove() {
-    if (this.holding && !this.hold.move) { this.joystickEl.classList.remove('run'); return { x: 0, y: 0, run: false }; }
+    if (this.holding) { this.joystickEl.classList.remove('run'); return { x: 0, y: 0, run: false }; }
     const k = this.keys;
     let x = 0, y = 0;
     if (k.has('KeyW')) y += 1;
