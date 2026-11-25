@@ -158,7 +158,7 @@ button.primary, button.ghost { display: block; width: 100%; border-radius: 14px;
 button.primary { border: 0; background: var(--accent); color: #0a0c18; box-shadow: 0 0 26px color-mix(in srgb, var(--accent) 55%, transparent); }
 button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1px solid var(--line); }
 .controls { margin-top: 16px; font-size: 12px; opacity: .65; text-align: center; line-height: 1.5; }
-.controls .mob { display: none; } body.touch .controls .mob { display: block; } body.touch .controls .desk { display: none; }
+body.touch .controls.desk { display: none; }
 .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
 .stats div { background: rgba(255, 255, 255, .06); border-radius: 12px; padding: 10px; }
 .stats span { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .12em; opacity: .6; }
@@ -255,16 +255,17 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
   animation: worlds-drift 18s linear infinite;
 }
 @keyframes worlds-drift { from { background-position: 0% 50%; } to { background-position: 300% 50%; } }
-.landing .lead { font-size: 15.5px; line-height: 1.55; margin: 0 0 16px; max-width: 38ch; color: var(--ink); opacity: .88; }
-/* the loop as a few handwritten lines in the margin */
-.landing .loop { list-style: none; margin: 0 0 22px; padding: 0; display: grid; gap: 4px; font: 600 clamp(19px, 2.4vw, 23px)/1.2 Caveat, 'Segoe Print', cursive; color: #2f2219; }
+/* the tagline, handwritten like a line in the explorer's journal */
+.landing .lead { font: 600 clamp(24px, 3vw, 32px)/1.15 Caveat, 'Segoe Print', cursive; margin: 0 0 18px; max-width: 28ch; color: #2f2219; }
+/* the loop: three plain steps, each marked in a world's colour */
+.landing .loop { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 8px; font-size: 14px; line-height: 1.35; color: var(--ink); opacity: .9; }
 .landing .loop li { display: flex; align-items: center; gap: 10px; }
 .landing .loop svg { flex: none; width: 18px; height: 18px; fill: currentColor; color: color-mix(in srgb, var(--w0, #8fe8ff) 60%, var(--ink)); }
 .landing .loop li:nth-child(2) svg { color: color-mix(in srgb, var(--w1, #e07bff) 60%, var(--ink)); }
 .landing .loop li:nth-child(3) svg { color: color-mix(in srgb, var(--w2, #ffc35c) 60%, var(--ink)); }
 .landing .actions { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
 .landing .actions .ghost { margin-top: 0; padding-inline: 22px; }
-.landing .controls { text-align: left; margin-top: 14px; color: var(--ink); opacity: .62; }
+.landing .controls { text-align: left; margin-top: 16px; max-width: 46ch; color: var(--ink); opacity: .62; }
 /* the drawing's motion: islands bob, portals swirl, gems drift and now and then glint, stars twinkle */
 .menu-art .bob { animation: art-bob 6s ease-in-out infinite; }
 .menu-art .swirl { transform-origin: 0 0; animation: art-spin 18s linear infinite; }
@@ -278,14 +279,15 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 @keyframes art-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
 
 @media (max-height: 640px) {
-  .landing .loop { display: none; }
   .landing .title { font-size: clamp(36px, 10vw, 60px); }
+  .landing .loop { gap: 5px; margin-bottom: 18px; font-size: 13px; }
 }
 /* phones held sideways: very little height, so the title follows the height and the spacing tightens */
 @media (max-height: 480px) {
   #screen-menu.landing { padding-block: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-bottom)); }
   .landing .title { font-size: clamp(28px, 11vh, 60px); margin-bottom: 8px; }
-  .landing .lead { font-size: 14px; line-height: 1.45; margin-bottom: 12px; }
+  .landing .lead { font-size: 23px; margin-bottom: 16px; }
+  .landing .loop { display: none; } /* the tagline already says it; longer languages wouldn't fit both */
   .landing .controls { margin-top: 10px; }
 }
 @media (prefers-reduced-motion: reduce) { .landing .title, .menu-art * { animation: none !important; } }
