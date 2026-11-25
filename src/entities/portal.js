@@ -191,10 +191,10 @@ export function createPortal({ dest, gem = undefined, destIndex, x, y, z, beacon
   group.add(sockets);
   const threadMat = new THREE.MeshBasicMaterial({ color: th.glow, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
   let thread = null;
-  // an empty socket is a hole in the shape of this world's gem: near-black, with a thin pale rim so it reads against
-  // the frame whatever the portal's colour
-  const holeMat = new THREE.MeshBasicMaterial({ color: 0x030306, side: THREE.DoubleSide });
-  const rimMat = new THREE.MeshBasicMaterial({ color: 0x9a9aa8, side: THREE.BackSide, toneMapped: false });
+  // an empty socket is this world's gem in smoked glass: the full 3D shape, dark, catching the light on its facets and
+  // turning like a filled one, outlined by a faint glow in the portal's colour so it reads against any frame
+  const ghostMat = new THREE.MeshStandardMaterial({ color: 0x060609, metalness: 0.35, roughness: 0.3, flatShading: true });
+  const haloMat = new THREE.MeshBasicMaterial({ color: th.glow, side: THREE.BackSide, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
   let socketMeshes = [];
   let filled = 0, quota = 0, sockScale = 1;
   let open = 0; // 0 = dormant, animates to 1 when activated
@@ -209,7 +209,7 @@ export function createPortal({ dest, gem = undefined, destIndex, x, y, z, beacon
     get quota() { return quota; },
     // reset for a new attempt at this level
     setQuota(q) {
-      for (const m of socketMeshes) sockets.remove(m, m.userData.hole);
+      for (const m of socketMeshes) sockets.remove(m, m.userData.ghost);
       if (thread) { sockets.remove(thread); thread.geometry.dispose(); thread = null; }
       socketMeshes = [];
       quota = q; filled = 0; open = 0;
@@ -224,15 +224,14 @@ export function createPortal({ dest, gem = undefined, destIndex, x, y, z, beacon
         m.scale.setScalar(scale);
         m.position.copy(p);
         m.visible = false;            // shown (spinning) once a gem is put in
-        const hole = new THREE.Group();
-        hole.position.copy(p);
-        const cavity = new THREE.Mesh(m.geometry, holeMat), rim = new THREE.Mesh(m.geometry, rimMat);
-        cavity.scale.set(scale, scale, scale * 0.2);
-        rim.scale.set(scale * 1.18, scale * 1.18, scale * 0.12);
-        rim.position.z = -0.05;
-        hole.add(rim, cavity);
-        m.userData.hole = hole;
-        sockets.add(hole, m);
+        const ghost = new THREE.Group();
+        ghost.position.copy(p);
+        const glass = new THREE.Mesh(m.geometry, ghostMat), halo = new THREE.Mesh(m.geometry, haloMat);
+        glass.scale.setScalar(scale);
+        halo.scale.setScalar(scale * 1.1);
+        ghost.add(halo, glass);
+        m.userData.ghost = ghost;
+        sockets.add(ghost, m);
         socketMeshes.push(m);
       }
     },
@@ -240,7 +239,7 @@ export function createPortal({ dest, gem = undefined, destIndex, x, y, z, beacon
     insert() {
       if (filled >= quota) return false;
       const m = socketMeshes[filled++];
-      m.visible = true; m.userData.hole.visible = false;
+      m.visible = true; m.userData.ghost.visible = false;
       m.userData.pop = 1;
       return filled >= quota;
     },
@@ -255,6 +254,7 @@ export function createPortal({ dest, gem = undefined, destIndex, x, y, z, beacon
       light.intensity = (10 + fillK * 15 + e * 25) + Math.sin(t * 3.1) * 4 * (0.3 + e);
       moteMat.opacity = 0.25 + fillK * 0.3 + e * 0.4;
       threadMat.opacity = 0.14 + fillK * 0.3 + Math.sin(t * 2.2) * 0.04;
+      haloMat.opacity = 0.3 + Math.sin(t * 2.2) * 0.08; // the empty sockets breathe with the thread
       sockets.position.y = H * 0.56 + Math.sin(t * 1.1) * 0.08; // the cluster floats
       beamMat.uniforms.uOpacity.value = 0.3 + e * 0.35;
       if (safeRing) {
@@ -262,7 +262,7 @@ export function createPortal({ dest, gem = undefined, destIndex, x, y, z, beacon
         safeRing.visible = e < 0.999;
       }
       socketMeshes.forEach((m, i) => {
-        m.rotation.y = t * 1.2 + i;
+        m.rotation.y = m.userData.ghost.rotation.y = t * 1.2 + i;
         if (m.userData.pop) { m.userData.pop = Math.max(0, m.userData.pop - dt * 2); m.scale.setScalar(sockScale * (1 + m.userData.pop * 0.9)); }
       });
       for (let i = 0; i < MOTES; i++) {
