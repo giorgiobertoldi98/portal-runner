@@ -106,16 +106,16 @@ body.touch .tool.act kbd { display: none; }
    the bottom): the item bar right above the pad, centred on it; Drop gem just left of the pad, level with its centre.
    Both keep the same --gap from the pad's edge. No key hints. The bar is as wide as fits centred on the pad without
    leaving the screen (--bar-w); more items wrap into new rows above, so the first row stays next to the pad. */
-body.touch #hud { --edge: calc(14px + env(safe-area-inset-right)); --pad: 124px; --pad-y: 92px; --joy-x: 86px; --gap: 32px; }
-body.touch #items { position: fixed; --bar-w: calc(var(--pad) + 2 * (var(--edge) - env(safe-area-inset-right)) - 12px); width: max-content; max-width: var(--bar-w); flex-wrap: wrap-reverse; justify-content: center; left: calc(100% - var(--edge) - var(--pad) / 2); transform: translateX(-50%); bottom: calc(var(--pad-y) + var(--pad) / 2 + var(--gap) + env(safe-area-inset-bottom)); }
+body.touch #hud { --edge: calc(14px + env(safe-area-inset-right)); --pad: 124px; --pad-y: 92px; --side: 24px; --pad-r: calc(var(--side) + env(safe-area-inset-right)); --gap: 32px; }
+body.touch #items { position: fixed; --bar-w: calc(var(--pad) + 2 * var(--side) - 12px); width: max-content; max-width: var(--bar-w); flex-wrap: wrap-reverse; justify-content: center; left: calc(100% - var(--pad-r) - var(--pad) / 2); transform: translateX(-50%); bottom: calc(var(--pad-y) + var(--pad) / 2 + var(--gap) + env(safe-area-inset-bottom)); }
 body.touch #item-keys, body.touch #btn-drop kbd { display: none; }
-body.touch #btn-drop { position: fixed; right: calc(var(--edge) + var(--pad) + var(--gap)); bottom: calc(var(--pad-y) - 22px + env(safe-area-inset-bottom)); }
+body.touch #btn-drop { position: fixed; right: calc(var(--pad-r) + var(--pad) + var(--gap)); bottom: calc(var(--pad-y) - 22px + env(safe-area-inset-bottom)); }
 body.touch #btn-drop .tl { bottom: auto; left: auto; top: 50%; right: calc(100% + 8px); transform: translateY(-50%); }
 
 /* touch controls: always visible while playing on touch screens */
 #joystick, #lookpad { display: none; position: absolute; pointer-events: none; z-index: 4; }
 body.touch #joystick, body.touch #lookpad { display: block; }
-#joystick { width: var(--pad); height: var(--pad); margin: calc(var(--pad) / -2) 0 0 calc(var(--pad) / -2); left: calc(var(--joy-x) + env(safe-area-inset-left)); top: calc(100% - var(--pad-y) - env(safe-area-inset-bottom)); border-radius: 50%; border: 2px solid rgba(255, 255, 255, .55); background: radial-gradient(circle, rgba(255, 255, 255, .06) 0%, rgba(10, 12, 24, .35) 70%); box-shadow: 0 0 0 6px rgba(255, 255, 255, .06), inset 0 0 18px rgba(0, 0, 0, .35); transition: border-color .15s, box-shadow .15s, opacity .2s; opacity: .85; }
+#joystick { width: var(--pad); height: var(--pad); margin: calc(var(--pad) / -2) 0 0 calc(var(--pad) / -2); left: calc(var(--side) + var(--pad) / 2 + env(safe-area-inset-left)); top: calc(100% - var(--pad-y) - env(safe-area-inset-bottom)); border-radius: 50%; border: 2px solid rgba(255, 255, 255, .55); background: radial-gradient(circle, rgba(255, 255, 255, .06) 0%, rgba(10, 12, 24, .35) 70%); box-shadow: 0 0 0 6px rgba(255, 255, 255, .06), inset 0 0 18px rgba(0, 0, 0, .35); transition: border-color .15s, box-shadow .15s, opacity .2s; opacity: .85; }
 #joystick.active { opacity: 1; transition: border-color .15s, box-shadow .15s; }
 #joystick.run { border-color: var(--accent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 35%, transparent), 0 0 24px var(--accent); }
 .joy-arrows { position: absolute; inset: 0; width: 100%; height: 100%; fill: rgba(255, 255, 255, .6); }
@@ -125,7 +125,7 @@ body.touch #joystick, body.touch #lookpad { display: block; }
 #joystick.active .joy-label { opacity: 0; }
 /* the look pad: its right edge on the shared gutter (--edge) */
 /* the same size as the joystick, mirrored in the right-hand gutter */
-#lookpad { width: var(--pad); height: var(--pad); margin: calc(var(--pad) / -2) 0 0 calc(var(--pad) / -2); left: calc(100% - var(--edge) - var(--pad) / 2); top: calc(100% - var(--pad-y) - env(safe-area-inset-bottom)); border-radius: 50%; border: 2px dashed rgba(255, 255, 255, .45); background: rgba(10, 12, 24, .25); opacity: .8; }
+#lookpad { width: var(--pad); height: var(--pad); margin: calc(var(--pad) / -2) 0 0 calc(var(--pad) / -2); left: calc(100% - var(--pad-r) - var(--pad) / 2); top: calc(100% - var(--pad-y) - env(safe-area-inset-bottom)); border-radius: 50%; border: 2px dashed rgba(255, 255, 255, .45); background: rgba(10, 12, 24, .25); opacity: .8; }
 #lookpad svg { position: absolute; inset: 11px; width: calc(100% - 22px); height: calc(100% - 22px); fill: rgba(255, 255, 255, .6); }
 #lookpad.active { border-color: var(--accent); opacity: 1; }
 body.touch .icon-btn { width: 40px; height: 40px; }
@@ -197,7 +197,7 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
   body.touch #hud { --edge: max(10px, env(safe-area-inset-right)); }
   #joy-knob { width: 46px; height: 46px; }
   #lookpad svg { inset: 11px; width: calc(100% - 22px); height: calc(100% - 22px); }
-  body.touch #hud { --pad: 112px; --pad-y: 72px; --joy-x: 80px; --gap: 26px; }
+  body.touch #hud { --pad: 112px; --pad-y: 72px; --gap: 26px; }
   body.touch .tool { width: 36px; height: 36px; border-radius: 10px; }
   body.touch #btn-drop { width: 40px; height: 40px; border-radius: 50%; bottom: calc(var(--pad-y) - 20px + env(safe-area-inset-bottom)); }
   body.touch #btn-drop .gem-icon { width: 23px; height: 23px; }
