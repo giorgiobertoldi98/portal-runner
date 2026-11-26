@@ -17,6 +17,35 @@ export const dist2D = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
 // ---------- Collisions (circles and axis-aligned boxes on the XZ plane) ----------
 
+// Colliders filed by area (square cells), so a query visits only those near a point instead of every prop in the
+// world: the cost stays the same however many props a world has. Build it again whenever colliders move.
+export function colliderGrid(colliders, cell = 10) {
+  const cells = new Map(), stamp = new Uint32Array(colliders.length), out = [];
+  const key = (i, j) => (i + 32768) * 65536 + (j + 32768);
+  colliders.forEach((c, n) => {
+    const r = c.type === 'box' ? Math.hypot(c.hx, c.hz) : c.r;
+    for (let i = Math.floor((c.x - r) / cell); i <= Math.floor((c.x + r) / cell); i++)
+      for (let j = Math.floor((c.z - r) / cell); j <= Math.floor((c.z + r) / cell); j++) {
+        const k = key(i, j);
+        if (!cells.has(k)) cells.set(k, []);
+        cells.get(k).push(n);
+      }
+  });
+  let q = 0;
+  return {
+    // the colliders that may reach within `rad` of (x, z); the returned array is reused by the next query
+    near(x, z, rad) {
+      q++; out.length = 0;
+      for (let i = Math.floor((x - rad) / cell); i <= Math.floor((x + rad) / cell); i++)
+        for (let j = Math.floor((z - rad) / cell); j <= Math.floor((z + rad) / cell); j++) {
+          const list = cells.get(key(i, j));
+          if (list) for (const n of list) if (stamp[n] !== q) { stamp[n] = q; out.push(colliders[n]); }
+        }
+      return out;
+    },
+  };
+}
+
 export function resolveCollisions(pos, radius, colliders) {
   for (let i = 0; i < colliders.length; i++) {
     const c = colliders[i];

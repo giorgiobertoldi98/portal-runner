@@ -1,4 +1,4 @@
-import { lerp, dampAngle, resolveCollisions, clampToRadius, dist2D } from '../engine/utils.js';
+import { lerp, dampAngle, resolveCollisions, clampToRadius, dist2D, colliderGrid } from '../engine/utils.js';
 import { ChaseBrain } from '../hunters/chase.js';
 import { PORTAL } from '../config.js';
 
@@ -11,6 +11,8 @@ import { PORTAL } from '../config.js';
 // Worlds can add places hunters can't enter (world.hunterKeepOut = [{ x, z, r }]) and places where you're hidden from
 // them (world.isSheltered(pos)): while you're sheltered the brain also gets ctx.safe = true.
 // Worlds that don't provide a brain get the plain chase brain.
+const LOOK = 12;   // metres: the farthest ahead a hunter looks for props in its way
+
 export class Monster {
   constructor(body, brain = new ChaseBrain()) {
     this.body = body;
@@ -41,6 +43,7 @@ export class Monster {
     this.active = true;
     this.object.visible = true;
     this.side = 0; this.clearT = 0; this.probeT = 0; this.probeFrom = null; this.best = null;
+    this.grid = colliderGrid(world.colliders);   // built per run: some colliders move between runs (the ice hole's)
     this.brain.reset(this, { world, rng });
   }
 
@@ -48,11 +51,10 @@ export class Monster {
   // so the hunter walks round them instead of pressing into them or wedging itself in gaps too narrow for it. It fans
   // out from the straight line and takes the nearest clear heading, keeping to the side it chose while the way stays
   // blocked (so it doesn't dither), and switches side only if it stops getting closer to its target.
-  steer(want, range, obstacles, dt) {
-    const R = this.body.radius + 0.15, look = Math.min(range, 4 + this.speed * 0.7), p = this.pos;
-    const blocked = (a) => {
-      const dx = Math.sin(a), dz = Math.cos(a);
-      for (const c of obstacles) {
+  steer(want, range, near, keepOut, dt) {
+    const R = this.body.radius + 0.15, look = Math.min(range, 4 + this.speed * 0.7, LOOK), p = this.pos;
+    const hits = (list, dx, dz) => {
+      for (const c of list) {
         const cr = c.type === 'box' ? Math.hypot(c.hx, c.hz) : c.r;
         const rx = c.x - p.x, rz = c.z - p.z, along = rx * dx + rz * dz;
         if (along < 0 || along > look + cr) continue;
@@ -60,6 +62,7 @@ export class Monster {
       }
       return false;
     };
+    const blocked = (a) => { const dx = Math.sin(a), dz = Math.cos(a); return hits(near, dx, dz) || (!!keepOut && hits(keepOut, dx, dz)); };
     // progress towards the target over a couple of seconds: none means this way round leads nowhere (jittering
     // against rock, or circling a pocket), so try the other side
     this.probeT = (this.probeT || 0) + dt;
@@ -89,13 +92,14 @@ export class Monster {
     const portalSafe = !!(portal && R > 0 && dist2D(player.position, portal) < R);
     this.safe = portalSafe || !!(world.isSheltered && world.isSheltered(player.position));
     const cmd = this.brain.think(dt, this, { ...ctx, dist: d, safe: this.safe });
+    const near = this.grid.near(this.pos.x, this.pos.z, LOOK + this.body.radius + 1);   // the props it could see ahead or touch
     // ease between speeds so state changes don't snap
     this.speed = lerp(this.speed, cmd.speed, 1 - Math.exp(-3 * dt));
-    const want = this.steer(Math.atan2(cmd.tx - this.pos.x, cmd.tz - this.pos.z), Math.hypot(cmd.tx - this.pos.x, cmd.tz - this.pos.z), world.hunterKeepOut ? world.colliders.concat(world.hunterKeepOut) : world.colliders, dt);
+    const want = this.steer(Math.atan2(cmd.tx - this.pos.x, cmd.tz - this.pos.z), Math.hypot(cmd.tx - this.pos.x, cmd.tz - this.pos.z), near, world.hunterKeepOut, dt);
     this.heading = dampAngle(this.heading, want, cmd.turn ?? 5, dt);
     this.pos.x += Math.sin(this.heading) * this.speed * dt;
     this.pos.z += Math.cos(this.heading) * this.speed * dt;
-    resolveCollisions(this.pos, this.body.radius, world.colliders);
+    resolveCollisions(this.pos, this.body.radius, near);
     if (portalSafe) { // keep out of the safe zone
       const kr = R + this.body.radius + 1, dx = this.pos.x - portal.x, dz = this.pos.z - portal.z, r = Math.hypot(dx, dz);
       if (r < kr) {
