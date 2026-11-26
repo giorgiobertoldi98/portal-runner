@@ -790,7 +790,7 @@ const STRINGS = {
     leftBehind: 'The Peaks are behind you',   // the title of the path not yet drawn, after its portal
     note: 'Saw ice spikes in a circle somewhere...',
     sketch: 'Sketch of a ring of tall blue ice spikes standing on a snowy rise, with mountains behind',
-    firstStorm: 'Snow storms... hurry up, or it will catch you!',
+    firstStorm: 'Snow storm! Slow down and relax',
     places: { camp: 'Camp', tower: 'Watchtower', mammoth: 'Mammoth', arches: 'Ice arches', lake: 'Frozen lake', falls: 'Frozen falls' },
     settings: {
       detectIn: { label: 'Yeti approach distance', hint: 'It approaches when you come this close, and gives up once you are farther than this.' },

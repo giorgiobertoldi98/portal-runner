@@ -105,7 +105,7 @@ Every toast in the game (see Design principles: anything that can be shown inste
 - **"Stand still… and listen. They answer."** (touch and PC), how to send the Resonance Call: once per run, 3.8 s after the first world that allows the call opens (the Alien world in a full run). A world's own intro hint replaces it; a world where the call is silent (the Glacier) skips it.
 - **"Heavier than it looks, huh?"**: the first time you pick up a gem in the first world, once per run (not again after dropping it or being caught).
 - **"<Hunter> caught you — n lives left · m gems dropped"**: after a catch with lives left; the gems part only if you were carrying some (plus a world's own respawn note, if it has one).
-- **"Snow storms... hurry up, or it will catch you!"** (Glacier): the first storm each time the Glacier is set up.
+- **"Snow storm! Slow down and relax"** (Glacier): the first storm each time the Glacier is set up.
 
 ## Scale
 - The player is 1.8 m tall.
