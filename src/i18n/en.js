@@ -36,7 +36,7 @@ export default {
 
   pause: { title: 'Paused', resume: 'Resume', quit: 'Quit to menu' },
 
-  // the controls card (from the pause card): the main controls only, for the device in use
+  // the controls card (the ? button): the main controls only, for the device in use
   help: {
     title: 'Controls',
     move: 'Move',
@@ -47,7 +47,7 @@ export default {
     moveTouch: 'Left side: move. Push to the edge to run',
     lookTouch: 'Right side: drag to look around',
     useTouch: 'Tap the buttons on the right to use your items',
-    pauseMenu: 'Pause and controls',
+    system: 'Pause, sound, controls',
     close: 'Back',
   },
 
@@ -77,7 +77,6 @@ export default {
     sound: 'Sound',
     pause: 'Pause',
     help: 'Controls',
-    escPause: '<kbd data-key="esc"></kbd> to pause',
     action: 'Action',
     note: 'Note',
     map: 'Map',

@@ -17,7 +17,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #05060c; col
 .lvl { font-size: 9.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 1px; opacity: .95; }
 .gems .unit { font-family: Inter, sans-serif; font-size: 11px; font-weight: 500; opacity: .7; letter-spacing: 0; }
 #hud.portal-open .world-chip { border-color: var(--accent); box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent); }
-/* top left: pause (sound and the controls card are on the pause card, where the mouse is free) */
+/* top left: the system buttons (pause, sound, controls) */
 .hud-sys { position: absolute; top: max(14px, env(safe-area-inset-top)); left: calc(14px + env(safe-area-inset-left)); display: flex; align-items: center; gap: 8px; }
 #lives { display: flex; gap: 3px; flex: none; padding-top: 4px; }
 .heart svg { fill: #ff4d6d; filter: drop-shadow(0 0 4px rgba(255, 77, 109, .7)); }
@@ -171,8 +171,7 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 .switch[aria-checked=true] i { transform: translateX(22px); }
 
 /* the world chip never reaches the system buttons: the world's name truncates first */
-.hud-status { max-width: calc(100% - 76px - env(safe-area-inset-left) - env(safe-area-inset-right)); }
-body:not(.touch) .hud-status { max-width: calc(100% - 180px); }   /* clear of the wider "Esc to pause" */
+.hud-status { max-width: calc(100% - 172px - env(safe-area-inset-left) - env(safe-area-inset-right)); }
 .lvl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* big screens (PC): the same chip, a little larger */
 @media (min-width: 900px) and (min-height: 560px) {
@@ -190,7 +189,7 @@ body:not(.touch) .hud-status { max-width: calc(100% - 180px); }   /* clear of th
 /* phones held sideways: the screen is short, so the HUD shrinks to a small chip (world name + gem count)
    and the touch pads get smaller and tuck into the corners, leaving the middle of the screen to the world */
 @media (max-height: 500px) {
-  .hud-status { top: max(8px, env(safe-area-inset-top)); gap: 8px; max-width: calc(100% - 66px - env(safe-area-inset-left) - env(safe-area-inset-right)); }
+  .hud-status { top: max(8px, env(safe-area-inset-top)); gap: 8px; max-width: calc(100% - 150px - env(safe-area-inset-left) - env(safe-area-inset-right)); }
   #lives { padding-top: 3px; }
   .hud-sys { top: max(8px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left)); gap: 6px; }
   .heart svg { width: 17px; height: 17px; }
@@ -371,12 +370,6 @@ body:not(.touch) .hud-status { max-width: calc(100% - 180px); }   /* clear of th
 }
 @media (prefers-reduced-motion: reduce) { .card.paper { transform: none; } }
 
-/* on PC the pause button is a reminder of its key rather than something to click: "Esc to pause" */
-.esc-hint { display: none; }
-body:not(.touch) #btn-pause { width: auto; padding: 0 12px; }
-body:not(.touch) #btn-pause svg { display: none; }
-body:not(.touch) #btn-pause .esc-hint { display: flex; align-items: center; gap: 7px; font: 600 13px Inter, sans-serif; white-space: nowrap; }
-.esc-hint kbd { font: 700 11px Inter, sans-serif; padding: 2px 6px; border-radius: 6px; background: rgba(255, 255, 255, .14); }
 /* the pause card's small system buttons (sound, controls), inked like the card's other controls */
 .card-sys { display: flex; justify-content: center; gap: 10px; margin-top: 14px; }
 .card.paper .icon-btn { width: 38px; height: 38px; border-radius: 50%; color: var(--ink); background: var(--page-fill); border: 1.5px solid color-mix(in srgb, var(--ink) 50%, transparent); backdrop-filter: none; -webkit-backdrop-filter: none; }
@@ -393,7 +386,9 @@ body:not(.touch) #btn-pause .esc-hint { display: flex; align-items: center; gap:
 .help-cols .glyph { width: 26px; height: 26px; fill: none; stroke: var(--ink); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .help-cols .glyph .fill { fill: var(--ink); stroke: none; }
 .help-cols.mob { display: none; } body.touch .help-cols.mob { display: grid; } body.touch .help-cols.desk { display: none; }
-body.touch .help-cols .k { width: 34px; justify-content: center; }   /* gestures: one icon each, centred in a column */
+body.touch .help-cols .k { width: 72px; justify-content: center; }   /* gestures centred in a column wide enough for the three system icons */
+.help-cols .k.sys { gap: 2px; }
+.help-cols .k.sys .glyph { width: 22px; height: 22px; }
 @media (max-height: 500px) {
   .help-cols { margin-bottom: 12px; } .help-cols ul { gap: 6px; } .help-cols li { font-size: 13px; }
 }
