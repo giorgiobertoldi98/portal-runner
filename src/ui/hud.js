@@ -26,11 +26,11 @@ export class HUD {
   }
 
   // overRun: the pause and controls cards sit over the dimmed run with the HUD behind them; from the menu the controls
-  // card sits on the menu's own paper instead
+  // card sits over the dimmed menu instead
   showScreen(name, overRun = name === 'pause' || name === 'help') {
-    for (const k of ['menu', 'settings', 'pause', 'end', 'help', 'loading']) this.el[k].classList.toggle('hidden', k !== name);
+    const overMenu = name === 'help' && !overRun;
+    for (const k of ['menu', 'settings', 'pause', 'end', 'help', 'loading']) this.el[k].classList.toggle('hidden', k !== name && !(overMenu && k === 'menu'));
     this.el.hud.classList.toggle('hidden', name !== null && !overRun);
-    this.el.help.classList.toggle('paper', name === 'help' && !overRun);
   }
 
   showing(name) { return !this.el[name].classList.contains('hidden'); }
