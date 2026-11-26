@@ -591,8 +591,9 @@ function build({ quality }) {
     for (let i = 0; i < k; i++) {
       const x = c.x + (rng() - 0.5) * 6, z = c.z + (rng() - 0.5) * 6, s = 0.6 + rng() * 1.2;
       spires.push({ x, y: hy(x, z) + s * 2, z, rx: (rng() - 0.5) * 0.5, rz: (rng() - 0.5) * 0.5, ry: rng() * 3, s });
+      L.add({ x, z, r: 0.85 * s });   // each spire is solid where it's widest (about 2 s above the snow), so you stop at the ice
     }
-    L.add({ x: c.x, z: c.z, r: 3.5 });
+    L.reserve(c.x, c.z, 3.5);         // other props still keep out of the cluster
   }
   for (const c of [{ x: -90, z: -30 }, { x: 120, z: 120 }, { x: 30, z: -200 }]) {
     spires.push({ x: c.x, y: hy(c.x, c.z) + 14, z: c.z, ry: rng() * 3, s: 4.2, sy: 4.2 });
