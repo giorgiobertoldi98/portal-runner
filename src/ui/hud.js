@@ -58,12 +58,11 @@ export class HUD {
   }
 
   // Your items (things you hold up to read: the note, the map), in the order you found them, and the selected one:
-  // a slot bar on every device; the selection shows for a moment after it changes (and the label stays while the
-  // selected item calls for attention).
+  // a slot bar on every device. Setting them shows nothing by itself (a world handing you items at its start
+  // highlights none): the selection shows only when you pick one or one is introduced (flashItemLabel).
   setItems(ids, sel) {
     const key = ids.join() + '|' + sel;
     if (this.itemsKey === key) return;
-    const prevSel = this.itemsKey ? this.itemsKey.split('|')[1] : null;
     this.itemsKey = key;
     const box = this.el.items;
     box.classList.toggle('none', !ids.length);
@@ -75,7 +74,6 @@ export class HUD {
     }
     box.classList.toggle('many', ids.length > 1);
     this.el.itemName.textContent = sel ? this.itemBtns[sel].getAttribute('aria-label') : '';
-    if (sel && sel !== prevSel) this.flashItemLabel();
   }
   // the selection shows (the ring, the others dimmed, the name above the bar) only for a moment after you pick an item
   // or one is introduced; the rest of the time the bar sits quiet, though Space still knows which one is selected
