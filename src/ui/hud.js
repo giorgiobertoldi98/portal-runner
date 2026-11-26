@@ -5,8 +5,6 @@ const $ = (id) => document.getElementById(id);
 const HEART = '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 21s-7.5-4.6-10-9.2C.4 8.6 2.3 4.5 6.2 4.5c2.2 0 3.6 1.2 4.4 2.4h2.8c.8-1.2 2.2-2.4 4.4-2.4 3.9 0 5.8 4.1 4.2 7.3C19.5 16.4 12 21 12 21z"/></svg>';
 
 const ICONS = {
-  map: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 6h12v12H6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><ellipse cx="6" cy="12" rx="2.2" ry="6" fill="none" stroke="currentColor" stroke-width="1.8"/><ellipse cx="18" cy="12" rx="2.2" ry="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M11 6v12" stroke="#ff6a4d" stroke-width="2.2"/></svg>',
-  note: '<svg viewBox="0 0 24 24" width="21" height="21"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 7.5h6M9 10.5h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".7"/></svg>',
   hand: '<svg viewBox="0 0 24 24" width="21" height="21"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-5.5a1.5 1.5 0 0 1 3 0V13m0-4.5a1.5 1.5 0 0 1 3 0V15a7 7 0 0 1-7 7h-1a7 7 0 0 1-5.6-2.8L3.6 15a1.6 1.6 0 0 1 2.4-2z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/></svg>',
 };
 
@@ -107,7 +105,9 @@ export class HUD {
     if (!a) return;
     this.el.actLabel.textContent = a.label;
     this.el.act.setAttribute('aria-label', a.label);
-    this.el.actIcon.innerHTML = ICONS[a.icon] || ICONS.hand;
+    // taking an item shows that item's own icon, copied from its button so the two can never differ
+    const item = this.itemBtns[a.icon];
+    this.el.actIcon.innerHTML = item ? item.querySelector('svg').outerHTML : ICONS[a.icon] || ICONS.hand;
   }
 
   setDrop(on) {
