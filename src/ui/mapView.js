@@ -51,8 +51,8 @@ const TURN_ARROW = (d) => `<svg viewBox="-12 -12 24 24" aria-hidden="true"><path
   + `<path d="${d > 0 ? 'M2.6 -7.6 6.4 -4.6 2.4 -2.2' : 'M-2.6 -7.6 -6.4 -4.6 -2.4 -2.2'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const KEYS = () => `<div class="map-keys"><span class="key">${TURN_ARROW(-1)}${KEY_NAMES.a}</span><span class="key">${KEY_NAMES.d}${TURN_ARROW(1)}</span></div>`;
 
-// The heading dial: a compass (north up, like the chart) whose needle is you, the chart's orange arrow, ending in a
-// wooden bead on the rim (the rods' wood) to show it can be dragged round. The needle points right at 0 and is
+// The heading dial: a compass (north up, like the chart) whose needle is your heading: an inked line ending in a
+// wooden bead on the rim (the rods' wood) to show it can be dragged round. The orange arrow stays on the chart only. The needle points right at 0 and is
 // rotated to your heading as the chart draws you.
 const TICKS = Array.from({ length: 16 }, (_, i) => {
   const a = i * Math.PI / 8, r0 = i % 4 ? 41 : 37.5, c = Math.cos(a), s = Math.sin(a);
@@ -65,8 +65,7 @@ const DIAL = () => `<div class="map-dial" aria-label="${tr('map.turn')}"><svg`
   + '<circle r="44" fill="none" stroke="currentColor" stroke-width=".7" opacity=".45"/>'
   + `<path d="${TICKS}" stroke="currentColor" stroke-width="1.2" opacity=".6"/>`
   + '<text y="-23" text-anchor="middle" dominant-baseline="middle" font-family="Cinzel, Georgia, serif" font-weight="700" font-size="12" fill="currentColor">' + tr('map.north') + '</text>'
-  + '<g class="dial-needle"><path d="M-6 0H30" stroke="rgba(58,42,28,.45)" stroke-width="1.6" stroke-linecap="round"/>'
-  + '<path d="M17 0 3 7.5 6.5 0 3 -7.5z" fill="#ff7a1a" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/>'
+  + '<g class="dial-needle"><path d="M-6 0H32" stroke="rgba(58,42,28,.7)" stroke-width="2" stroke-linecap="round"/>'
   + '<circle cx="38" r="6.5" fill="url(#dial-wood)" stroke="rgba(30,16,6,.55)" stroke-width="1"/></g>'
   + '<circle r="2.6" fill="currentColor"/></svg></div>';
 

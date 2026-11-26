@@ -5,8 +5,6 @@ const $ = (id) => document.getElementById(id);
 const HEART = '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 21s-7.5-4.6-10-9.2C.4 8.6 2.3 4.5 6.2 4.5c2.2 0 3.6 1.2 4.4 2.4h2.8c.8-1.2 2.2-2.4 4.4-2.4 3.9 0 5.8 4.1 4.2 7.3C19.5 16.4 12 21 12 21z"/></svg>';
 
 const ICONS = {
-  map: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 6h12v12H6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><ellipse cx="6" cy="12" rx="2.2" ry="6" fill="none" stroke="currentColor" stroke-width="1.8"/><ellipse cx="18" cy="12" rx="2.2" ry="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M11 6v12" stroke="#ff6a4d" stroke-width="2.2"/></svg>',
-  note: '<svg viewBox="0 0 24 24" width="21" height="21"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 7.5h6M9 10.5h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".7"/></svg>',
   hand: '<svg viewBox="0 0 24 24" width="21" height="21"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-5.5a1.5 1.5 0 0 1 3 0V13m0-4.5a1.5 1.5 0 0 1 3 0V15a7 7 0 0 1-7 7h-1a7 7 0 0 1-5.6-2.8L3.6 15a1.6 1.6 0 0 1 2.4-2z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/></svg>',
 };
 
@@ -58,12 +56,11 @@ export class HUD {
   }
 
   // Your items (things you hold up to read: the note, the map), in the order you found them, and the selected one:
-  // a slot bar on every device; the label above it names the selected item for a moment after the selection changes
-  // (and while that item calls for attention).
+  // a slot bar on every device. Setting them shows nothing by itself (a world handing you items at its start
+  // highlights none): the selection shows only when you pick one or one is introduced (flashItemLabel).
   setItems(ids, sel) {
     const key = ids.join() + '|' + sel;
     if (this.itemsKey === key) return;
-    const prevSel = this.itemsKey ? this.itemsKey.split('|')[1] : null;
     this.itemsKey = key;
     const box = this.el.items;
     box.classList.toggle('none', !ids.length);
@@ -75,12 +72,14 @@ export class HUD {
     }
     box.classList.toggle('many', ids.length > 1);
     this.el.itemName.textContent = sel ? this.itemBtns[sel].getAttribute('aria-label') : '';
-    if (sel && sel !== prevSel) this.flashItemLabel();
   }
+  // the selection shows (the ring, the others dimmed, the name above the bar) only for a moment after you pick an item
+  // or one is introduced; the rest of the time the bar sits quiet, though Space still knows which one is selected
   flashItemLabel(ms = 2600) {
     this.el.itemLabel.classList.add('show');
+    this.el.items.classList.add('picking');
     clearTimeout(this.labelTimer);
-    this.labelTimer = setTimeout(() => this.el.itemLabel.classList.remove('show'), ms);
+    this.labelTimer = setTimeout(() => { this.el.itemLabel.classList.remove('show'); this.el.items.classList.remove('picking'); }, ms);
   }
   // an item met for the first time: its name above the bar for a few seconds and a short glow on its button
   introduce(btn) {
@@ -106,7 +105,9 @@ export class HUD {
     if (!a) return;
     this.el.actLabel.textContent = a.label;
     this.el.act.setAttribute('aria-label', a.label);
-    this.el.actIcon.innerHTML = ICONS[a.icon] || ICONS.hand;
+    // taking an item shows that item's own icon, copied from its button so the two can never differ
+    const item = this.itemBtns[a.icon];
+    this.el.actIcon.innerHTML = item ? item.querySelector('svg').outerHTML : ICONS[a.icon] || ICONS.hand;
   }
 
   setDrop(on) {

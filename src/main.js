@@ -471,11 +471,10 @@ class Game {
     this.player.speedMul = carryFactor(this.carried.length);
   }
 
-  // place a carried gem back on the ground
+  // place a carried gem back on the ground, looking as it did before you found it (only a tool or being close lights it)
   putDown(gem, x, z) {
     const w = this.world;
     gem.state = 'ground';
-    gem.marked = true;
     gem.blockPickup = true;
     gem.lit = 0; gem.litTarget = 0;
     gem.group.position.set(x, w.heightAt(x, z) + 1.3, z);
@@ -712,7 +711,6 @@ class Game {
       if (g.blockPickup && gd > GEMS.pickupRadius + 1.5) g.blockPickup = false;
       if (!g.blockPickup && gd < GEMS.pickupRadius && Math.abs(gp.y - P.y - 1) < 2.5) {
         g.state = 'carried';
-        g.marked = false;
         w.scene.remove(g.group);
         this.carried.push(g);
         this.player.setCarried(this.carried.length);

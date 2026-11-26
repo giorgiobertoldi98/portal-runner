@@ -14,7 +14,6 @@ export const gemMapColor = (look = DEFAULT_GEM) => look.mapCol ?? look.inner ?? 
 // It is dark until something lights it (only its crystal glows; a geode's rock shell just catches the light):
 //   lit    (0..1) — set every frame by the Resonance Call (inside the ring = 1), or by the map
 //   near   (0..1) — proximity glimmer, so the last metres are findable (it also brings out the colour)
-//   marked        — a gem you dropped (or lost when caught) keeps a faint glow and its colour so you can find it again
 // Hidden it shows its dark tone; revealed (lit) it turns its world colour and glows.
 export function createGem(look = DEFAULT_GEM) {
   const L = { ...DEFAULT_GEM, ...look };
@@ -57,7 +56,6 @@ export function createGem(look = DEFAULT_GEM) {
     lit: 0,            // smoothed light level
     litTarget: 0,
     near: 0,
-    marked: false,
     blockPickup: false, // true right after a drop, until the player steps away
     hue: offset,
     update(dt, t) {
@@ -67,9 +65,9 @@ export function createGem(look = DEFAULT_GEM) {
       // light in fast, fade out over ~0.8 s
       const k = this.litTarget > this.lit ? 10 : 1.3;
       this.lit += (this.litTarget - this.lit) * (1 - Math.exp(-k * dt));
-      const glow = Math.max(this.lit, this.near * 0.35, this.marked ? 0.3 : 0);
-      // how far it has turned from its dark tone to its colour: revealed, close by (the proximity glimmer), or dropped
-      const colour = Math.max(this.lit, Math.min(1, this.near * 1.6), this.marked ? 0.7 : 0);
+      const glow = Math.max(this.lit, this.near * 0.35);
+      // how far it has turned from its dark tone to its colour: revealed, or close by (the proximity glimmer)
+      const colour = Math.max(this.lit, Math.min(1, this.near * 1.6));
       const pulse = 0.88 + Math.sin(t * 3 + offset * 6) * 0.12;
       for (const m of mats) {
         m.mat.color.copy(m.dark).lerp(m.col, colour);

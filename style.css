@@ -75,12 +75,13 @@ body:not(.touch) #tools:not(:has(#items:not(.none))):not(:has(#btn-drop.show)) .
 body.touch .tool.act { bottom: calc(16px + env(safe-area-inset-bottom)); }
 body.touch .tool.act kbd { display: none; }
 
-/* items: a slot bar; slots have the size and look of the system buttons and carry nothing written on them. The selected
-   one is ringed in the world's colour and named in a label above the bar for a moment */
+/* items: a slot bar; slots have the size and look of the system buttons and carry nothing written on them. For a
+   moment after you pick one (.picking) the selected one is ringed in the world's colour, the others dimmed, and its
+   name shows in a label above the bar; otherwise every slot looks the same */
 #items { position: relative; display: flex; align-items: center; gap: 6px; }
 #items.none { display: none; }
-#items .tool:not(.sel):not(:hover) { opacity: .7; }
-#items .tool.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 12px color-mix(in srgb, var(--accent) 40%, transparent); }
+#items.picking .tool:not(.sel):not(:hover) { opacity: .7; }
+#items.picking .tool.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 12px color-mix(in srgb, var(--accent) 40%, transparent); }
 #items .tool.sel.attn { box-shadow: none; opacity: 1; }
 #items .tool .tl { display: none; }
 #item-label { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); padding: 4px 10px; border-radius: 99px; background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font: 600 12px Inter, sans-serif; white-space: nowrap; opacity: 0; transition: opacity .3s; pointer-events: none; }
