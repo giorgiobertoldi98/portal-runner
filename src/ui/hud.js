@@ -25,9 +25,12 @@ export class HUD {
     this.toastTimer = null;
   }
 
-  showScreen(name) {
-    for (const k of ['menu', 'settings', 'pause', 'end', 'help', 'loading']) this.el[k].classList.toggle('hidden', k !== name);
-    this.el.hud.classList.toggle('hidden', name !== null && name !== 'pause' && name !== 'help');   // pause and controls cards sit over the dimmed run
+  // overRun: the pause and controls cards sit over the dimmed run with the HUD behind them; from the menu the controls
+  // card sits over the dimmed menu instead
+  showScreen(name, overRun = name === 'pause' || name === 'help') {
+    const overMenu = name === 'help' && !overRun;
+    for (const k of ['menu', 'settings', 'pause', 'end', 'help', 'loading']) this.el[k].classList.toggle('hidden', k !== name && !(overMenu && k === 'menu'));
+    this.el.hud.classList.toggle('hidden', name !== null && !overRun);
   }
 
   showing(name) { return !this.el[name].classList.contains('hidden'); }
