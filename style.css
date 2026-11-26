@@ -376,8 +376,13 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 @media (hover: hover) { .card.paper .icon-btn:hover { background: var(--page-fill-hi); } }
 .card.paper .icon-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 /* the controls card: two columns of rows (a key or a gesture, then what it does), only the device in use */
-.card.help { width: min(640px, 100%); text-align: center; }
-.help-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 22px; margin: 0 0 20px; text-align: left; }
+.card.help { position: relative; width: min(640px, 100%); text-align: center; }
+/* the card's close button, top right, inked like the card's other controls */
+.card-x { position: absolute; top: 12px; right: 12px; width: 38px; height: 38px; display: grid; place-items: center; padding: 0; border-radius: 50%; cursor: pointer;
+  color: var(--ink); background: var(--page-fill); border: 1.5px solid color-mix(in srgb, var(--ink) 50%, transparent); }
+@media (hover: hover) { .card-x:hover { background: var(--page-fill-hi); } }
+.card-x:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.help-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 22px; margin: 0 0 6px; text-align: left; }
 .help-cols ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .help-cols li { display: flex; align-items: center; gap: 12px; font-size: 14px; line-height: 1.3; }
 .help-cols .k { flex: none; width: 88px; display: flex; justify-content: flex-end; gap: 4px; }
@@ -390,7 +395,8 @@ body.touch .help-cols .k { width: 72px; justify-content: center; }   /* gestures
 .help-cols .k.sys { gap: 2px; }
 .help-cols .k.sys .glyph { width: 22px; height: 22px; }
 @media (max-height: 500px) {
-  .help-cols { margin-bottom: 12px; } .help-cols ul { gap: 6px; } .help-cols li { font-size: 13px; }
+  .help-cols { margin-bottom: 4px; }
+  .card-x { top: 8px; right: 8px; width: 34px; height: 34px; } .help-cols ul { gap: 6px; } .help-cols li { font-size: 13px; }
 }
 
 /* phones held sideways: tighter everywhere so the left column fits without scrolling */

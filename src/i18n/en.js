@@ -49,7 +49,6 @@ export default {
     lookTouch: 'Right side: drag to look around',
     useTouch: 'Tap the buttons on the right to use your items',
     system: 'Pause, sound, controls',
-    close: 'Back',
   },
 
   end: {
