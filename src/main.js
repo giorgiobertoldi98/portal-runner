@@ -380,7 +380,7 @@ class Game {
     this.catches = 0;
     this.level = 0;
     this.callTaught = false;
-    this.toldSlowed = false;  // "this gem is slowing me down": once per run, in the first world
+    this.toldSlowed = false;  // the first gem's toast: once per run, in the first world
     this.hud.setLives(this.lives, GAME.lives);
     this.hud.showScreen(null);
     this.input.enabled = true;

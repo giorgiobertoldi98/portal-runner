@@ -9,7 +9,7 @@ Portal Runner is a personal 3D game played in the browser. It has polished graph
 General principles that guide every design decision. New ones are added here as they come up.
 - **Show, don't tell.** When the game wants you to do something (open a new item, take something, notice a tool), it prompts visually (a glow, a pulse, the item's name beside it) rather than with a toast. Toasts are for what can't be shown. Highlighting the thing itself is enough: no arrows pointing at it. A prompt carries at most one or two plain words (the item's name, "Take the note").
 - **Let the player work it out.** Hints and toasts suggest rather than explain: short and a little cryptic. It's fine if a player doesn't get it straight away: figuring it out is part of the fun.
-- **The voice.** Toasts are the words of someone who knows these worlds: what is here, what is happening and what lies ahead. They speak to you, the player, and they are on your side even while they set you challenges: behind their words, mystery and a challenge, but also delight that you are here living it. They never say they made these worlds or these challenges.
+- **The voice.** One voice speaks to you throughout: the toasts, the notes you find and the tools left for you to take all come from the same unseen person. It is as if they had prepared everything for you (the worlds, the tools, the hunters): they know what is here, what is happening and what lies ahead. They are on your side even while they set you challenges: behind their words, mystery and a challenge, but also delight that you are here living it. They never say they prepared any of it.
 - **Don't spoil.** A world's arrival line (shown as you start) gives only its atmosphere, in a few words and no verbs: never what is there or what hunts you.
 - **One drawn look.** Every screen, card and illustration (menu, Settings, pause, end, notices, held items, future documents and art) is drawn like the explorers' note: ink outlines and watercolour washes on warm paper. Screens are that drawing at dusk, with darker vibes: pale ink on a deep violet sheet, where the worlds' colours glow (dark, never black). Things you hold up to read stay dark ink on light paper. Only the 3D world and the HUD over it (translucent dark panels, so the world shows through) look different. Anything new follows the same look.
 - **Keep the HUD quiet.** Few toasts, small and out of the way, in the HUD's own style; nothing covers the middle of the screen unless you asked for it (a held item).
@@ -102,10 +102,10 @@ General principles that guide every design decision. New ones are added here as 
 
 ## Toasts
 Every toast in the game (see Design principles: anything that can be shown instead isn't a toast):
-- **"Let go of the stick to send a Resonance Call"** (touch) / **"Stand still to send a Resonance Call"** (PC): once per run, 3.8 s after the first world that allows the call opens (the Alien world in a full run). A world's own intro hint replaces it; a world where the call is silent (the Glacier) skips it.
-- **"This gem is slowing me down..."**: the first time you pick up a gem in the first world, once per run (not again after dropping it or being caught).
+- **"Let go of the stick… and listen. They answer."** (touch) / **"Stand still… and listen. They answer."** (PC), how to send the Resonance Call: once per run, 3.8 s after the first world that allows the call opens (the Alien world in a full run). A world's own intro hint replaces it; a world where the call is silent (the Glacier) skips it.
+- **"Heavier than it looks, huh?"**: the first time you pick up a gem in the first world, once per run (not again after dropping it or being caught).
 - **"<Hunter> caught you — n lives left · m gems dropped"**: after a catch with lives left; the gems part only if you were carrying some (plus a world's own respawn note, if it has one).
-- **"Snow storms... make the Yeti so hungry!"** (Glacier): the first storm each time the Glacier is set up.
+- **"Snow storms... hurry up, or it will catch you!"** (Glacier): the first storm each time the Glacier is set up.
 
 ## Scale
 - The player is 1.8 m tall.

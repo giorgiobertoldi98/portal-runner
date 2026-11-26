@@ -101,9 +101,9 @@ export default {
   actions: { takeNote: 'Take the note', takeMap: 'Take the map' },
 
   toast: {
-    callTouch: 'Let go of the stick to send a Resonance Call',
-    callPc: 'Stand still to send a Resonance Call',
-    firstGem: 'This gem is slowing me down...',
+    callTouch: 'Let go of the stick… and listen. They answer.',
+    callPc: 'Stand still… and listen. They answer.',
+    firstGem: 'Heavier than it looks, huh?',
     // the catch toast, joined with ' · '
     caught: { one: '{hunter} caught you — {count} life left', other: '{hunter} caught you — {count} lives left' },
     dropped: { one: '{count} gem dropped', other: '{count} gems dropped' },
