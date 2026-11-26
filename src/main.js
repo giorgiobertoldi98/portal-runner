@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { tr, applyDom } from './i18n/i18n.js';
+import { tr, has, applyDom } from './i18n/i18n.js';
 import { GAME, PORTAL, GEMS, PLAYER, CALL, AUDIO, carryFactor } from './config.js';
 import { WORLDS, worldText } from './worlds/registry.js';
 import { Input } from './engine/input.js';
@@ -19,6 +19,7 @@ import { MapView } from './ui/mapView.js';
 import { Briefing } from './ui/briefing.js';
 import { SettingsScreen } from './ui/settingsScreen.js';
 import { menuIllustration } from './ui/menuArt.js';
+import { beyondIllustration, portalBackdrop } from './ui/beyondArt.js';
 import { MENU_AUDIO } from './ui/menuAudio.js';
 import { load as loadSettings } from './settings.js';
 
@@ -107,10 +108,12 @@ class Game {
     const start = () => { this.audio.init(); this.audio.click(); this.startGame(); };
     document.getElementById('btn-start').addEventListener('click', start);
     document.getElementById('btn-again').addEventListener('click', start);
+    document.getElementById('btn-beyond-again').addEventListener('click', start);
     document.getElementById('btn-resume').addEventListener('click', () => this.resume());
     const toMenu = () => { this.briefing.dismiss(); this.putAway(); this.world?.mechanics?.reset(); this.resonance.reset(); this.hud.setDrop(false); this.hud.setAction(null); this.hud.setCall(false); this.audio.init(); this.audio.click(); this.showMenu(); this.input.releaseLock(); this.syncHolding(); };
     document.getElementById('btn-quit').addEventListener('click', toMenu);
     document.getElementById('btn-menu').addEventListener('click', toMenu);
+    document.getElementById('btn-beyond-menu').addEventListener('click', toMenu);
     document.getElementById('btn-pause').addEventListener('click', (e) => { e.stopPropagation(); if (this.state === 'playing') this.pause(); else if (this.state === 'paused') this.resume(); });
     // the controls card: from the HUD it pauses the run and Back (or Esc) resumes it; from the pause card Back returns there
     document.querySelectorAll('.btn-help').forEach((b) => b.addEventListener('click', (e) => {
@@ -564,10 +567,42 @@ class Game {
     setTimeout(() => this.hud.showEnd(true, tr('end.winText'), this.stats(true)), 900);
   }
 
-  stats(win = false) {
+  // through the portal of the last world open so far: the way on isn't drawn yet. The run ends here, over the inside
+  // of that portal, and the menu's calm track takes over
+  beyond() {
+    const crossed = this.world.def, ahead = WORLDS.slice(this.level + 1);
+    this.hud.setCall(false);
+    this.putAway();
+    this.state = 'over';
+    this.input.releaseLock();
+    this.hud.setDanger(0);
+    this.hud.setDrop(false); this.hud.setAction(null);
+    this.audio.whoosh();
+    this.audio.stopMusic(1.2);
+    this.hud.fade(true, ahead[0].theme.css);
+    setTimeout(() => {
+      this.world.mechanics?.reset();
+      this.syncItems();
+      this.hud.showBeyond({
+        title: has(`${crossed.id}.leftBehind`) ? worldText(crossed, 'leftBehind') : tr('beyond.title'),
+        stats: [[tr('end.time'), this.clockText()], [tr('end.delivered'), this.delivered], [tr('end.caught'), this.catches]],
+        art: beyondIllustration(crossed, ahead),
+        backdrop: portalBackdrop(ahead[0].theme),
+      });
+      this.hud.fade(false);
+      this.audio.crossed();
+      this.menuAudio();
+    }, 650);
+  }
+
+  clockText() {
     const m = Math.floor(this.time / 60), s = Math.floor(this.time % 60);
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+
+  stats(win = false) {
     return [
-      [tr('end.time'), `${m}:${String(s).padStart(2, '0')}`],
+      [tr('end.time'), this.clockText()],
       win ? [tr('end.livesLeft'), this.lives ?? tr('end.none')] : [tr('end.world'), this.world ? worldText(this.world.def, 'name') : tr('end.none')],
       [tr('end.delivered'), this.delivered],
       [tr('end.caught'), this.catches],
@@ -750,6 +785,7 @@ class Game {
     if (portal.active && portal.contains(P)) {
       this.hud.setCall(false);
       if (this.level === WORLDS.length - 1) { this.win(); return; }
+      if (this.level + 1 >= GAME.openWorlds && !this.debug) { this.beyond(); return; }
       this.enterLevel(this.level + 1);
       return;
     }

@@ -325,6 +325,14 @@ export class AudioEngine {
     [261.6, 329.6, 392].forEach((f) => this.tone({ freq: f, type: 'sine', dur: 2.6, gain: 0.1, when: 0.7, attack: 0.3 }));
   }
 
+  // onto the path not yet drawn: a rising glass arpeggio, ringing on while the menu's calm track fades in
+  crossed() {
+    [523.25, 659.25, 783.99, 1046.5, 1174.66].forEach((f, i) => {
+      this.tone({ freq: f, dur: 3.2, gain: 0.12, when: 0.6 + i * 0.22, bus: this.music });
+      this.tone({ freq: f * 2.01, dur: 1.6, gain: 0.04, when: 0.6 + i * 0.22, bus: this.music });
+    });
+  }
+
   lose() {
     [392, 349.2, 311.1, 233.1].forEach((f, i) => this.tone({ freq: f, type: 'sawtooth', dur: 0.9, gain: 0.12, when: i * 0.25, filter: 900 }));
   }

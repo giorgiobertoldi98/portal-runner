@@ -6,7 +6,8 @@
 // {
 //   id,
 //   strings: { en: { name, tab, tagline, hunter, ... }, <lang>: {...} },   // this world's text, per language (i18n/CLAUDE.md):
-//                                    //   name, its Settings tab, the arrival line, the hunter (as a sentence subject)
+//                                    //   name, its Settings tab, the arrival line, the hunter (as a sentence subject),
+//                                    //   leftBehind? (the title of the path not yet drawn after it; else a generic one)
 //   settings?: [{ id, text, unit?, min, max, step, get(), set(v), vars?() }]   // per-level settings shown in the menu (settings.js)
 //   theme: { glow, colA, colB, colC, stone, css, hum },   // used by the portal LEADING here + HUD accent
 //   gem?: { style: 'cluster' | 'geode' | 'rose', dark, col, glow, inner?, innerDark?, glowK?, mapCol? }   // this world's gems (entities/gemDesigns.js)

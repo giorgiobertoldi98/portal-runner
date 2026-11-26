@@ -161,6 +161,24 @@
   </div>
 </div>
 
+<!-- the path not yet drawn: stepping through the portal of the last world open so far. Over the inside of that portal
+     (its backdrop and the card's drawing are built by ui/beyondArt.js), a card says the way on isn't drawn yet -->
+<div id="screen-beyond" class="screen hidden">
+  <div class="beyond-bg" id="beyond-bg"></div>
+  <div class="card paper beyond">
+    <div class="beyond-pic" id="beyond-pic"></div>
+    <div class="beyond-copy">
+      <h2 id="beyond-title"></h2>
+      <p class="beyond-text" data-i18n="beyond.text"></p>
+      <div class="stats" id="beyond-stats"></div>
+      <div class="beyond-btns">
+        <button class="primary" id="btn-beyond-again" data-i18n="end.again"></button>
+        <button class="ghost" id="btn-beyond-menu" data-i18n="end.menu"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- the controls card (the ? button, on the HUD or the pause card): the main controls for the device in use; its × closes it, back to where it was opened from -->
 <div id="screen-help" class="screen hidden">
   <div class="card paper help">

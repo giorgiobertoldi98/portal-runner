@@ -66,6 +66,12 @@ export default {
     none: '—',
   },
 
+  // the path not yet drawn: after the last world open so far (title: a world's own `leftBehind`, else this one)
+  beyond: {
+    title: 'A world behind you',
+    text: "The way on isn't drawn yet…\nsomeone is still inking it.",
+  },
+
   rotate: {
     title: 'Portal Runner plays sideways',
     touch: 'Turn your device to landscape. If it doesn\'t rotate, switch off rotation lock.',
