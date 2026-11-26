@@ -785,7 +785,7 @@ class Game {
     if (portal.active && portal.contains(P)) {
       this.hud.setCall(false);
       if (this.level === WORLDS.length - 1) { this.win(); return; }
-      if (this.level + 1 >= GAME.openWorlds && !this.debug) { this.beyond(); return; }
+      if (this.level + 1 >= GAME.openWorlds) { this.beyond(); return; }
       this.enterLevel(this.level + 1);
       return;
     }

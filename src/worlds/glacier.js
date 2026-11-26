@@ -700,7 +700,7 @@ function build({ quality }) {
     doAction: (ctx) => {
       if (note.canTake) return note.take(ctx);
       const took = cave.take(ctx);
-      if (took) storms.shift({ ...ctx, avoid: cave.avoid() }, { soundAt: 1.4, toastAt: 1.6 });
+      if (took) storms.shift({ ...ctx, avoid: cave.avoid() }, { soundAt: 1.4 });
       return took;
     },
     mapMarks: () => ({ hole: cave.marker() }),
@@ -790,7 +790,6 @@ const STRINGS = {
     leftBehind: 'The Peaks are behind you',   // the title of the path not yet drawn, after its portal
     note: 'Thought I saw ice spikes in a circle somewhere...',
     sketch: 'Sketch of a ring of tall blue ice spikes standing on a snowy rise, with mountains behind',
-    windsChanging: 'Winds are changing…',
     firstStorm: 'Snow storms... make the Yeti so hungry!',
     places: { camp: 'Camp', tower: 'Watchtower', mammoth: 'Mammoth', arches: 'Ice arches', lake: 'Frozen lake', falls: 'Frozen falls' },
     settings: {

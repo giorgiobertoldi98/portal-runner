@@ -177,15 +177,14 @@ export function createSnowStorms({ scene, heightAt, createParticles, density = 1
       this.shift(ctx);
     },
 
-    // every device moves to a new spot (a gem delivered, or the explorers' map taken). A falling chime and a toast
-    // mark it every time. `soundAt` / `toastAt` (seconds) let a caller keep them clear of its own cues.
-    shift(ctx, { soundAt = 0.25, toastAt = 0.6 } = {}) {
+    // every device moves to a new spot (a gem delivered, or the explorers' map taken). A falling chime marks it
+    // every time; `soundAt` (seconds) lets a caller keep it clear of its own cues.
+    shift(ctx, { soundAt = 0.25 } = {}) {
       if (!devices.length) return;
       shiftWait = GLACIER.deviceShufflePause;
       placeAll(ctx);
       const audio = ctx.audio;
       if (audio) [1760, 1318.5, 987.8, 740].forEach((f, i) => audio.tone({ freq: f, type: 'sine', dur: 0.7, gain: 0.035, when: soundAt + i * 0.09 }));
-      if (ctx.hud) setTimeout(() => ctx.hud.toast(tr('glacier.windsChanging'), 3000), toastAt * 1000);
     },
 
     // end the current storm right away (e.g. you went down into the ice hole); its device stays where it is
