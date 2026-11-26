@@ -10,5 +10,5 @@ What a world is, how it plugs in, and the rules a new or changed world must foll
 - **Gems**: the world sets its gem look (`gem`); it hides exactly as many gems as its quota, and the portal builds one socket per gem needed, so any quota works without other changes.
 - **Holes in the ground** (e.g. the Glacier's ice hole): `heightAt` includes the hole and `groundAt` is the terrain alone; `constrainMove` blocks steps that are too steep, `constrainCamera` keeps the camera out of rock, `hunterKeepOut` and `isSheltered` tell hunters where they can't go and where they lose you. Nothing underground casts shadows: they would land on the snow above.
 - **Mechanics** talk to the hunter brain through `signals` and to the game through the optional hooks; a world where the Resonance Call is silent also skips the call hint.
-- **Debug mode**: a world whose items you find in play must implement `grantAll()`, handing them over as if taken, without sounds or side effects.
+- **Debug, Start with all items**: a world whose items you find in play must implement `grantAll()`, handing them over as if taken, without sounds or side effects.
 - Every world plays on touch and PC: anything costly scales with `quality` (density, terrain segments).

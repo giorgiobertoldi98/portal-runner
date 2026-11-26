@@ -47,7 +47,7 @@ export const AUDIO = {
 // Game rules.
 export const GAME = {
   quotas: [3, 3, 3],        // gems to bring to the portal in each level
-  openWorlds: 1,            // worlds open so far: the last one's portal leads to the path not yet drawn (debug mode goes on)
+  openWorlds: 1,            // worlds open so far: the last one's portal leads to the path not yet drawn
   lives: 3,
   monsterSpawnMinDist: 90,  // metres from the player
   monsterPrediction: 0.35,  // 0 = hunters aim where you are, 1 = where you're going

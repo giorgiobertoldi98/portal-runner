@@ -7,7 +7,7 @@ import { AudioEngine } from './engine/audio.js';
 import { CameraRig } from './engine/cameraRig.js';
 import { FixedShot } from './engine/fixedShot.js';
 import { mulberry32 } from './engine/noise.js';
-import { findSpot, dist2D, clamp, dampAngle, insideColliders } from './engine/utils.js';
+import { findSpot, dist2D, clamp, dampAngle, insideColliders, colliderGrid } from './engine/utils.js';
 import { Player } from './entities/player.js';
 import { createPortal } from './entities/portal.js';
 import { createGem, gemMapColor } from './entities/gem.js';
@@ -21,7 +21,7 @@ import { SettingsScreen } from './ui/settingsScreen.js';
 import { menuIllustration } from './ui/menuArt.js';
 import { beyondIllustration, portalBackdrop } from './ui/beyondArt.js';
 import { MENU_AUDIO } from './ui/menuAudio.js';
-import { load as loadSettings } from './settings.js';
+import { load as loadSettings, DEBUG } from './settings.js';
 
 loadSettings(); // saved settings override the defaults in config.js
 applyDom();     // the static markup's text, in the player's language
@@ -31,7 +31,7 @@ const QUALITY = isTouch
   ? { pixelRatio: Math.min(devicePixelRatio, 1.5), shadowMap: 1024, density: 0.6, terrainSegments: 150 }
   : { pixelRatio: Math.min(devicePixelRatio, 2), shadowMap: 2048, density: 1, terrainSegments: 200 };
 
-const CALL_HINT = () => tr(isTouch ? 'toast.callTouch' : 'toast.callPc');
+const CALL_HINT = () => tr('toast.call');
 const MAP_TURN = 2.2;   // rad/s: how fast A / D turn the explorer and the camera with the map open
 const MAP_AIM = 7;      // rad/s at most: how fast they turn to face where the map's dial points
 const MAP_SWING = 12;   // how fast the camera swings behind the explorer as the map opens (higher = quicker)
@@ -123,18 +123,6 @@ class Game {
     }));
     document.getElementById('btn-help-close').addEventListener('click', () => this.closeHelp());
     document.getElementById('btn-menu-help').addEventListener('click', () => { this.audio.init(); this.audio.click(); this.helpFrom = 'menu'; this.hud.showScreen('help', false); });
-    // settings switches, remembered in this browser when storage is available: debug mode (off by default; read at each level start)
-    const bindSwitch = (cls, key, on, apply) => {
-      try { const v = localStorage.getItem(key); if (v) on = v === 'on'; } catch (_) {}
-      const btns = document.querySelectorAll(cls);
-      const show = () => { apply(on); btns.forEach((b) => b.setAttribute('aria-checked', String(on))); };
-      btns.forEach((b) => b.addEventListener('click', () => {
-        on = !on; show(); this.audio.init(); this.audio.click();
-        try { localStorage.setItem(key, on ? 'on' : 'off'); } catch (_) {}
-      }));
-      show();
-    };
-    bindSwitch('.opt-debug', 'pr-debug', false, (on) => { this.debug = on; });
 
     // menu track: browsers only allow sound after a gesture, so it starts on the first touch, click or key at the menu
     const wake = () => { if (this.state === 'menu') { this.audio.init(); this.menuAudio(); } };
@@ -198,7 +186,7 @@ class Game {
   closeHeld() { if (this.mapView.open) this.toggleMap(); else if (this.briefing.open) this.closeBriefing(); }
 
   // keep the items in step with what the world says you have: a new one joins the end, gets selected and is held up
-  // straight away, as if tapped (it glows until then, in case it can't open yet). Debug mode hands everything over at
+  // straight away, as if tapped (it glows until then, in case it can't open yet). Debug (Start with all items) hands everything over at
   // the start, quietly: no glow, nothing opens, and the first item stays selected.
   syncItems() {
     const found = [];
@@ -206,7 +194,7 @@ class Game {
       const i = this.items.indexOf(d.id), has = this.world ? d.has() : false;
       if (has && i < 0) {
         this.items.push(d.id);
-        if (!this.debug) { this.itemSel = this.items.length - 1; this.hud.attention(d.btn, true); found.push(d.id); }
+        if (!DEBUG.items) { this.itemSel = this.items.length - 1; this.hud.attention(d.btn, true); found.push(d.id); }
       } else if (!has && i >= 0) { this.items.splice(i, 1); this.hud.attention(d.btn, false); }
     }
     this.itemSel = clamp(this.itemSel, 0, Math.max(0, this.items.length - 1));
@@ -361,7 +349,19 @@ class Game {
     }
     this.base = this.baseSpot();
     if (w.mechanics) w.mechanics.setup({ world: w, rng: this.rng, portal: { x: pp.x, z: pp.z }, base: this.base, gems: this.groundGemSpots() });
-    if (this.debug) w.mechanics?.grantAll?.();   // debug mode: start out holding everything this world lets you find
+    // props filed by area for the explorer's and the hunter's collisions: after the mechanics, which may move some (the ice hole's)
+    w.grid = colliderGrid(w.colliders);
+    if (DEBUG.items) w.mechanics?.grantAll?.();   // debug: start out holding everything this world lets you find
+    if (DEBUG.gems[w.def.id]) for (const g of w.gems) this.carry(g);   // debug: start carrying every gem the portal needs
+  }
+
+  // a gem off the ground and onto your back
+  carry(g) {
+    g.state = 'carried';
+    this.world.scene.remove(g.group);
+    this.carried.push(g);
+    this.player.setCarried(this.carried.length);
+    this.updateGemHud();
   }
 
   groundGemSpots() {
@@ -380,7 +380,7 @@ class Game {
     this.catches = 0;
     this.level = 0;
     this.callTaught = false;
-    this.toldSlowed = false;  // "this gem is slowing me down": once per run, in the first world
+    this.toldSlowed = false;  // the first gem's toast: once per run, in the first world
     this.hud.setLives(this.lives, GAME.lives);
     this.hud.showScreen(null);
     this.input.enabled = true;
@@ -745,12 +745,8 @@ class Game {
       if (canFind) near = Math.max(near, g.near);
       if (g.blockPickup && gd > GEMS.pickupRadius + 1.5) g.blockPickup = false;
       if (!g.blockPickup && gd < GEMS.pickupRadius && Math.abs(gp.y - P.y - 1) < 2.5) {
-        g.state = 'carried';
-        w.scene.remove(g.group);
-        this.carried.push(g);
-        this.player.setCarried(this.carried.length);
+        this.carry(g);
         this.audio.pickup();
-        this.updateGemHud();
         if (this.level === 0 && !this.toldSlowed) { this.toldSlowed = true; this.hud.toast(tr('toast.firstGem'), 3600); }
       }
       g.update(dt, t);
@@ -785,7 +781,7 @@ class Game {
     if (portal.active && portal.contains(P)) {
       this.hud.setCall(false);
       if (this.level === WORLDS.length - 1) { this.win(); return; }
-      if (this.level + 1 >= GAME.openWorlds && !this.debug) { this.beyond(); return; }
+      if (this.level + 1 >= GAME.openWorlds) { this.beyond(); return; }
       this.enterLevel(this.level + 1);
       return;
     }

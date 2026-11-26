@@ -1,7 +1,7 @@
 // Settings screen (from the main menu): one tab for the general settings, then one per world, side by side in a
 // column on the left; the chosen tab's settings fill the right.
 import { WORLDS } from '../worlds/registry.js';
-import { GENERAL, levelSettings, setValue, resetDefaults } from '../settings.js';
+import { GENERAL, levelSettings, GENERAL_DEBUG, levelDebugSettings, setValue, resetDefaults } from '../settings.js';
 import { tr, has, num, lang, LANGUAGES, setLanguage } from '../i18n/i18n.js';
 
 const $ = (id) => document.getElementById(id);
@@ -20,6 +20,7 @@ export class SettingsScreen {
     this.head = $('set-head');
     this.list = $('set-list');
     this.general = $('set-general');
+    this.debug = $('set-debug');
     // each world's tab carries a dab of its colour
     this.tabs.innerHTML = `<button data-t="general">${tr('settings.general')}</button>`
       + WORLDS.map((d, i) => `<button data-t="${i}" style="--tab:${d.theme.css}"><i class="dab"></i>${tr(`${d.id}.tab`)}</button>`).join('');
@@ -52,6 +53,13 @@ export class SettingsScreen {
     this.head.textContent = general ? tr('settings.general') : tr(`${WORLDS[+this.tab].id}.name`);
     this.head.style.setProperty('--tab', general ? '' : WORLDS[+this.tab].theme.css);
     const items = general ? GENERAL : levelSettings(+this.tab);
+    const flags = general ? GENERAL_DEBUG : levelDebugSettings(+this.tab);
+    // the tab's debug switches, in their own section before everything else
+    this.debug.innerHTML = flags.length ? `<h4 class="set-sub">${tr('settings.debug')}</h4>` + flags.map((s, i) => `
+      <div class="setting">
+        <div class="txt"><span>${labelOf(s)}</span>${hasHint(s) ? `<small>${hintOf(s)}</small>` : ''}</div>
+        <button class="switch" role="switch" data-f="${i}" aria-label="${labelOf(s)}"><i></i></button>
+      </div>`).join('') + '<hr class="set-rule">' : '';
     this.list.innerHTML = items.map((s, i) => `
       <div class="setting stepper">
         <div class="txt"><span>${labelOf(s)}</span>${hasHint(s) ? `<small data-h="${i}">${hintOf(s)}</small>` : ''}</div>
@@ -62,6 +70,10 @@ export class SettingsScreen {
         </div>
       </div>`).join('');
     this.rows = items;
+    this.flags = flags;
+    this.debug.querySelectorAll('button.switch').forEach((btn) => btn.addEventListener('click', () => {
+      const s = flags[+btn.dataset.f]; s.set(!s.get()); this.onSound(); this.refresh();
+    }));
     this.list.querySelectorAll('button.step').forEach((btn) => this.bindStep(btn));
     this.refresh();
   }
@@ -84,5 +96,6 @@ export class SettingsScreen {
   refresh() {
     this.list.querySelectorAll('b[data-v]').forEach((el) => { const s = this.rows[+el.dataset.v]; el.textContent = fmt(s, s.get()); });
     this.list.querySelectorAll('small[data-h]').forEach((el) => { el.textContent = hintOf(this.rows[+el.dataset.h]); });
+    this.debug.querySelectorAll('button.switch').forEach((el) => el.setAttribute('aria-checked', String(this.flags[+el.dataset.f].get())));
   }
 }

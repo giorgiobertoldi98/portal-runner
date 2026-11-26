@@ -73,7 +73,8 @@ export class Player {
     const px = this.position.x, pz = this.position.z;
     this.position.x += this.velocity.x * dt;
     this.position.z += this.velocity.z * dt;
-    resolveCollisions(this.position, PLAYER.radius, world.colliders);
+    // only the props around you (world.grid, filed by area): the cost doesn't grow with the world's prop count
+    resolveCollisions(this.position, PLAYER.radius, world.grid ? world.grid.near(this.position.x, this.position.z, PLAYER.radius + 2) : world.colliders);
     clampToRadius(this.position, world.radius - 2);
     if (world.constrainMove) world.constrainMove(this.position, px, pz); // e.g. walls too steep to walk (the ice hole)
     const gy = world.heightAt(this.position.x, this.position.z);

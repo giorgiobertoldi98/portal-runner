@@ -329,7 +329,10 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 .set-head { margin: 0 0 12px; font: 700 clamp(18px, 2.4vw, 24px) Cinzel, serif; letter-spacing: .04em; color: var(--ink);
   padding-bottom: 6px; border-bottom: 1.5px solid color-mix(in srgb, var(--tab, var(--ink)) 60%, transparent); }
 .set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 10px; align-items: start; }
-#set-general:not(.hidden), #set-list { display: contents; }
+/* a section within a tab (Debug, first), across both columns, closed by a rule */
+.set-rule { grid-column: 1 / -1; width: 100%; margin: 4px 0; border: 0; border-top: 1px dashed var(--ink-line); }
+.set-sub { grid-column: 1 / -1; margin: 0; font: 700 clamp(14px, 1.8vw, 17px) Cinzel, serif; letter-spacing: .05em; color: var(--ink-soft); }
+#set-debug, #set-general:not(.hidden), #set-list { display: contents; }
 /* a setting row on paper */
 .paper .setting { padding: 10px 12px; color: var(--ink); background: var(--page-fill); border: 1px solid var(--ink-line); border-radius: 8px 11px 9px 12px; }
 #screen-settings .setting { margin: 0; min-height: 100%; }
@@ -386,10 +389,11 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 .beyond-swirl .mote { animation: beyond-mote 9s ease-in-out infinite; }
 @keyframes beyond-mote { 0%, 100% { opacity: .2; transform: translateY(0); } 50% { opacity: .9; transform: translateY(-14px); } }
 .card.paper.beyond { position: relative; width: min(1000px, 100%); max-height: 100%; display: grid; grid-template-columns: minmax(0, 47fr) minmax(0, 53fr); align-items: center; gap: clamp(14px, 3vw, 34px);
-  padding: clamp(14px, 4vh, 34px) clamp(20px, 3.5vw, 40px) clamp(14px, 4vh, 34px) clamp(12px, 2.5vw, 30px); text-align: left; }
-.beyond-pic { min-width: 0; height: min(412px, 62vh); }
+  padding: clamp(14px, 4vh, 34px) clamp(20px, 3.5vw, 40px) clamp(14px, 4vh, 34px) clamp(12px, 2.5vw, 30px); text-align: left;
+  padding-block: clamp(14px, 4svh, 34px); }   /* svh: the height you can see with the browser's bar showing (vh above for older browsers) */
+.beyond-pic { min-width: 0; height: min(412px, 62vh); height: min(412px, 62svh); }
 .beyond-pic svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.beyond-copy { display: flex; flex-direction: column; gap: clamp(10px, 3vh, 22px); min-width: 0; }
+.beyond-copy { display: flex; flex-direction: column; gap: clamp(10px, 3vh, 22px); gap: clamp(10px, 3svh, 22px); min-width: 0; }
 .card.paper.beyond h2 { margin: 0; font-size: clamp(24px, 2.7vw, 34px); color: #f2c66e; overflow-wrap: break-word; text-wrap: balance; }
 .card.paper.beyond h2::after { margin: 8px 0 0; }
 .beyond-text { margin: 0; white-space: pre-line; font: 600 clamp(21px, 2.5vw, 32px)/1.2 Caveat, 'Segoe Print', cursive; color: var(--ink); opacity: .92; }
@@ -407,7 +411,7 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
   .card.paper.beyond h2 { font-size: 20px; margin: 0; }
   .card.paper.beyond h2::after { margin-top: 4px; }
   .beyond-text { font-size: 19px; }
-  .beyond-pic { height: min(300px, 72vh); }
+  .beyond-pic { height: min(300px, 72vh); height: min(300px, 72svh); }
   .card.paper.beyond .stats { gap: 6px; }
   .card.paper.beyond .stats b { font-size: 15px; }
   .card.paper.beyond .stats span { font-size: 9.5px; }

@@ -36,6 +36,7 @@ Each kind of knowledge has one home, so no file grows into a dump and each note 
 - Default tuning lives in `src/config.js`; saved settings override it at startup. Every speed there is a fraction of the running speed V, fixed per state.
 - Gameplay code stays world-agnostic: anything specific to one world lives in that world's module, its mechanics or its hunter brain, and reaches the game loop through the world contract's hooks.
 - Audio is fully procedural: no audio files.
+- Per-frame work that scans the world's colliders reads only the nearby ones from `world.grid` (`colliderGrid`, rebuilt by `main.js` at each level setup, after the mechanics). A mechanic that moves or adds colliders during a run must rebuild it.
 - Every word the player reads goes through `tr()` (`src/i18n/`): no literal player-facing text in code or markup, and no sentences built from pieces. Check text changes with `?lang=pseudo`. Rules in `src/i18n/CLAUDE.md`.
 - Small rooms get a fixed camera shot (design principle in GAME.md): a world declares the room and its shot; how it behaves is in `src/engine/fixedShot.js`.
 
@@ -54,6 +55,7 @@ Each kind of knowledge has one home, so no file grows into a dump and each note 
 - Prompt visually rather than with toasts; keep toasts few, short and suggestive (see Design principles in GAME.md). When the game prompts the player to open a tool or press something, highlighting it is enough: no arrows, at most one or two plain words.
 
 ## Code quality
+- Weigh maintainability, extendability and cost (CPU per frame, memory, garbage) in every change, especially in code that runs every frame and grows with the world (props, hunters, effects). Take the easy wins when they come up (look only at what's near, build once instead of every frame, don't allocate in hot loops); don't optimise further than that unless a measurement shows it's needed.
 - Keep the code clean and easy to read, with concise, understandable comments (say why, not what the line already says).
 - As development goes on, notice when something would clearly benefit from being modularised for reuse or decoupling, and do it, without overdoing it: no abstractions for a single use.
 

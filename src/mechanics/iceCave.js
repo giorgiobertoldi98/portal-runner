@@ -638,7 +638,7 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
       return true;
     },
 
-    // the map in your hands without the trip down (debug mode), the crate left empty
+    // the map in your hands without the trip down (debug: Start with all items), the crate left empty
     grant() {
       held = true; mapState = 'held'; canTake = false;
       item.group.visible = false;
