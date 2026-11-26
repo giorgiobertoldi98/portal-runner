@@ -58,8 +58,8 @@ export class HUD {
   }
 
   // Your items (things you hold up to read: the note, the map), in the order you found them, and the selected one:
-  // a slot bar on every device; the label above it names the selected item for a moment after the selection changes
-  // (and while that item calls for attention).
+  // a slot bar on every device; the selection shows for a moment after it changes (and the label stays while the
+  // selected item calls for attention).
   setItems(ids, sel) {
     const key = ids.join() + '|' + sel;
     if (this.itemsKey === key) return;
@@ -77,10 +77,13 @@ export class HUD {
     this.el.itemName.textContent = sel ? this.itemBtns[sel].getAttribute('aria-label') : '';
     if (sel && sel !== prevSel) this.flashItemLabel();
   }
+  // the selection shows (the ring, the others dimmed, the name above the bar) only for a moment after you pick an item
+  // or one is introduced; the rest of the time the bar sits quiet, though Space still knows which one is selected
   flashItemLabel(ms = 2600) {
     this.el.itemLabel.classList.add('show');
+    this.el.items.classList.add('picking');
     clearTimeout(this.labelTimer);
-    this.labelTimer = setTimeout(() => this.el.itemLabel.classList.remove('show'), ms);
+    this.labelTimer = setTimeout(() => { this.el.itemLabel.classList.remove('show'); this.el.items.classList.remove('picking'); }, ms);
   }
   // an item met for the first time: its name above the bar for a few seconds and a short glow on its button
   introduce(btn) {
