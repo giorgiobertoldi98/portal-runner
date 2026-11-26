@@ -162,6 +162,7 @@ Why these values:
 ## Enemies
 - Each world has one hunter, and each hunter's behaviour is custom to its world.
 - Hunters aim slightly ahead of where you're running rather than at where you are.
+- Hunters walk round rocks, trees and ruins rather than pressing into them, and never squeeze into gaps too narrow for them: they take the nearer way round and keep to it, trying the other side only if it leads nowhere.
 - **Portal safe zone (every world)**: within 13 m of the portal (beyond the 7.5 m insertion range, so you can always feed gems in safely), no hunter can follow you, whatever its distance or state, storms included. While you're inside, it stops chasing, can't enter the zone and can't reach you from its edge, and the danger cues are off. Once you step out, its normal behaviour resumes straight away. Each hunter decides what it does meanwhile (the Yeti goes back to searching, heading away from you; plain-chase hunters walk away from the portal). A radius of 0 turns the safe zone off.
 - You start each level (and respawn after being caught) facing the middle of the world, just inside the edge of the safe zone (1.5 m in from the ring), never on the portal platform. If that spot isn't walkable, the start swings around the portal at the same distance, then a little closer.
 - The zone is marked by a faint ring on the ground in the portal's glow colour. It follows the terrain, breathes gently and fades out when the portal opens.
