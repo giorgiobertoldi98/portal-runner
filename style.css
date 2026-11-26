@@ -273,9 +273,14 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 .landing .loop svg { flex: none; width: 18px; height: 18px; fill: currentColor; color: var(--w0, #8fe8ff); }
 .landing .loop li:nth-child(2) svg { color: var(--w1, #e07bff); }
 .landing .loop li:nth-child(3) svg { color: var(--w2, #ffc35c); }
-.landing .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.landing .actions .primary { grid-column: 1 / -1; }   /* Begin on its own row; Settings and Controls side by side below */
+.landing .actions { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
 .landing .actions .ghost { margin-top: 0; padding-inline: 22px; }
+/* Controls: a quiet text link under the buttons, less weight than Settings */
+.menu-link { display: inline-flex; align-items: center; gap: 7px; margin-top: 14px; padding: 4px 2px; border: 0; background: none; cursor: pointer;
+  color: var(--ink-soft); font: 500 14px Inter, sans-serif; letter-spacing: .02em; transition: color .15s; }
+.menu-link span { text-decoration: underline; text-decoration-color: var(--ink-line); text-underline-offset: 4px; }
+@media (hover: hover) { .menu-link:hover { color: var(--ink); } .menu-link:hover span { text-decoration-color: currentColor; } }
+.menu-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 4px; }
 /* the drawing's motion: islands bob, portals swirl, gems drift and now and then glint, stars twinkle */
 .menu-art .bob { animation: art-bob 6s ease-in-out infinite; }
 .menu-art .swirl { transform-origin: 0 0; animation: art-spin 18s linear infinite; }
@@ -297,6 +302,7 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
   #screen-menu.landing { padding-block: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-bottom)); }
   .landing .title { font-size: clamp(28px, 11vh, 60px); margin-bottom: 8px; }
   .landing .lead { font-size: 23px; margin-bottom: 16px; }
+  .menu-link { margin-top: 8px; font-size: 13px; }
   .landing .loop { display: none; } /* the tagline already says it; longer languages wouldn't fit both */
 }
 @media (prefers-reduced-motion: reduce) { .landing .title, .menu-art * { animation: none !important; } }
