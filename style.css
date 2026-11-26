@@ -340,7 +340,7 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 #screen-pause, #screen-end, #screen-help { background: radial-gradient(ellipse at center, rgba(12, 10, 22, .35), rgba(12, 10, 22, .75)); }
 #screen-help.paper { background: var(--page-grain), var(--page-sheet); }   /* opened from the menu: on the menu's paper, no world behind */
 .card.paper { color: var(--ink); background: var(--page-grain), var(--page-sheet); border: 0; border-radius: 6px 10px 8px 12px; backdrop-filter: none; -webkit-backdrop-filter: none;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, .5), inset 0 0 40px var(--page-rim), inset 0 0 0 1px var(--ink-line); transform: rotate(-.4deg); }
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .5), inset 0 0 40px var(--page-rim), inset 0 0 0 1px var(--ink-line); }
 .card.paper h2 { color: var(--ink); text-shadow: none; margin-bottom: 14px; }
 /* an inked flourish under the title (a mask, so it takes the ink colour) */
 .card.paper h2::after { content: ''; display: block; width: 120px; height: 10px; margin: 6px auto 0; opacity: .55; background: var(--ink);
@@ -370,7 +370,6 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
   .card.paper .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .card.paper .stats b { font-size: 15px; }
 }
-@media (prefers-reduced-motion: reduce) { .card.paper { transform: none; } }
 
 /* the pause card's small system buttons (sound, controls), inked like the card's other controls */
 .card-sys { display: flex; justify-content: center; gap: 10px; margin-top: 14px; }
