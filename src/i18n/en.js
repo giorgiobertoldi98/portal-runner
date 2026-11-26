@@ -11,6 +11,7 @@ export default {
     loop3: 'Fill the portal and step through to the next world.',
     start: 'Begin the expedition',
     settings: 'Settings',
+    controls: 'Controls',
   },
 
   settings: {

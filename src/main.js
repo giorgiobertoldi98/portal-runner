@@ -115,10 +115,11 @@ class Game {
     // the controls card: from the HUD it pauses the run and Back (or Esc) resumes it; from the pause card Back returns there
     document.querySelectorAll('.btn-help').forEach((b) => b.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (this.state === 'playing') { this.helpFromPause = false; this.pause('help'); }
-      else if (this.state === 'paused') { this.helpFromPause = true; this.hud.showScreen('help'); }
+      if (this.state === 'playing') { this.helpFrom = 'run'; this.pause('help'); }
+      else if (this.state === 'paused') { this.helpFrom = 'pause'; this.hud.showScreen('help'); }
     }));
     document.getElementById('btn-help-close').addEventListener('click', () => this.closeHelp());
+    document.getElementById('btn-menu-help').addEventListener('click', () => { this.audio.init(); this.audio.click(); this.helpFrom = 'menu'; this.hud.showScreen('help', false); });
     // settings switches, remembered in this browser when storage is available: debug mode (off by default; read at each level start)
     const bindSwitch = (cls, key, on, apply) => {
       try { const v = localStorage.getItem(key); if (v) on = v === 'on'; } catch (_) {}
@@ -164,6 +165,7 @@ class Game {
         else if (this.state === 'paused') { if (this.hud.showing('help')) this.closeHelp(); else this.resume(); }
       }
       if (e.code === 'Escape' && this.state === 'menu' && !document.getElementById('screen-settings').classList.contains('hidden')) this.hud.showScreen('menu');
+      if (e.code === 'Escape' && this.state === 'menu' && this.hud.showing('help')) this.closeHelp();
       if (e.code === 'KeyM') toggleMute();
       if ((e.code === 'KeyQ' || e.code === 'KeyG') && this.state === 'playing' && !this.heldItem()) this.dropQueued = true;   // not while an item is held up: the game's controls are off
     });
@@ -298,7 +300,11 @@ class Game {
   }
 
   // the controls card goes back where it was opened from: the pause card, or straight into the run
-  closeHelp() { if (this.helpFromPause) this.hud.showScreen('pause'); else this.resume(); }
+  closeHelp() {
+    if (this.helpFrom === 'menu') { this.audio.click(); this.hud.showScreen('menu'); }
+    else if (this.helpFrom === 'pause') this.hud.showScreen('pause');
+    else this.resume();
+  }
 
   resume() {
     this.audio.init();
