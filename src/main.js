@@ -7,7 +7,7 @@ import { AudioEngine } from './engine/audio.js';
 import { CameraRig } from './engine/cameraRig.js';
 import { FixedShot } from './engine/fixedShot.js';
 import { mulberry32 } from './engine/noise.js';
-import { findSpot, dist2D, clamp, dampAngle, insideColliders } from './engine/utils.js';
+import { findSpot, dist2D, clamp, dampAngle, insideColliders, colliderGrid } from './engine/utils.js';
 import { Player } from './entities/player.js';
 import { createPortal } from './entities/portal.js';
 import { createGem, gemMapColor } from './entities/gem.js';
@@ -361,6 +361,8 @@ class Game {
     }
     this.base = this.baseSpot();
     if (w.mechanics) w.mechanics.setup({ world: w, rng: this.rng, portal: { x: pp.x, z: pp.z }, base: this.base, gems: this.groundGemSpots() });
+    // props filed by area for the explorer's and the hunter's collisions: after the mechanics, which may move some (the ice hole's)
+    w.grid = colliderGrid(w.colliders);
     if (this.debug) w.mechanics?.grantAll?.();   // debug mode: start out holding everything this world lets you find
   }
 

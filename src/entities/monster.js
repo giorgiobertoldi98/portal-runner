@@ -1,4 +1,4 @@
-import { lerp, dampAngle, resolveCollisions, clampToRadius, dist2D, colliderGrid } from '../engine/utils.js';
+import { lerp, dampAngle, resolveCollisions, clampToRadius, dist2D } from '../engine/utils.js';
 import { ChaseBrain } from '../hunters/chase.js';
 import { PORTAL } from '../config.js';
 
@@ -43,7 +43,6 @@ export class Monster {
     this.active = true;
     this.object.visible = true;
     this.side = 0; this.clearT = 0; this.probeT = 0; this.probeFrom = null; this.best = null;
-    this.grid = colliderGrid(world.colliders);   // built per run: some colliders move between runs (the ice hole's)
     this.brain.reset(this, { world, rng });
   }
 
@@ -92,7 +91,7 @@ export class Monster {
     const portalSafe = !!(portal && R > 0 && dist2D(player.position, portal) < R);
     this.safe = portalSafe || !!(world.isSheltered && world.isSheltered(player.position));
     const cmd = this.brain.think(dt, this, { ...ctx, dist: d, safe: this.safe });
-    const near = this.grid.near(this.pos.x, this.pos.z, LOOK + this.body.radius + 1);   // the props it could see ahead or touch
+    const near = world.grid ? world.grid.near(this.pos.x, this.pos.z, LOOK + this.body.radius + 1) : world.colliders;   // the props it could see ahead or touch
     // ease between speeds so state changes don't snap
     this.speed = lerp(this.speed, cmd.speed, 1 - Math.exp(-3 * dt));
     const want = this.steer(Math.atan2(cmd.tx - this.pos.x, cmd.tz - this.pos.z), Math.hypot(cmd.tx - this.pos.x, cmd.tz - this.pos.z), near, world.hunterKeepOut, dt);
