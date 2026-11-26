@@ -54,13 +54,13 @@ General principles that guide every design decision. New ones are added here as 
 ## Settings
 - Opened from the main menu. Changes apply from the next run and are remembered in the browser. **Reset to defaults** restores the values in this document (on / off switches stay as they are).
 - **Layout** (landscape): a paper page like the menu. On the left, the title, the tabs in a column (General, then one per world, named after it with a dab of its colour, no numbers) and, at the bottom, "Changes apply from the next run", **Done** and **Reset to defaults**. On the right, the chosen tab's name and its settings, in two columns where there is room; only that side scrolls when they don't fit, never the page. Esc also closes it.
-- **General**: debug mode on/off (default off; see below), language (see below), base speed V (12 m/s), speed lost per gem (11% of V per gem carried, 0–30%; never below 45% of V), portal safe radius (13 m), lives (3).
+- **General**: debug mode on/off (default off; see below), language (see below), base speed V (12 m/s), speed lost per gem (15% of V per gem carried, 0–30%; never below 45% of V), portal safe radius (13 m), lives (3).
 - **Debug mode**: for testing. While it's on, every world starts with all the items it lets you find already among your items (in the Glacier: the note and the explorers' map), quietly: none glows or opens by itself, and the first one is selected (without showing it); the paper in the snow and the map on the crate are gone, and the storm devices don't shift as they do when you take the map. Portals also lead on into the worlds not open yet, instead of to the path not yet drawn. Everything else plays as normal. It applies from the next world you enter.
 - **Language**: the game starts in the browser's language when it has it, otherwise in English. The choice appears only once the game speaks more than one language: each language named in itself, and choosing one restarts the game at the menu in that language (settings are kept). Reset to defaults leaves it alone. Key names (WASD, Shift, Space, Q, Esc, M, A / D) are the same in every language.
 - Hints that quote your carrying speeds (Yeti approach speed, storm close chase) update to match the speed lost per gem.
 - **Worlds** (each in its own tab):
   - Every world: gems needed (3, range 1–12). Exactly this many gems are hidden in the world.
-  - Glacier: Yeti approach distance (45 m), Yeti approach speed (65% of V), Yeti storm sprint (260% of V, 100–400%; its speed in a storm while farther than its approach distance), Yeti storm close chase (115% of V, 40–200%; its speed in a storm within its approach distance), Yeti forget time (8 s), number of storm devices (10), device trigger radius (15 m), storm radius min and max (45 m and 80 m; each storm picks a random radius in that range; min and max push each other so min ≤ max), ice hole distance (180 m, 30–220; the hole with the explorers' map never opens closer than this to the portal or to the spawn point).
+  - Glacier: Yeti approach distance (45 m), Yeti approach speed (65% of V), Yeti storm sprint (260% of V, 100–400%; its speed in a storm while farther than its approach distance), Yeti storm close chase (115% of V, 40–200%; its speed in a storm within its approach distance), Yeti forget time (8 s), number of storm devices (10), device trigger radius (20 m), storm radius min and max (45 m and 80 m; each storm picks a random radius in that range; min and max push each other so min ≤ max), ice hole distance (180 m, 30–220; the hole with the explorers' map never opens closer than this to the portal or to the spawn point).
 
 ## Controls
 - **Touch**: the left thumb moves with a joystick (it jumps to where the thumb lands anywhere on the left side); directions are relative to the camera, the explorer turns to face the way it walks, and pushing to the edge runs. The right side of the screen moves the camera (drag sideways to look around, up and down to tilt). Tapping an item's button holds it up.
@@ -125,7 +125,7 @@ Every speed is a fixed fraction of the player's running speed **V = 12 m/s**. Ch
 |---|---|---|
 | Player walking | 0.5 V | 6 |
 | Player running | V | 12 |
-| Player running with n gems | (1 − 0.11·n) V, never below 0.45 V (0.11 = speed lost per gem, editable) | 10.7 / 9.4 / 8.0 with 1 / 2 / 3 gems |
+| Player running with n gems | (1 − 0.15·n) V, never below 0.45 V (0.15 = speed lost per gem, editable) | 10.2 / 8.4 / 6.6 with 1 / 2 / 3 gems |
 | Yeti searching | 0.4 V | 4.8 |
 | Yeti approaching | 0.65 V | 7.8 |
 | Yeti in a storm, farther than its approach distance (storm sprint, editable) | 2.6 V | 31.2 |
@@ -134,12 +134,12 @@ Every speed is a fixed fraction of the player's running speed **V = 12 m/s**. Ch
 | Plain-chase hunters while you're in the portal safe zone (moving away) | 0.4 V | 4.8 |
 
 Why these values:
-- **Each hunter speed sits at or below a carrying speed** rather than rising over time, so what you carry decides the danger.
+- **Hunter speeds sit between your carrying speeds** rather than rising over time, so what you carry decides the danger.
 - **Searching (0.4 V)** is slower than walking: a wandering Yeti is scenery, never a threat on its own.
-- **Approaching (0.65 V)** is just below your running speed even with a full load of 3 gems (0.67 V), so you can always outrun it in the open, but with all 3 gems only barely: a 2% margin that any turn or obstacle eats up. The danger is otherwise a short approach distance (45 m, under 4 seconds of running) and the storms, not raw speed.
-- **Storm sprint (2.6 V)** is how storms turn a distant Yeti into an immediate one. From 250 m away it reaches the edge of its approach distance in about 7 seconds; running out of a storm from its centre takes about 4–7 s carrying nothing and 6–10 s carrying 3 gems, so a Yeti that starts far away usually still catches you if you carry gems. Lowering the sprint makes far-away storms safer.
+- **Approaching (0.65 V)** is below your running speed with up to 2 gems (0.70 V with 2, only just) but above it with all 3 (0.55 V): carrying a full load, you can't outrun it once it has seen you, so you must not let it come within its approach distance (45 m, under 4 seconds of running). With fewer gems the danger is that short distance and the storms, not raw speed.
+- **Storm sprint (2.6 V)** is how storms turn a distant Yeti into an immediate one. From 250 m away it reaches the edge of its approach distance in about 7 seconds; running out of a storm from its centre takes about 4–7 s carrying nothing and 7–12 s carrying 3 gems, so a Yeti that starts far away usually still catches you if you carry gems. Lowering the sprint makes far-away storms safer.
 - **Storm close chase (1.15 V)** is faster than your gem-free running speed, so once the Yeti is within its approach distance in a storm you can't outrun it: you must reach the storm's edge or the portal safe zone before it closes in, and carrying gems only makes that harder. It switches abruptly from the sprint to this speed at the Yeti's approach distance (the same setting decides both). The sprint only happens beyond that distance, which is deep inside the storm's fog, so you rarely see it run at sprint speed.
-- **Plain chase (0.65 V)** is gentler because those hunters always know where you are. You outrun them carrying up to 3 gems, only just with all 3.
+- **Plain chase (0.65 V)** is gentler because those hunters always know where you are. You outrun them carrying up to 2 gems (only just with 2); with all 3 they are faster than you.
 
 ## Core loop (per world)
 1. Explore the world looking for **dark gems**. The world holds exactly as many as the portal needs, so every gem counts.
@@ -205,7 +205,7 @@ Why these values:
 - 10 hidden storm devices, placed at the start of each run. They are spread evenly over the walkable map, away from its border, and stay at least 45 m from the portal and 55 m from the spawn point, and clear of the ice hole.
 - No gem ever starts inside a trigger zone: devices are always placed at least the trigger radius + 6 m from every gem on the ground, so fetching a gem never forces a storm.
 - **Devices shift** (all together, to new spots following the same placement rules and also staying at least 70 m from you) on two occasions: when you take the explorers' map, and when a gem goes into the portal. After a shift, further insertions don't shift them again for 10 s, so feeding several gems at once causes one shift. Every shift is marked by a falling glassy chime and the toast "Winds are changing…". The gem that opens the portal doesn't shift them, since devices stop triggering once the portal is open.
-- Devices are invisible and silent: nothing warns you before you cross a device's 15 m trigger radius (a hum would be mistaken for a gem's).
+- Devices are invisible and silent: nothing warns you before you cross a device's 20 m trigger radius (a hum would be mistaken for a gem's).
 - Crossing a device's trigger radius starts a storm: a fixed circle centred where you stood, with a random radius of 45–80 m.
 - Inside a storm: thick fog and a blizzard cut visibility to ~30 m (never zero). A glowing line on the ground and a snow curtain mark its edge. A gust, a roar from the Yeti and wind sound announce it; the first storm of a run also brings its toast (see Toasts).
 - Only one storm at a time. Devices don't trigger once the portal is open, nor for 4 seconds after a storm ends.
