@@ -26,9 +26,12 @@ export class Player {
   }
 
   // the shape and colours of the gems you carry in the current world
+  // the gems on your back take the new look; however many you carry stay (a world can start you carrying them)
   setGemLook(look) {
     this.gemLook = look;
+    const n = this.carried.length;
     while (this.carried.length) this.carryGroup.remove(this.carried.pop());
+    this.setCarried(n);
   }
 
   setCarried(n) {
