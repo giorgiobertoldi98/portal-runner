@@ -112,13 +112,9 @@ class Game {
     document.getElementById('btn-quit').addEventListener('click', toMenu);
     document.getElementById('btn-menu').addEventListener('click', toMenu);
     document.getElementById('btn-pause').addEventListener('click', (e) => { e.stopPropagation(); if (this.state === 'playing') this.pause(); else if (this.state === 'paused') this.resume(); });
-    // the controls card: from the HUD it pauses the run and Back (or Esc) resumes it; from the pause card Back returns there
-    document.querySelectorAll('.btn-help').forEach((b) => b.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (this.state === 'playing') { this.helpFromPause = false; this.pause('help'); }
-      else if (this.state === 'paused') { this.helpFromPause = true; this.hud.showScreen('help'); }
-    }));
-    document.getElementById('btn-help-close').addEventListener('click', () => this.closeHelp());
+    // the controls card pauses the run like the pause button; Back (or Esc) resumes
+    document.getElementById('btn-help').addEventListener('click', (e) => { e.stopPropagation(); if (this.state === 'playing') this.pause('help'); });
+    document.getElementById('btn-help-close').addEventListener('click', () => this.resume());
     // settings switches, remembered in this browser when storage is available: debug mode (off by default; read at each level start)
     const bindSwitch = (cls, key, on, apply) => {
       try { const v = localStorage.getItem(key); if (v) on = v === 'on'; } catch (_) {}
@@ -136,10 +132,9 @@ class Game {
     const wake = () => { if (this.state === 'menu') { this.audio.init(); this.menuAudio(); } };
     ['pointerdown', 'touchend', 'keydown'].forEach((ev) => addEventListener(ev, wake, { capture: true, passive: true }));
 
-    // sound: on the HUD and on the pause card, both showing the same state
-    const muteBtns = document.querySelectorAll('.btn-mute');
-    const toggleMute = () => { this.audio.init(); this.audio.setMuted(!this.audio.muted); muteBtns.forEach((b) => b.classList.toggle('muted', this.audio.muted)); };
-    muteBtns.forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); toggleMute(); }));
+    const muteBtn = document.getElementById('btn-mute');
+    const toggleMute = () => { this.audio.init(); this.audio.setMuted(!this.audio.muted); muteBtn.classList.toggle('muted', this.audio.muted); };
+    muteBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMute(); });
     addEventListener('keydown', (e) => {
       const live = this.state === 'playing' || this.state === 'frozen';
       // Space: put away what you hold up; else use the action within reach (take the note / map); else hold up the selected item
@@ -159,10 +154,7 @@ class Game {
       }
       // the open map: Esc puts it away (instead of pausing)
       if (this.mapView.open && live && e.code === 'Escape') { e.preventDefault(); this.toggleMap(); return; }
-      if (e.code === 'Escape') {
-        if (this.state === 'playing') this.pause();
-        else if (this.state === 'paused') { if (this.hud.showing('help')) this.closeHelp(); else this.resume(); }
-      }
+      if (e.code === 'Escape') { if (this.state === 'playing') this.pause(); else if (this.state === 'paused') this.resume(); }
       if (e.code === 'Escape' && this.state === 'menu' && !document.getElementById('screen-settings').classList.contains('hidden')) this.hud.showScreen('menu');
       if (e.code === 'KeyM') toggleMute();
       if ((e.code === 'KeyQ' || e.code === 'KeyG') && this.state === 'playing' && !this.heldItem()) this.dropQueued = true;   // not while an item is held up: the game's controls are off
@@ -288,7 +280,7 @@ class Game {
     this.renderer.setSize(innerWidth, innerHeight);
   }
 
-  // screen: the card shown over the paused run (the pause card, or the controls card opened from the HUD)
+  // screen: the card shown over the paused run (the pause card, or the controls card)
   pause(screen = 'pause') {
     this.state = 'paused';
     this.input.releaseLock();
@@ -296,9 +288,6 @@ class Game {
     this.hud.showScreen(screen);
     if (this.audio.ctx) this.audio.ctx.suspend();
   }
-
-  // the controls card goes back where it was opened from: the pause card, or straight into the run
-  closeHelp() { if (this.helpFromPause) this.hud.showScreen('pause'); else this.resume(); }
 
   resume() {
     this.audio.init();

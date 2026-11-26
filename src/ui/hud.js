@@ -30,8 +30,6 @@ export class HUD {
     this.el.hud.classList.toggle('hidden', name !== null && name !== 'pause' && name !== 'help');   // pause and controls cards sit over the dimmed run
   }
 
-  showing(name) { return !this.el[name].classList.contains('hidden'); }
-
   setAccent(css) { document.documentElement.style.setProperty('--accent', css); }
 
   setWorld(name) { this.el.level.textContent = name; }
