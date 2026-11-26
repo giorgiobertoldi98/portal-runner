@@ -787,6 +787,7 @@ const STRINGS = {
     tab: 'Glacier',
     tagline: 'Wind, ice, white silence.',
     hunter: 'The Yeti',
+    leftBehind: 'The Peaks are behind you',   // the title of the path not yet drawn, after its portal
     note: 'Thought I saw ice spikes in a circle somewhere...',
     sketch: 'Sketch of a ring of tall blue ice spikes standing on a snowy rise, with mountains behind',
     windsChanging: 'Winds are changing…',

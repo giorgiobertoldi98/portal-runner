@@ -8,15 +8,21 @@ import { mulberry32 } from '../engine/noise.js';
 
 // the screens' ink and paper tone (--page-ink / --page-base in style.css): washed and far-off colours fade into the paper
 let INK = '#ece2cb', PAPER = '#302b42';
-const hex = (n) => (typeof n === 'string' ? n : `#${n.toString(16).padStart(6, '0')}`);
+// read the screens' ink and paper tones from style.css (before drawing)
+export function readInk() {
+  const css = getComputedStyle(document.documentElement);
+  INK = css.getPropertyValue('--page-ink').trim() || INK;
+  PAPER = css.getPropertyValue('--page-base').trim() || PAPER;
+}
+export const hex = (n) => (typeof n === 'string' ? n : `#${n.toString(16).padStart(6, '0')}`);
 // a colour thinned towards the paper, as a watercolour wash would be
-const wash = (c, k) => {
+export const wash = (c, k) => {
   const a = parseInt(hex(c).slice(1), 16), b = parseInt(PAPER.slice(1), 16);
   const ch = (s) => Math.round(((a >> s) & 255) * (1 - k) + ((b >> s) & 255) * k);
   return `rgb(${ch(16)},${ch(8)},${ch(0)})`;
 };
-const f = (n) => Math.round(n * 10) / 10;
-const line = (w = 1.3, o = 1) => `stroke="${INK}" stroke-width="${w}" stroke-opacity="${o}" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"`;
+export const f = (n) => Math.round(n * 10) / 10;
+export const line = (w = 1.3, o = 1) => `stroke="${INK}" stroke-width="${w}" stroke-opacity="${o}" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"`;
 
 // where the i-th portal floats (its feet), and how big: zig-zagging, climbing and shrinking into the distance
 function spot(i) {
@@ -27,7 +33,7 @@ function spot(i) {
 }
 
 // ── one portal on its floating island, in local units (feet at 0,0; the arch is 108 wide, 170 tall) ──
-const OUTER = 'M-68 0V-116A68 68 0 0 1 68-116V0Z', INNER = 'M-54 0V-116A54 54 0 0 1 54-116V0Z';
+export const OUTER = 'M-68 0V-116A68 68 0 0 1 68-116V0Z', INNER = 'M-54 0V-116A54 54 0 0 1 54-116V0Z';
 function spiral(turns, r0, r1) {
   let d = '';
   for (let k = 0; k <= 60; k++) {
@@ -36,8 +42,10 @@ function spiral(turns, r0, r1) {
   }
   return d;
 }
-function portal(def, i, rng) {
-  const th = def.theme, { x, y, s, fade } = spot(i), id = `p${i}`;
+// at: { x, y, s (scale), fade, spin (seconds per turn of its swirl) }; id: unique prefix for its gradients; wash: the id of the SVG's watercolour filter
+// extra: markup drawn on the island (in its local units, bobbing with it)
+export function islandPortal(def, at, id, rng, washId = 'wash', extra = '') {
+  const th = def.theme, { x, y, s, fade, spin = 16 } = at;
   const stone = wash(th.stone, 0.5), glow = hex(th.glow);
   const crystals = [[-96, 2, 0.8], [-82, 6, 1.1], [88, 4, 1], [100, 0, 0.7]].map(([cx, cy, k]) =>
     `<path d="M${cx - 6 * k} ${cy} L${cx - 1 * k} ${cy - 22 * k} L${cx + 6 * k} ${cy} Z" fill="${wash(th.glow, 0.15)}" ${line(1.1)}/>`).join('');
@@ -51,8 +59,8 @@ function portal(def, i, rng) {
       <radialGradient id="${id}h"><stop offset="0" stop-color="${glow}" stop-opacity=".55"/><stop offset="1" stop-color="${glow}" stop-opacity="0"/></radialGradient>
       <clipPath id="${id}c"><path d="${INNER}"/></clipPath>
     </defs>
-    <ellipse cx="0" cy="-86" rx="132" ry="150" fill="url(#${id}h)" filter="url(#wash)"/>
-    <path d="M-124 6 L-104 42 L-72 54 L-54 94 L-22 106 L0 152 L18 108 L50 88 L74 58 L106 38 L124 6 Z" fill="${stone}" fill-opacity=".8" filter="url(#wash)"/>
+    <ellipse cx="0" cy="-86" rx="132" ry="150" fill="url(#${id}h)" filter="url(#${washId})"/>
+    <path d="M-124 6 L-104 42 L-72 54 L-54 94 L-22 106 L0 152 L18 108 L50 88 L74 58 L106 38 L124 6 Z" fill="${stone}" fill-opacity=".8" filter="url(#${washId})"/>
     <path d="M-124 6 L-104 42 L-72 54 L-54 94 L-22 106 L0 152 L18 108 L50 88 L74 58 L106 38 L124 6" fill="none" ${line()}/>
     ${hatch}
     <path d="M-40 168 l12 -6 l8 10 l-10 8 z M44 150 l10 -4 l5 8 l-9 5 z" fill="${stone}" ${line(1)}/>
@@ -60,7 +68,7 @@ function portal(def, i, rng) {
     <ellipse cx="0" cy="2" rx="80" ry="11" fill="${wash(th.stone, 0.45)}" ${line(1, 0.7)}/>
     <g clip-path="url(#${id}c)">
       <rect x="-60" y="-176" width="120" height="180" fill="url(#${id}g)"/>
-      <g transform="translate(0 -84)"><g class="swirl" style="animation-duration:${f(16 + i * 5)}s">
+      <g transform="translate(0 -84)"><g class="swirl" style="animation-duration:${f(spin)}s">
         <path d="${spiral(2.2, 4, 96)}" fill="none" stroke="${wash(th.colC, 0)}" stroke-width="3" stroke-opacity=".75" stroke-linecap="round"/>
         <path d="${spiral(2.2, 4, 96)}" transform="rotate(180)" fill="none" stroke="#fffaf0" stroke-width="2" stroke-opacity=".55" stroke-linecap="round"/>
       </g></g>
@@ -68,6 +76,7 @@ function portal(def, i, rng) {
     <path d="${OUTER}${INNER}" fill-rule="evenodd" fill="${stone}" ${line(1.4)}/>
     <path d="M-61 -6V-112M61 -6V-112" fill="none" ${line(0.8, 0.4)}/>
     ${crystals}
+    ${extra}
   </g>
 </g>`;
 }
@@ -92,9 +101,7 @@ function gem(look, rng) {
 const glint = (c) => `<path class="glint-star" d="M0 -9 L1.6 -1.6 L9 0 L1.6 1.6 L0 9 L-1.6 1.6 L-9 0 L-1.6 -1.6Z" fill="${c}" stroke="${INK}" stroke-width=".6" vector-effect="non-scaling-stroke"/>`;
 
 export function menuIllustration(worlds) {
-  const css = getComputedStyle(document.documentElement);
-  INK = css.getPropertyValue('--page-ink').trim() || INK;
-  PAPER = css.getPropertyValue('--page-base').trim() || PAPER;
+  readInk();
   const rng = mulberry32(23);
   const spots = worlds.map((_, i) => spot(i));
   const tints = worlds.map((w) => hex(w.theme.glow));
@@ -128,7 +135,7 @@ export function menuIllustration(worlds) {
   }).join('');
 
   // the farthest portal is drawn first, so nearer ones overlap it
-  const portals = worlds.map((w, i) => portal(w, i, rng)).reverse().join('');
+  const portals = worlds.map((w, i) => islandPortal(w, { ...spot(i), spin: 16 + i * 5 }, `p${i}`, rng)).reverse().join('');
   return `<svg class="menu-art" viewBox="0 0 600 640" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 <defs>
   <filter id="wash" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="3" seed="4"/><feDisplacementMap in="SourceGraphic" scale="14"/><feGaussianBlur stdDeviation="1.2"/></filter>

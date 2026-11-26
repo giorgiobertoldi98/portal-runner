@@ -14,7 +14,7 @@ export class HUD {
       hud: $('hud'), gemCount: $('gem-count'), dropN: $('drop-n'), act: $('btn-act'), actLabel: $('act-label'), actIcon: $('btn-act').querySelector('.ico'), gemIcon: $('gem-icon'), dropIcon: $('drop-icon'), lives: $('lives'), level: $('level'), drop: $('btn-drop'), callChip: $('call-chip'), callText: $('call-text'), callBar: $('call-bar'),
       banner: $('banner'), bannerName: $('banner-name'),
       bannerTag: $('banner-tag'), toast: $('toast'), vignette: $('vignette'), fade: $('fade'),
-      menu: $('screen-menu'), settings: $('screen-settings'), pause: $('screen-pause'), end: $('screen-end'), help: $('screen-help'), loading: $('screen-loading'),
+      menu: $('screen-menu'), settings: $('screen-settings'), pause: $('screen-pause'), end: $('screen-end'), help: $('screen-help'), loading: $('screen-loading'), beyond: $('screen-beyond'),
       items: $('items'), itemLabel: $('item-label'), itemName: $('item-name'),
       mapBtn: $('btn-map'), noteBtn: $('btn-note'), endTitle: $('end-title'), endText: $('end-text'), endStats: $('end-stats'), joystick: $('joystick'),
     };
@@ -27,7 +27,7 @@ export class HUD {
   // card sits over the dimmed menu instead
   showScreen(name, overRun = name === 'pause' || name === 'help') {
     const overMenu = name === 'help' && !overRun;
-    for (const k of ['menu', 'settings', 'pause', 'end', 'help', 'loading']) this.el[k].classList.toggle('hidden', k !== name && !(overMenu && k === 'menu'));
+    for (const k of ['menu', 'settings', 'pause', 'end', 'help', 'loading', 'beyond']) this.el[k].classList.toggle('hidden', k !== name && !(overMenu && k === 'menu'));
     this.el.hud.classList.toggle('hidden', name !== null && !overRun);
   }
 
@@ -149,6 +149,15 @@ export class HUD {
     this.el.endText.textContent = text;
     this.el.endStats.innerHTML = stats.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
     this.showScreen('end');
+  }
+
+  // the path not yet drawn (markup from ui/beyondArt.js; the title already translated)
+  showBeyond({ title, stats, art, backdrop }) {
+    $('beyond-title').textContent = title;
+    $('beyond-stats').innerHTML = stats.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
+    $('beyond-pic').innerHTML = art;
+    $('beyond-bg').innerHTML = backdrop;
+    this.showScreen('beyond');
   }
 
   setTouch(on) { document.body.classList.toggle('touch', on); }
