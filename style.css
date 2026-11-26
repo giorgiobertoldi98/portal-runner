@@ -329,6 +329,8 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 .set-head { margin: 0 0 12px; font: 700 clamp(18px, 2.4vw, 24px) Cinzel, serif; letter-spacing: .04em; color: var(--ink);
   padding-bottom: 6px; border-bottom: 1.5px solid color-mix(in srgb, var(--tab, var(--ink)) 60%, transparent); }
 .set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 10px; align-items: start; }
+/* a section within a tab (Debug), across both columns */
+.set-sub { grid-column: 1 / -1; margin: 10px 0 0; font: 700 clamp(14px, 1.8vw, 17px) Cinzel, serif; letter-spacing: .05em; color: var(--ink-soft); }
 #set-general:not(.hidden), #set-list { display: contents; }
 /* a setting row on paper */
 .paper .setting { padding: 10px 12px; color: var(--ink); background: var(--page-fill); border: 1px solid var(--ink-line); border-radius: 8px 11px 9px 12px; }

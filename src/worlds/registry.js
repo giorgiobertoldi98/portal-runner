@@ -31,7 +31,7 @@
 //       briefing?(touch) -> { image (SVG markup), text } | null,
 //                                      //   a note: one of your items while non-null (note button / Space);
 //                                      //   it is held up once when it first appears
-//       grantAll?(),                   //   debug mode: every item the world lets you find is yours from the start
+//       grantAll?(),                   //   debug (Start with all items): every item the world lets you find is yours from the start
 //       onRespawn?({ base, heading, player }) -> string | null,  // after being caught; the string is added to the catch toast
 //     },
 //     // optional physical hooks (glacier: the ice hole):

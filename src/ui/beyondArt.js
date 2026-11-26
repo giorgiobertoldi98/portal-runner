@@ -13,7 +13,7 @@ export function beyondIllustration(crossed, ahead) {
   // a little flag planted on the island's rim, three of its gems stitched on it
   const stitch = [9, 19, 29].map((x, k) => `<path d="M${x} ${10 + k}l3 -5 3 5 -3 4z" fill="${col}" ${line(0.6)}/>`).join('');
   const flag = `<path d="M96 4V-70" ${line(1.6)}/><g transform="translate(96 -70)"><path class="flag" d="M0 0L40 6L36 16L42 26L0 24Z" fill="#e8743a" ${line(1.1)}/>${stitch}</g>`;
-  const island = islandPortal(crossed, { x: 140, y: 285, s: 0.9, fade: 1 }, 'bz', rng, 'bwash', flag);
+  const island = islandPortal(crossed, { x: 140, y: 255, s: 0.85, fade: 1 }, 'bz', rng, 'bwash', flag);
   // the worlds ahead: pencil only, each fainter and smaller, along a route that stops being inked
   const spots = ahead.map((_, i) => ({ x: 330 + 80 * i, y: 200 - 140 * i, s: 0.55 * 0.58 ** i, o: 0.45 - 0.15 * i }));
   const sketches = spots.map(({ x, y, s, o }, i) => {
@@ -25,7 +25,7 @@ export function beyondIllustration(crossed, ahead) {
   spots.forEach(({ x, y }, i) => { if (i) pencil += ` C${x - 60} ${y + 70} ${x - 30} ${y + 40} ${x} ${y + 6}`; else pencil += ` C320 200 ${x - 10} ${y + 30} ${x} ${y + 6}`; });
   return `<svg class="menu-art beyond-art" viewBox="0 0 470 412" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 <defs><filter id="bwash" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="3" seed="7"/><feDisplacementMap in="SourceGraphic" scale="12"/><feGaussianBlur stdDeviation="1.1"/></filter></defs>
-<path d="M150 285C200 245 250 255 290 215" fill="none" ${line(1.8, 0.8)} stroke-dasharray="1 7"/>
+<path d="M148 255C200 235 250 250 290 215" fill="none" ${line(1.8, 0.8)} stroke-dasharray="1 7"/>
 <path class="pencil" d="${pencil}" fill="none" ${line(1, 0.5)} stroke-dasharray="5 4"/>
 ${sketches}
 ${island}

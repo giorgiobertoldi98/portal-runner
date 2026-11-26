@@ -71,6 +71,22 @@ export function load() {
   for (const { key, s } of all()) if (typeof saved[key] === 'number' && isFinite(saved[key])) s.set(fix(s, saved[key]));
 }
 
+// Debug switches, for testing: each tab's Debug section (General: start with all items; every world: start with all
+// its gems). Remembered under their own keys and left alone by Reset to defaults.
+// A switch: { id, text (i18n key holding { label, hint? }), get() -> bool, set(bool) }
+export const DEBUG = { items: false, gems: {} };
+const flag = (key, read, write) => {
+  try { const v = localStorage.getItem(key); if (v) write(v === 'on'); } catch (_) {}
+  return { get: read, set: (on) => { write(on); try { localStorage.setItem(key, on ? 'on' : 'off'); } catch (_) {} } };
+};
+export const GENERAL_DEBUG = [
+  { id: 'items', text: 'settings.debugItems', ...flag('pr-debug', () => DEBUG.items, (on) => { DEBUG.items = on; }) },
+];
+const levelDebug = WORLDS.map((def) => [
+  { id: 'gems', text: 'settings.debugGems', ...flag(`pr-debug-gems.${def.id}`, () => !!DEBUG.gems[def.id], (on) => { DEBUG.gems[def.id] = on; }) },
+]);
+export const levelDebugSettings = (index) => levelDebug[index];
+
 export function resetDefaults() {
   for (const { key, s } of all()) s.set(defaults.get(key));
   try { localStorage.removeItem(STORE_KEY); } catch (_) {}

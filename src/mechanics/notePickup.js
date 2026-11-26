@@ -60,7 +60,7 @@ export function createNotePickup({ scene, heightAt }) {
       return true;
     },
 
-    // the note in your hands without picking it up (debug mode)
+    // the note in your hands without picking it up (debug: Start with all items)
     grant() { held = true; canTake = false; group.visible = false; },
 
     hide() { group.visible = false; canTake = false; },
