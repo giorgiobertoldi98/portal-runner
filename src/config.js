@@ -21,7 +21,7 @@ export const GEMS = {
   extraPerLevel: 0,     // gems in each level on top of the quota (0 = exactly the gems needed)
   humRadius: 14,        // a dark gem starts humming (and faintly glimmering) inside this distance once you have a way to find gems (the Resonance Call, or a world's map)…
   humRadiusBlind: 4,    // …and only this close before that (e.g. the Glacier before you find the explorers' map), so gems aren't found by stumbling around
-  slowPerGem: 0.11,     // each carried gem removes 11% of your speed… (editable: Speed lost per gem)
+  slowPerGem: 0.15,     // each carried gem removes 15% of your speed… (editable: Speed lost per gem)
   minSpeedFactor: 0.45, // …but you never drop below 45%
 };
 
@@ -61,7 +61,6 @@ export const SPEED = {
 export const hunterSpeed = (k) => k * PLAYER.runSpeed;
 // your speed factor (fraction of V) while carrying n gems
 export const carryFactor = (n) => Math.max(GEMS.minSpeedFactor, 1 - GEMS.slowPerGem * n);
-// "89 / 78 / 67%": your running speed with 1 / 2 / 3 gems, for settings hints
 // your running speed with 1 / 2 / 3 gems, in % of V, as hints quote it (the text around it adds the % sign)
 export const carryText = () => [1, 2, 3].map((n) => Math.round(carryFactor(n) * 100)).join(' / ');
 
@@ -71,7 +70,7 @@ export const GLACIER = {
   // so crossing the whole map takes about 45 seconds and 45 m is under 4 seconds of running.
   speed: {                  // fractions of your running speed
     search: 0.4,            // wandering: slower than you walking
-    approach: 0.65,         // just below your speed with a full load of 3 gems (67%): you can outrun it, barely
+    approach: 0.65,         // below your speed with 2 gems (70%), above it with 3 (55%): a full load can't outrun it
     stormFar: 2.6,          // in a storm while beyond detectIn: crosses the map in seconds (editable: Yeti storm sprint)
     stormNear: 1.15,        // in a storm within detectIn: faster than you at any load, so you can't outrun it (editable: Yeti storm close chase)
   },
@@ -79,7 +78,7 @@ export const GLACIER = {
   forget: 8,                // seconds after giving up during which it won't approach you again (storms still bring it)
   waypointReach: 5,         // metres: close enough to a search waypoint to pick the next one
   devices: 10,              // hidden storm devices on the map
-  reach: 15,                // trigger radius of a device
+  reach: 20,                // trigger radius of a device
   deviceAvoidPortal: 45,    // devices stay this far from the portal…
   deviceAvoidBase: 55,      // …from where you spawn
   deviceGemClearance: 6,    // …and from any gem on the ground by this much MORE than their trigger radius (so no gem sits inside a trigger zone)
