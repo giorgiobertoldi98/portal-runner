@@ -101,8 +101,7 @@ export default {
   actions: { takeNote: 'Take the note', takeMap: 'Take the map' },
 
   toast: {
-    callTouch: 'Let go of the stick… and listen. They answer.',
-    callPc: 'Stand still… and listen. They answer.',
+    call: 'Stand still… and listen. They answer.',
     firstGem: 'Heavier than it looks, huh?',
     // the catch toast, joined with ' · '
     caught: { one: '{hunter} caught you — {count} life left', other: '{hunter} caught you — {count} lives left' },

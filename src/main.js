@@ -31,7 +31,7 @@ const QUALITY = isTouch
   ? { pixelRatio: Math.min(devicePixelRatio, 1.5), shadowMap: 1024, density: 0.6, terrainSegments: 150 }
   : { pixelRatio: Math.min(devicePixelRatio, 2), shadowMap: 2048, density: 1, terrainSegments: 200 };
 
-const CALL_HINT = () => tr(isTouch ? 'toast.callTouch' : 'toast.callPc');
+const CALL_HINT = () => tr('toast.call');
 const MAP_TURN = 2.2;   // rad/s: how fast A / D turn the explorer and the camera with the map open
 const MAP_AIM = 7;      // rad/s at most: how fast they turn to face where the map's dial points
 const MAP_SWING = 12;   // how fast the camera swings behind the explorer as the map opens (higher = quicker)
