@@ -38,7 +38,11 @@ export function levelSettings(index) {
     id: 'gems', text: 'settings.gems', min: 1, max: 12, step: 1,
     get: () => GAME.quotas[index], set: (v) => { GAME.quotas[index] = v; },
   };
-  return [gems, ...(def.settings || [])];
+  const clearance = {
+    id: 'gemClearance', text: 'settings.gemClearance', unit: 'm', min: 0, max: 150, step: 5,
+    get: () => GEMS.portalClearances[index], set: (v) => { GEMS.portalClearances[index] = v; },
+  };
+  return [gems, clearance, ...(def.settings || [])];
 }
 
 // every setting with a unique storage key

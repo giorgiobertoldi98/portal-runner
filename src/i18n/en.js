@@ -30,6 +30,7 @@ export default {
     slowPerGem: { label: 'Speed lost per gem', hint: 'Each gem you carry removes this share of V, never below {min}%. Now: {carry}% with 1 / 2 / 3 gems.' },
     safeRadius: { label: 'Portal safe radius', hint: 'In every world, inside this distance from the portal (the faint ring) hunters can\'t follow you or come in. 0 = no safe zone.' },
     lives: { label: 'Lives' },
+    gemClearance: { label: 'Gem distance from the safe zone', hint: 'Gems are hidden at least this far beyond the edge of the portal safe zone. If the world has no room for it, they go in the best spot available.' },
     gems: { label: 'Gems needed', hint: 'Gems to bring to the portal. Exactly this many are hidden in the world.' },
   },
 
