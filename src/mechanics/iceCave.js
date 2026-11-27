@@ -150,7 +150,7 @@ function createMapItem() {
   return { group: g, scroll, halo };
 }
 
-export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, density = 1 }) {
+export function createIceCave({ scene, groundAt, groundColor, sites, holeUniform, colliders, density = 1 }) {
   const cfg = GLACIER;
   let site = null;          // { x, z, y0, rot, c, s }
   let H = new Float32Array(NU * NV), walk = new Uint8Array((NU - 1) * (NV - 1));
@@ -426,7 +426,7 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
     const snow = C(0xe3ebf4), packed = C(0xc2d2e3), floorIce = C(0x93b4d0), icePatch = C(0x7fa9cc), drift = C(0xeef3f9);
     const crust = C(0xdde8f2), paleIce = C(0xa6d0ea), wallA = C(0x7fb6db), wallB = C(0x3f6f99), vein = C(0xb4def5);
     const stone = C(0x868c98), stoneDark = C(0x666d7a), frost = C(0xc3d0dd), slate = C(0x485366), slateLight = C(0x626e82);
-    const cc = new THREE.Color(), c2 = new THREE.Color();
+    const cc = new THREE.Color(), c2 = new THREE.Color(), vcol = new THREE.Color(), gc = new THREE.Color();
     const between = (out, stops, t) => {   // stops = colours evenly along t = 0..1
       const x = clamp01(t) * (stops.length - 1), i = Math.min(stops.length - 2, Math.floor(x));
       return out.copy(stops[i]).lerp(stops[i + 1], smooth01(x - i));
@@ -463,9 +463,14 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
         between(c2, [stoneDark, stone, frost], 0.45 + 0.35 * n).multiplyScalar(1 + 0.03 * m);
         cc.lerp(c2, toRock(uc));
       }
+      // up on the landing, over its last two metres the snow turns into the terrain's own, corner by corner, so the
+      // rim shows no line between the snow outside and the snow in the hole
+      const top = depth < 0.15;
       for (let k = 1; k < poly.length - 1; k++) for (const p of [poly[0], poly[k], poly[k + 1]]) {
-        const w = toWorld(p.u, p.v);
-        out.push(w.x, p.h, w.z); colors.push(cc.r, cc.g, cc.b);
+        const w = toWorld(p.u, p.v), r = Math.hypot(p.u, p.v);
+        vcol.copy(cc);
+        if (top && r > RP - 2) vcol.lerp(groundColor(gc, w.x, w.z), smooth01((r - RP + 2) / 2));
+        out.push(w.x, p.h, w.z); colors.push(vcol.r, vcol.g, vcol.b);
       }
     };
     // where the wall really stands between a low and a high corner of a grid triangle (the shape's own edge, found by
