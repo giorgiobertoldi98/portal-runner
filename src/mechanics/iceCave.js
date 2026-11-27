@@ -370,8 +370,22 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
       H[node(i, j)] = hAt(u, v);
     }
     const pos = [], col = [];
-    const snow = new THREE.Color(0xe3ebf4), caveFloor = new THREE.Color(0x8496ad), wallA = new THREE.Color(0x7fb6db), wallB = new THREE.Color(0x3f6f99);
-    const vein = new THREE.Color(0xb4def5), icePatch = new THREE.Color(0x8fb4d6), cc = new THREE.Color();
+    // The palette goes from the snow outside to old glacier ice the deeper you go, and to bedrock in the map's room:
+    // the shaft's floor from snow (at the rim, like the snow around the hole) through packed snow to bare ice; its
+    // walls from a snow crust through pale ice to deep blue ice; the tunnel turning from that ice to the room's slate
+    // and frosted stone, under the same icy vault.
+    const C = (hex) => new THREE.Color(hex);
+    const snow = C(0xe3ebf4), packed = C(0xc2d2e3), floorIce = C(0x93b4d0), icePatch = C(0x7fa9cc), drift = C(0xeef3f9);
+    const crust = C(0xdde8f2), paleIce = C(0xa6d0ea), wallA = C(0x7fb6db), wallB = C(0x3f6f99), vein = C(0xb4def5);
+    const stone = C(0x868c98), stoneDark = C(0x666d7a), frost = C(0xc3d0dd), slate = C(0x515a68), slateLight = C(0x6e7786);
+    const cc = new THREE.Color(), c2 = new THREE.Color();
+    const between = (out, stops, t) => {   // stops = colours evenly along t = 0..1
+      const x = clamp01(t) * (stops.length - 1), i = Math.min(stops.length - 2, Math.floor(x));
+      return out.copy(stops[i]).lerp(stops[i + 1], smooth01(x - i));
+    };
+    // how far a spot is along the tunnel into the room's rock (0 in the shaft, 1 in the room)
+    const ua = Math.sqrt(RP * RP - TW * TW), ub = LC - Math.sqrt(RC * RC - TW * TW);
+    const toRock = (u) => smooth01((u - ua - 0.3) / (ub - ua + 0.6));
     // up at the rim the terrain takes over exactly at the opening's edge (it is cut away inside it), so the pit's own
     // surface stops there too instead of overlapping it in grid steps
     const clipRim = (poly) => {
@@ -391,14 +405,15 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
       for (const p of poly) { lo = Math.min(lo, p.h); uc += p.u / poly.length; vc += p.v / poly.length; }
       const depth = clamp01((site.y0 - lo) / D);
       const rc = Math.hypot(uc, vc);
-      if (rc > RP && depth > 0.9) cc.copy(caveFloor); else cc.copy(snow).lerp(caveFloor, depth * 0.55);
-      if (rc < RP) {
-        // in the shaft: patches of bare blue ice and pale drifts, so no part is one smooth sheet. Up at the rim (the
-        // landing) they fade out into plain snow, like the snow outside.
-        const k = 1 - (1 - smooth01((RP - rc) / 1.5)) * (1 - smooth01(depth / 0.15));
-        const n = fbm(rockNoise, uc * 0.9 - 70, vc * 0.9 + 15, 3), m = rockNoise(uc * 3.1, vc * 3.1);
-        cc.lerp(icePatch, k * 0.45 * smooth01((n - 0.05) / 0.35)).lerp(snow, k * 0.25 * smooth01(-n / 0.4));
-        cc.multiplyScalar(1 + k * (0.07 * m - 0.05));
+      const n = fbm(rockNoise, uc * 0.9 - 70, vc * 0.9 + 15, 3), m = rockNoise(uc * 3.1, vc * 3.1);
+      // snow → packed snow → bare ice; patches of ice show through more the deeper it is, pale drifts less
+      between(cc, [snow, packed, floorIce], depth);
+      const ice = smooth01((depth - 0.08) / 0.6);
+      cc.lerp(icePatch, ice * 0.5 * smooth01((n - 0.05) / 0.35)).lerp(drift, (1 - ice) * 0.35 * smooth01(-n / 0.4));
+      cc.multiplyScalar(1 + 0.03 * m);
+      if (rc > RP && depth > 0.9) {   // the tunnel's floor turns to the room's frosted stone
+        between(c2, [stoneDark, stone, frost], 0.45 + 0.35 * n).multiplyScalar(1 + 0.03 * m);
+        cc.lerp(c2, toRock(uc));
       }
       for (let k = 1; k < poly.length - 1; k++) for (const p of [poly[0], poly[k], poly[k + 1]]) {
         const w = toWorld(p.u, p.v);
@@ -455,7 +470,7 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
     // the wall's foot and top heights {y0, y1}. The carving fades out at its foot (it meets the floor), at its ends (it
     // meets the next wall) and, where the top edge shows (topTaper), at its top; walls whose top hides behind the vault
     // reach above it instead.
-    const wall = (len, at, { amp = 0.5, topTaper = 0.6, seed = 0 } = {}) => {
+    const wall = (len, at, { amp = 0.5, topTaper = 0.6, seed = 0, rock = () => 0 } = {}) => {
       const cols = Math.max(2, Math.ceil(len / 0.42)), spots = [];
       let rows = 2;
       for (let c = 0; c <= cols; c++) { const f = at(c / cols); spots.push(f); rows = Math.max(rows, Math.ceil((f.y1 - f.y0) / 0.5)); }
@@ -465,8 +480,9 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
           let y = f.y0 + (f.y1 - f.y0) * (r / rows);
           if (r > 0 && r < rows) y += rockNoise(sAlong * 2.1 + seed, r * 1.7) * 0.25 * (f.y1 - f.y0) / rows;   // uneven courses
           const taper = clamp01(Math.min(end, (y - f.y0) / 0.35, topTaper ? (f.y1 - y) / topTaper : 1));
-          const k = carve(sAlong + seed, y - site.y0) * taper;
-          out.push({ u: f.u + f.nu * amp * k, v: f.v + f.nv * amp * k, h: y, k, s: sAlong });
+          // smoother up in the snow, rougher down in the ice
+          const k = carve(sAlong + seed, y - site.y0) * taper * (0.3 + 0.7 * smooth01((site.y0 - y) / (D * 0.6)));
+          out.push({ u: f.u + f.nu * amp * k, v: f.v + f.nv * amp * k, h: y, k, s: sAlong, bu: f.u });
         }
         return out;
       });
@@ -475,11 +491,18 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
         if (Math.max(d.h - a.h, e.h - b.h) < 0.02) continue;   // no wall here (the landing)
         for (const t of [[a, b, e], [a, e, d]]) {
           const ym = (t[0].h + t[1].h + t[2].h) / 3, km = (t[0].k + t[1].k + t[2].k) / 3;
-          const depth = clamp01((site.y0 - ym) / D);
-          // deeper is darker; pale veins run along the rock's courses; the hollows sit in shadow
-          cc.copy(wallA).lerp(wallB, depth * 0.85 + 0.1 * Math.sin(ym * 2.1 + t[0].s));
-          cc.lerp(vein, 0.22 * clamp01(Math.sin(ym * 3.3 + rockNoise(t[0].s * 0.25 + seed, ym * 0.2) * 2.5) * 2 - 1));
-          cc.multiplyScalar(1 - 0.3 * km);
+          const depth = clamp01((site.y0 - ym) / D), sm = t[0].s, band = Math.sin(ym * 3.3 + rockNoise(sm * 0.25 + seed, ym * 0.2) * 2.5);
+          // ice: a snow crust at the top, pale then deep blue below, with paler veins along its courses
+          between(cc, [crust, paleIce, wallA, wallB], depth * 1.05 + 0.04 * Math.sin(ym * 2.1 + sm));
+          cc.lerp(vein, smooth01((depth - 0.15) / 0.3) * 0.22 * clamp01(band * 2 - 1));
+          // the room's bedrock: slate in courses, frosted at the seams, giving way to ice under the vault
+          const rk = rock((t[0].bu + t[1].bu + t[2].bu) / 3) * (1 - smooth01((ym - (site.y0 - D) - 1.8) / 1.4));
+          if (rk > 0) {
+            c2.copy(slate).lerp(slateLight, 0.5 + 0.5 * Math.sin(ym * 4.1 + rockNoise(sm * 0.4 + seed, ym * 0.5) * 1.5));
+            c2.lerp(frost, 0.45 * clamp01(band * 3 - 2.2));
+            cc.lerp(c2, rk);
+          }
+          cc.multiplyScalar(1 - (0.12 + 0.2 * depth) * km);   // the hollows sit in shadow
           for (const p of t) { const w = toWorld(p.u, p.v); wpos.push(w.x, p.h, w.z); wcol.push(cc.r, cc.g, cc.b); }
         }
       }
@@ -500,14 +523,14 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
     wall(RF * SWEEP, (t) => { const th = TH0 + t * SWEEP; return { u: Math.cos(th) * RF, v: Math.sin(th) * RF, nu: Math.cos(th), nv: Math.sin(th), y0: hAt(Math.cos(th) * (RF - 0.002), Math.sin(th) * (RF - 0.002)), y1: hAt(Math.cos(th) * (RF + 0.002), Math.sin(th) * (RF + 0.002)) }; }, { amp: 0.45, topTaper: 0.5, seed: 200 });
     wall(RP - RF, (t) => { const r = RF + t * (RP - RF), ri = Math.min(r, RP - 0.01); return { u: Math.cos(TH0) * r, v: Math.sin(TH0) * r, nu: -Math.sin(TH0), nv: Math.cos(TH0), y0: hAt(Math.cos(TH0 - 0.001) * ri, Math.sin(TH0 - 0.001) * ri), y1: hAt(Math.cos(TH0 + 0.001) * ri, Math.sin(TH0 + 0.001) * ri) }; }, { amp: 0.45, topTaper: 0.5, seed: 260 });
     // the tunnel's sides and the chamber's wall, up behind the vault
-    const ua = Math.sqrt(RP * RP - TW * TW), ub = LC - Math.sqrt(RC * RC - TW * TW), at = Math.asin(TW / RC);
+    const at = Math.asin(TW / RC);
     for (const side of [1, -1]) {
-      wall(ub - ua, (t) => { const u = ua + t * (ub - ua); return { u, v: side * TW, nu: 0, nv: side, y0: fl, y1: fl + ceilLocal(u, side * TW) + 0.5 }; }, { amp: 0.35, topTaper: 0, seed: side > 0 ? 300 : 340 });
+      wall(ub - ua, (t) => { const u = ua + t * (ub - ua); return { u, v: side * TW, nu: 0, nv: side, y0: fl, y1: fl + ceilLocal(u, side * TW) + 0.5 }; }, { amp: 0.35, topTaper: 0, seed: side > 0 ? 300 : 340, rock: toRock });
     }
     wall(RC * 2 * (Math.PI - at), (t) => {
       const a = -(Math.PI - at) + t * 2 * (Math.PI - at);
       return { u: LC + Math.cos(a) * RC, v: Math.sin(a) * RC, nu: Math.cos(a), nv: Math.sin(a), y0: fl, y1: fl + ceilLocal(LC + RC, 0) + 0.5 };
-    }, { amp: 0.3, topTaper: 0, seed: 400 });
+    }, { amp: 0.3, topTaper: 0, seed: 400, rock: () => 1 });
     walls.geometry.dispose();
     const wg = new THREE.BufferGeometry();
     wg.setAttribute('position', new THREE.Float32BufferAttribute(wpos, 3));
@@ -524,7 +547,10 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
       dm.rotation.set(rr() * 3, rr() * 3, rr() * 3);
       dm.scale.set(sz * (0.8 + rr() * 0.6), sz * (0.5 + rr() * 0.4), sz * (0.8 + rr() * 0.6));
       dm.updateMatrix(); rubble.setMatrixAt(k, dm.matrix);
-      rubble.setColorAt(k, tint.set(rr() < 0.35 ? 0x6f7f93 : 0x9cc4e2).multiplyScalar(0.85 + rr() * 0.25));
+      const dp = (phi - LAND) / (SWEEP - LAND), pick = rr();   // snow clods up top, ice lower down, a few stones at the bottom
+      between(tint, [snow, paleIce, wallA], dp);
+      if (pick < 0.3 * dp) tint.copy(stoneDark);
+      rubble.setColorAt(k, tint.multiplyScalar(0.88 + rr() * 0.2));
     }
     rubble.instanceMatrix.needsUpdate = true; rubble.instanceColor.needsUpdate = true;  }
 
