@@ -79,12 +79,9 @@ const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
 const smooth01 = (x) => { const k = clamp01(x); return k * k * (3 - 2 * k); };
 // how deep the rock is carved at a spot of a wall (s: metres along it, y: height), 0..1: broad hollows with crags in them
 const carve = (s, y) => clamp01((0.5 + 0.6 * fbm(rockNoise, s * 0.42, y * 0.3, 3)) * 0.8 + Math.abs(rockNoise(s * 1.3 + 31, y * 1.1 - 7)) * 0.35);
-// the ledge's trodden, lumpy snow: gentle enough to walk (well under the wall test's step), none on the landing or the
-// floor, so it meets both without a step
-const ledgeBumps = (u, v) => {
-  const phi = wrap(Math.atan2(v, u) - TH0);
-  return 0.11 * fbm(rockNoise, u * 0.7 + 200, v * 0.7 - 40, 3) * smooth01((phi - LAND) / 0.4) * smooth01((SWEEP - phi) / 0.4);
-};
+// the shaft's trodden, lumpy snow (landing, ledge and floor): gentle enough to walk (well under the wall test's step),
+// fading out towards the rim and the tunnel mouth, so it meets the snow outside and the tunnel's floor without a step
+const pitBumps = (u, v) => 0.11 * fbm(rockNoise, u * 0.7 + 200, v * 0.7 - 40, 3) * smooth01((RP - Math.hypot(u, v)) / 1.2);
 // the vault lifted into the rock: none at the tunnel mouth, where it meets the shaft's wall
 const ceilLift = (u, v) => 0.4 * clamp01(0.45 + 0.7 * fbm(rockNoise, u * 0.6 + 90, v * 0.6, 3)) * smooth01((Math.hypot(u, v) - RP) / 1.2);
 
@@ -194,12 +191,20 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
     for (let i = 0; i < NU - 1; i++) for (let j = 0; j < NV - 1; j++) {
       const u = U0 + i * CS, v = V0 + j * CS, uc = u + CS / 2, vc = v + CS / 2, rc = Math.hypot(uc, vc);
       if (!inFootprint(uc, vc, 0.6)) continue;
-      if (!((rc > RP - 0.4 && Math.abs(vc) < TW + 0.1) || rc > RP + 0.1)) continue;
+      if (rc < RP - 0.2) continue;
+      if (Math.abs(vc) > TW + 0.05 && rc < RP + 0.7) continue;   // beside the mouth it would poke out of the carved wall
       const a = vtx(u, v), d = vtx(u + CS, v), b = vtx(u, v + CS), c = vtx(u + CS, v + CS);
       for (const tri of [[a, d, b], [d, c, b]]) {
+        // the vault stops exactly at the shaft's wall: no lip over the tunnel mouth, and no gap under the wall above it
+        const poly = [];
+        for (let k = 0; k < 3; k++) {
+          const p = tri[k], q = tri[(k + 1) % 3], fp = RP - Math.hypot(p[0], p[2]), fq = RP - Math.hypot(q[0], q[2]);
+          if (fp <= 0) poly.push(p);
+          if ((fp <= 0) !== (fq <= 0)) { const t = fp / (fp - fq); poly.push(vtx(p[0] + (q[0] - p[0]) * t, p[2] + (q[2] - p[2]) * t)); }
+        }
         const k = 0.5 + 0.5 * Math.sin(uc * 1.7 + vc * 2.3);
         const cc = cA.clone().lerp(cB, k);
-        for (const p of tri) { pos.push(...p); col.push(cc.r, cc.g, cc.b); }
+        for (let n = 1; n < poly.length - 1; n++) for (const p of [poly[0], poly[n], poly[n + 1]]) { pos.push(...p); col.push(cc.r, cc.g, cc.b); }
       }
     }
     const g = new THREE.BufferGeometry();
@@ -356,8 +361,9 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
       const h = pitLocal(u, v), w = toWorld(u, v);
       if (h === null) return groundAt(w.x, w.z);
       const r = Math.hypot(u, v);
-      if (h === 0 && r > RP - 1.5) return site.y0 + (groundAt(w.x, w.z) - site.y0) * smooth01((r - RP + 1.5) / 1.5);
-      return site.y0 + h + (r >= RF && r < RP ? ledgeBumps(u, v) : 0);
+      const lumps = r < RP ? pitBumps(u, v) : 0;
+      if (h === 0 && r > RP - 1.5) return site.y0 + (groundAt(w.x, w.z) - site.y0) * smooth01((r - RP + 1.5) / 1.5) + lumps;
+      return site.y0 + h + lumps;
     };
     for (let j = 0; j < NV; j++) for (let i = 0; i < NU; i++) {
       const u = U0 + i * CS, v = V0 + j * CS;
@@ -386,11 +392,13 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
       const depth = clamp01((site.y0 - lo) / D);
       const rc = Math.hypot(uc, vc);
       if (rc > RP && depth > 0.9) cc.copy(caveFloor); else cc.copy(snow).lerp(caveFloor, depth * 0.55);
-      if (rc >= RF && rc < RP && depth > 0.01) {
-        // on the ledge: patches of bare blue ice and pale drifts, so the way down isn't one smooth sheet
+      if (rc < RP) {
+        // in the shaft: patches of bare blue ice and pale drifts, so no part is one smooth sheet. Up at the rim (the
+        // landing) they fade out into plain snow, like the snow outside.
+        const k = 1 - (1 - smooth01((RP - rc) / 1.5)) * (1 - smooth01(depth / 0.15));
         const n = fbm(rockNoise, uc * 0.9 - 70, vc * 0.9 + 15, 3), m = rockNoise(uc * 3.1, vc * 3.1);
-        cc.lerp(icePatch, 0.45 * smooth01((n - 0.05) / 0.35)).lerp(snow, 0.25 * smooth01(-n / 0.4));
-        cc.multiplyScalar(0.95 + 0.07 * m);
+        cc.lerp(icePatch, k * 0.45 * smooth01((n - 0.05) / 0.35)).lerp(snow, k * 0.25 * smooth01(-n / 0.4));
+        cc.multiplyScalar(1 + k * (0.07 * m - 0.05));
       }
       for (let k = 1; k < poly.length - 1; k++) for (const p of [poly[0], poly[k], poly[k + 1]]) {
         const w = toWorld(p.u, p.v);
@@ -486,11 +494,11 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
     // the shaft's wall: from the top of the ledge round to the tunnel mouth, over the mouth (from the vault up), and on
     // to where the ledge starts again
     wall(RP * (-thT - TH0), (t) => rim(TH0 + t * (-thT - TH0), onLedge), { amp: 0.55, seed: 0 });
-    wall(RP * 2 * thT, (t) => rim(-thT + t * 2 * thT, underVault), { amp: 0.4, seed: 60 });
+    wall(RP * 2 * thT, (t) => rim(-thT + t * 2 * thT, underVault), { amp: 0.2, seed: 60 });
     wall(RP * (secEnd - thT), (t) => rim(thT + t * (secEnd - 1e-4 - thT), onLedge), { amp: 0.55, seed: 120 });
     // the ledge's drop to the floor, and the face under the landing where the ledge starts
-    wall(RF * SWEEP, (t) => { const th = TH0 + t * SWEEP; return { u: Math.cos(th) * RF, v: Math.sin(th) * RF, nu: Math.cos(th), nv: Math.sin(th), y0: fl, y1: hAt(Math.cos(th) * (RF + 0.002), Math.sin(th) * (RF + 0.002)) }; }, { amp: 0.45, topTaper: 0.5, seed: 200 });
-    wall(RP - RF, (t) => { const r = RF + t * (RP - RF); return { u: Math.cos(TH0) * r, v: Math.sin(TH0) * r, nu: -Math.sin(TH0), nv: Math.cos(TH0), y0: fl, y1: y0 }; }, { amp: 0.45, topTaper: 0.5, seed: 260 });
+    wall(RF * SWEEP, (t) => { const th = TH0 + t * SWEEP; return { u: Math.cos(th) * RF, v: Math.sin(th) * RF, nu: Math.cos(th), nv: Math.sin(th), y0: hAt(Math.cos(th) * (RF - 0.002), Math.sin(th) * (RF - 0.002)), y1: hAt(Math.cos(th) * (RF + 0.002), Math.sin(th) * (RF + 0.002)) }; }, { amp: 0.45, topTaper: 0.5, seed: 200 });
+    wall(RP - RF, (t) => { const r = RF + t * (RP - RF), ri = Math.min(r, RP - 0.01); return { u: Math.cos(TH0) * r, v: Math.sin(TH0) * r, nu: -Math.sin(TH0), nv: Math.cos(TH0), y0: hAt(Math.cos(TH0 - 0.001) * ri, Math.sin(TH0 - 0.001) * ri), y1: hAt(Math.cos(TH0 + 0.001) * ri, Math.sin(TH0 + 0.001) * ri) }; }, { amp: 0.45, topTaper: 0.5, seed: 260 });
     // the tunnel's sides and the chamber's wall, up behind the vault
     const ua = Math.sqrt(RP * RP - TW * TW), ub = LC - Math.sqrt(RC * RC - TW * TW), at = Math.asin(TW / RC);
     for (const side of [1, -1]) {
