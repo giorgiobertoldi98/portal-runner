@@ -620,7 +620,9 @@ export function createIceCave({ scene, groundAt, groundColor, sites, holeUniform
     const underVault = (u, v) => fl + ceilLocal(u, v);
     // the shaft's wall: from the top of the ledge round to the tunnel mouth, over the mouth (from the vault up), and on
     // to where the ledge starts again
-    wall(RP * (-thT - TH0), (t) => rim(TH0 + t * (-thT - TH0), onLedge), { amp: 0.55, seed: 0 });
+    // (starting a hair past the corner, so its first column stands on the landing, not on the floor the curved
+    // end of the landing meets there)
+    wall(RP * (-thT - TH0), (t) => rim(TH0 + 0.002 + t * (-thT - TH0 - 0.002), onLedge), { amp: 0.55, seed: 0 });
     wall(RP * 2 * thT, (t) => rim(-thT + t * 2 * thT, underVault), { amp: 0.2, seed: 60 });
     wall(RP * (secEnd - thT), (t) => rim(thT + t * (secEnd - 1e-4 - thT), onLedge), { amp: 0.55, seed: 120 });
     // the ledge's drop to the floor, and the face under the landing where the ledge starts
@@ -634,7 +636,7 @@ export function createIceCave({ scene, groundAt, groundColor, sites, holeUniform
     wall(endLen, (t) => {
       const a = (1 - t) * Math.PI / 2, p = endAt(a), q = endAt(Math.max(0, a - 0.01)), o = endAt(Math.min(Math.PI / 2, a + 0.01));
       const tu = q.u - o.u, tv = q.v - o.v, tl = Math.hypot(tu, tv);   // along the curve, outwards; the rock is to its left
-      const ri = Math.min(p.r, RP - 0.01), th = TH0 + landingEnd(ri);
+      const ri = Math.min(Math.max(p.r, RF + 0.01), RP - 0.01), th = TH0 + landingEnd(ri);   // heights read just inside both ends
       return { u: p.u, v: p.v, nu: -tv / tl, nv: tu / tl,
         y0: hAt(Math.cos(th - 0.003) * ri, Math.sin(th - 0.003) * ri), y1: hAt(Math.cos(th + 0.003) * ri, Math.sin(th + 0.003) * ri) };
     }, { amp: 0.45, topTaper: 0.5, seed: 260 });
