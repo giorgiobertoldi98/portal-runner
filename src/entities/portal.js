@@ -141,7 +141,7 @@ export function createPortal({ dest, gem = undefined, destIndex, x, y, z, beacon
   const moteSeeds = Array.from({ length: MOTES }, () => Math.random());
 
   // safe-zone ring: a faint band on the ground, in the portal's colour, marking PORTAL.safeRadius
-  // (inside it hunters can't follow you). It follows the terrain and fades out once the portal opens.
+  // (inside it hunters can't follow you). It follows the terrain and stays while the portal is open, since the zone does.
   const safeMat = new THREE.MeshBasicMaterial({
     color: th.glow, alphaMap: safeAlphaMap(), transparent: true, opacity: 0.32,
     depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false,
@@ -258,8 +258,7 @@ export function createPortal({ dest, gem = undefined, destIndex, x, y, z, beacon
       sockets.position.y = H * 0.56 + Math.sin(t * 1.1) * 0.08; // the cluster floats
       beamMat.uniforms.uOpacity.value = 0.3 + e * 0.35;
       if (safeRing) {
-        safeMat.opacity = (0.28 + Math.sin(t * 1.6) * 0.06) * (1 - e); // gentle breathing; gone once the portal is open
-        safeRing.visible = e < 0.999;
+        safeMat.opacity = 0.28 + Math.sin(t * 1.6) * 0.06; // gentle breathing
       }
       socketMeshes.forEach((m, i) => {
         m.rotation.y = m.userData.ghost.rotation.y = t * 1.2 + i;
