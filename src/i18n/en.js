@@ -1,10 +1,10 @@
 // English: the game's own text. Each world's text is in its module (`strings`). See ./CLAUDE.md.
 export default {
-  title: 'Portal Runner',
+  title: 'The Explorer',
   loading: 'Shaping worlds…',
 
   menu: {
-    lead: 'Explore worlds, hunt gems, jump into portals… but be careful on your way',
+    lead: 'Discover worlds, hunt gems, jump into portals… but be careful on your way',
     start: 'Begin the expedition',
     settings: 'Settings',
     controls: 'Controls',
@@ -71,7 +71,7 @@ export default {
   },
 
   rotate: {
-    title: 'Portal Runner plays sideways',
+    title: 'This game plays sideways',
     touch: 'Turn your device to landscape. If it doesn\'t rotate, switch off rotation lock.',
     pc: 'Make the window wider than it is tall.',
   },

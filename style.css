@@ -253,11 +253,12 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
   padding: max(24px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(26px, env(safe-area-inset-bottom)) max(clamp(20px, 6vw, 88px), env(safe-area-inset-left));
   overflow: hidden; /* the menu never scrolls: the short-screen rules make the copy fit */
 }
-.landing-copy { width: min(440px, 50vw); position: relative; z-index: 1; }
+.landing-copy { width: min(580px, 50vw); position: relative; z-index: 1; }
 .landing-art { align-self: stretch; height: 100%; min-height: 0; position: relative; }
 .landing-art .menu-art { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .landing .title {
-  font-size: clamp(44px, 13vw, 92px); line-height: .95; letter-spacing: .04em; margin: 0 0 14px;
+  /* sized from the width so the name keeps to one line beside the drawing; a longer translation wraps instead */
+  font-size: clamp(28px, min(6vw, 11vh), 70px); line-height: .95; letter-spacing: .04em; margin: 0 0 14px;
   /* the worlds' colours, mixed into the ink so they sit on the page like the rest of the drawing */
   background: linear-gradient(100deg, color-mix(in srgb, var(--w0, #8fe8ff) 70%, var(--ink)), color-mix(in srgb, var(--w1, #e07bff) 70%, var(--ink)), color-mix(in srgb, var(--w2, #ffc35c) 75%, var(--ink)), color-mix(in srgb, var(--w0, #8fe8ff) 70%, var(--ink)));
   background-size: 300% 100%;
@@ -267,8 +268,8 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 }
 @keyframes worlds-drift { from { background-position: 0% 50%; } to { background-position: 300% 50%; } }
 /* the tagline, handwritten like a line in the explorer's journal */
-.landing .lead { font: 600 clamp(24px, 3vw, 32px)/1.15 Caveat, 'Segoe Print', cursive; margin: 0 0 24px; max-width: 28ch; color: var(--ink); }
-.landing .actions { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+.landing .lead { font: 600 clamp(24px, 3vw, 32px)/1.15 Caveat, 'Segoe Print', cursive; margin: 0 0 24px; max-width: 31ch; text-wrap: balance; color: var(--ink); }
+.landing .actions { max-width: 440px; display: grid; grid-template-columns: 1fr auto; gap: 10px; }
 .landing .actions .ghost { margin-top: 0; padding-inline: 22px; }
 /* Controls: a quiet text link under the buttons, less weight than Settings */
 .menu-link { display: inline-flex; align-items: center; gap: 9px; margin-top: 18px; padding: 4px 2px; border: 0; background: none; cursor: pointer;
@@ -289,13 +290,10 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 @keyframes art-glint { 0%, 86%, 100% { transform: scale(0) rotate(0); } 91% { transform: scale(1) rotate(45deg); } }
 @keyframes art-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
 
-@media (max-height: 640px) {
-  .landing .title { font-size: clamp(36px, 10vw, 60px); }
-}
-/* phones held sideways: very little height, so the title follows the height and the spacing tightens */
+/* phones held sideways: very little height, so the spacing tightens */
 @media (max-height: 480px) {
   #screen-menu.landing { padding-block: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-bottom)); }
-  .landing .title { font-size: clamp(28px, 11vh, 60px); margin-bottom: 8px; }
+  .landing .title { margin-bottom: 8px; }
   .landing .lead { font-size: 23px; margin-bottom: 16px; }
   .menu-link { margin-top: 10px; font-size: 15px; }
 }

@@ -1,9 +1,9 @@
-# Portal Runner — the game
+# The Explorer — the game
 
 > The game as designed: its ideas, principles, mechanics and tuning, as the player experiences them. It describes the current state only (git history is the changelog), and holds no implementation: how things are built lives in the code and in the notes beside it (see `CLAUDE.md`, Documentation).
 
 ## Concept
-Portal Runner is a personal 3D game played in the browser. It has polished graphics and sound. It must be fun but not impossible.
+The Explorer is a personal 3D game played in the browser. You are the explorer, the one the title names. It has polished graphics and sound. It must be fun but not impossible.
 
 ## Design principles
 General principles that guide every design decision. New ones are added here as they come up.
@@ -33,7 +33,7 @@ General principles that guide every design decision. New ones are added here as 
 
 ## Screens and orientation
 - **Landscape only**, on mobile and on PC. Every screen (menu, Settings, the run, the note, the map, the controls card, pause and end screens) is designed for a screen wider than it is tall.
-- On a screen taller than it is wide (a phone held upright, or a PC window narrower than it is tall) a full-screen notice covers everything: a phone icon turning sideways, "Portal Runner plays sideways" and, on touch, "Turn your device to landscape. If it doesn't rotate, switch off rotation lock" (on PC: "Make the window wider than it is tall"). Nothing is drawn behind it. A run in progress pauses, so turning the phone back shows the pause screen and nothing happens until you press Resume.
+- On a screen taller than it is wide (a phone held upright, or a PC window narrower than it is tall) a full-screen notice covers everything: a phone icon turning sideways, "This game plays sideways" and, on touch, "Turn your device to landscape. If it doesn't rotate, switch off rotation lock" (on PC: "Make the window wider than it is tall"). Nothing is drawn behind it. A run in progress pauses, so turning the phone back shows the pause screen and nothing happens until you press Resume.
 - Browsers don't let a page lock the orientation (outside fullscreen), which is why the game blocks portrait with the notice instead of rotating itself.
 - Every screen must look right on small and large screens alike: nothing overlaps, is cut off or scrolls where it shouldn't, and controls stay comfortable to reach on touch.
 
@@ -47,9 +47,9 @@ General principles that guide every design decision. New ones are added here as 
 - **Drawn, not rendered**: the menu (like Settings and the loading screen) is a page in the same hand-drawn style as the explorers' note (ink outlines and watercolour washes), drawn at dusk: pale ink on deep violet paper. It sets the look for the game's illustrations.
 - The drawing shows the void between worlds: a winding chain of floating islands climbs into the distance, each carrying a portal (one per world) washed in its world's colours, its swirl turning slowly, with no name on it. The nearest is large and clear; the farther ones are smaller and paler, so you only glimpse what's coming. A dotted route links them like a path on a map. Dark gems, sketched in each world's design, drift past and glint now and then; tiny stars twinkle. The islands bob gently. A new world appears here automatically. With reduced motion on, everything is still.
 - It names no specific world: the copy is about the expedition as a whole. The title is inked in the worlds' colours, mixed with the pale ink, drifting slowly (still when reduced motion is on).
-- Layout: the text sits on the left, vertically centred; the drawing fills the rest of the screen on the right and never sits under the text. On short screens the title gets smaller.
+- Layout: the text sits on the left, vertically centred; the drawing fills the rest of the screen on the right and never sits under the text. The title, "The Explorer", stays on one line beside the drawing, growing and shrinking with the screen.
 - **The menu never scrolls**: everything fits on one screen.
-- From top to bottom: the title; a handwritten tagline ("Explore worlds, hunt gems, jump into portals… but be careful on your way"); then the buttons **Begin the expedition** (inked) and **Settings**, and below them, with less weight, **Controls** as a quiet text link with a small "?" (the HUD's controls icon). No summary of the rules: the tagline says enough, and the rest is found by playing. The copy doesn't describe how gems are found. The menu doesn't list the controls itself: **Controls** opens the controls card over the dimmed menu, and closing it (× or Esc) returns to the menu (see HUD and camera).
+- From top to bottom: the title; a handwritten tagline ("Discover worlds, hunt gems, jump into portals… but be careful on your way"); then the buttons **Begin the expedition** (inked) and **Settings**, and below them, with less weight, **Controls** as a quiet text link with a small "?" (the HUD's controls icon). No summary of the rules: the tagline says enough, and the rest is found by playing. The copy doesn't describe how gems are found. The menu doesn't list the controls itself: **Controls** opens the controls card over the dimmed menu, and closing it (× or Esc) returns to the menu (see HUD and camera).
 - **Sound**: one calm background track shared by the main menu, Settings and the path not yet drawn, belonging to no single world: a slow C-major pad, a low drone, a rare glass note and a faint airy hush. Browsers allow sound only after a gesture, so it fades in on the first touch, click or key. A run plays at a lower overall level so the game doesn't jump out at you after the menu. Returning to the menu crossfades back to the menu track and silences all in-game sounds (gem hum, portal hum, heartbeat).
 
 ## Settings

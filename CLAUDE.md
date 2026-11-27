@@ -1,6 +1,6 @@
-# Portal Runner — instructions for Claude
+# The Explorer — instructions for Claude
 
-Portal Runner is Giorgio's personal 3D browser game (Three.js): gem hunting across worlds connected by portals.
+The Explorer is Giorgio's personal 3D browser game (Three.js): gem hunting across worlds connected by portals.
 
 This repo is the only home of the project: the code and its docs here are the source of truth. There is no claude.ai Project or artifact to keep in sync. Work may happen from Claude Code in VS Code or from the Claude app, so always commit and push finished work, and start from the latest dev (see Working style).
 

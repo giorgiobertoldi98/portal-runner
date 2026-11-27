@@ -1,4 +1,4 @@
-# Portal Runner
+# The Explorer
 
 A 3D browser game built with Three.js. Hunt hidden dark gems in each world, carry them to the portal (each one slows you down), fill it and step through to the next world — Glacier → Alien → Desert — while each world's hunter tries to catch you.
 
