@@ -79,6 +79,12 @@ const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
 const smooth01 = (x) => { const k = clamp01(x); return k * k * (3 - 2 * k); };
 // how deep the rock is carved at a spot of a wall (s: metres along it, y: height), 0..1: broad hollows with crags in them
 const carve = (s, y) => clamp01((0.5 + 0.6 * fbm(rockNoise, s * 0.42, y * 0.3, 3)) * 0.8 + Math.abs(rockNoise(s * 1.3 + 31, y * 1.1 - 7)) * 0.35);
+// the ledge's trodden, lumpy snow: gentle enough to walk (well under the wall test's step), none on the landing or the
+// floor, so it meets both without a step
+const ledgeBumps = (u, v) => {
+  const phi = wrap(Math.atan2(v, u) - TH0);
+  return 0.11 * fbm(rockNoise, u * 0.7 + 200, v * 0.7 - 40, 3) * smooth01((phi - LAND) / 0.4) * smooth01((SWEEP - phi) / 0.4);
+};
 // the vault lifted into the rock: none at the tunnel mouth, where it meets the shaft's wall
 const ceilLift = (u, v) => 0.4 * clamp01(0.45 + 0.7 * fbm(rockNoise, u * 0.6 + 90, v * 0.6, 3)) * smooth01((Math.hypot(u, v) - RP) / 1.2);
 
@@ -167,6 +173,11 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
   const walls = new THREE.Mesh(new THREE.BufferGeometry(), flatMat({ vertexColors: true, roughness: 0.45, side: THREE.DoubleSide }));
   walls.receiveShadow = true; walls.visible = false; walls.frustumCulled = false;
   scene.add(walls);
+  // loose ice and rock fallen along the foot of the shaft's wall, down the ledge (out of the way of your feet)
+  const RUBBLE = 70;
+  const rubble = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), flatMat({ color: 0xffffff, roughness: 0.5 }), RUBBLE);
+  rubble.receiveShadow = true; rubble.visible = false; rubble.frustumCulled = false;
+  scene.add(rubble);
 
   // everything that keeps its shape from site to site lives in one group, built once in the local frame
   // (y = 0 at the rim): cave ceiling, the rock mound above the cave, the rim shards, the explorers' camp
@@ -346,7 +357,7 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
       if (h === null) return groundAt(w.x, w.z);
       const r = Math.hypot(u, v);
       if (h === 0 && r > RP - 1.5) return site.y0 + (groundAt(w.x, w.z) - site.y0) * smooth01((r - RP + 1.5) / 1.5);
-      return site.y0 + h;
+      return site.y0 + h + (r >= RF && r < RP ? ledgeBumps(u, v) : 0);
     };
     for (let j = 0; j < NV; j++) for (let i = 0; i < NU; i++) {
       const u = U0 + i * CS, v = V0 + j * CS;
@@ -354,7 +365,7 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
     }
     const pos = [], col = [];
     const snow = new THREE.Color(0xe3ebf4), caveFloor = new THREE.Color(0x8496ad), wallA = new THREE.Color(0x7fb6db), wallB = new THREE.Color(0x3f6f99);
-    const vein = new THREE.Color(0xb4def5), cc = new THREE.Color();
+    const vein = new THREE.Color(0xb4def5), icePatch = new THREE.Color(0x8fb4d6), cc = new THREE.Color();
     // up at the rim the terrain takes over exactly at the opening's edge (it is cut away inside it), so the pit's own
     // surface stops there too instead of overlapping it in grid steps
     const clipRim = (poly) => {
@@ -373,7 +384,14 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
       let lo = Infinity, uc = 0, vc = 0;
       for (const p of poly) { lo = Math.min(lo, p.h); uc += p.u / poly.length; vc += p.v / poly.length; }
       const depth = clamp01((site.y0 - lo) / D);
-      if (Math.hypot(uc, vc) > RP && depth > 0.9) cc.copy(caveFloor); else cc.copy(snow).lerp(caveFloor, depth * 0.55);
+      const rc = Math.hypot(uc, vc);
+      if (rc > RP && depth > 0.9) cc.copy(caveFloor); else cc.copy(snow).lerp(caveFloor, depth * 0.55);
+      if (rc >= RF && rc < RP && depth > 0.01) {
+        // on the ledge: patches of bare blue ice and pale drifts, so the way down isn't one smooth sheet
+        const n = fbm(rockNoise, uc * 0.9 - 70, vc * 0.9 + 15, 3), m = rockNoise(uc * 3.1, vc * 3.1);
+        cc.lerp(icePatch, 0.45 * smooth01((n - 0.05) / 0.35)).lerp(snow, 0.25 * smooth01(-n / 0.4));
+        cc.multiplyScalar(0.95 + 0.07 * m);
+      }
       for (let k = 1; k < poly.length - 1; k++) for (const p of [poly[0], poly[k], poly[k + 1]]) {
         const w = toWorld(p.u, p.v);
         out.push(w.x, p.h, w.z); colors.push(cc.r, cc.g, cc.b);
@@ -471,7 +489,7 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
     wall(RP * 2 * thT, (t) => rim(-thT + t * 2 * thT, underVault), { amp: 0.4, seed: 60 });
     wall(RP * (secEnd - thT), (t) => rim(thT + t * (secEnd - 1e-4 - thT), onLedge), { amp: 0.55, seed: 120 });
     // the ledge's drop to the floor, and the face under the landing where the ledge starts
-    wall(RF * SWEEP, (t) => { const th = TH0 + t * SWEEP; return { u: Math.cos(th) * RF, v: Math.sin(th) * RF, nu: Math.cos(th), nv: Math.sin(th), y0: fl, y1: y0 + ledgeDrop(t * SWEEP) }; }, { amp: 0.45, topTaper: 0.5, seed: 200 });
+    wall(RF * SWEEP, (t) => { const th = TH0 + t * SWEEP; return { u: Math.cos(th) * RF, v: Math.sin(th) * RF, nu: Math.cos(th), nv: Math.sin(th), y0: fl, y1: hAt(Math.cos(th) * (RF + 0.002), Math.sin(th) * (RF + 0.002)) }; }, { amp: 0.45, topTaper: 0.5, seed: 200 });
     wall(RP - RF, (t) => { const r = RF + t * (RP - RF); return { u: Math.cos(TH0) * r, v: Math.sin(TH0) * r, nu: -Math.sin(TH0), nv: Math.cos(TH0), y0: fl, y1: y0 }; }, { amp: 0.45, topTaper: 0.5, seed: 260 });
     // the tunnel's sides and the chamber's wall, up behind the vault
     const ua = Math.sqrt(RP * RP - TW * TW), ub = LC - Math.sqrt(RC * RC - TW * TW), at = Math.asin(TW / RC);
@@ -488,7 +506,19 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
     wg.setAttribute('color', new THREE.Float32BufferAttribute(wcol, 3));
     wg.computeVertexNormals(); wg.computeBoundingSphere();
     walls.geometry = wg;
-  }
+
+    // the rubble: clumps along the wall's foot, the same for every site (only the heights differ)
+    const rr = mulberry32(77), dm = new THREE.Object3D(), tint = new THREE.Color();
+    for (let k = 0; k < RUBBLE; k++) {
+      const phi = LAND + 0.25 + rr() * (SWEEP - LAND - 0.4), th = TH0 + phi, r = RP - 0.12 - rr() * 0.22;
+      const u = Math.cos(th) * r, v = Math.sin(th) * r, w = toWorld(u, v), sz = 0.1 + rr() ** 2 * 0.22;
+      dm.position.set(w.x, hAt(u, v) + sz * 0.3, w.z);
+      dm.rotation.set(rr() * 3, rr() * 3, rr() * 3);
+      dm.scale.set(sz * (0.8 + rr() * 0.6), sz * (0.5 + rr() * 0.4), sz * (0.8 + rr() * 0.6));
+      dm.updateMatrix(); rubble.setMatrixAt(k, dm.matrix);
+      rubble.setColorAt(k, tint.set(rr() < 0.35 ? 0x6f7f93 : 0x9cc4e2).multiplyScalar(0.85 + rr() * 0.25));
+    }
+    rubble.instanceMatrix.needsUpdate = true; rubble.instanceColor.needsUpdate = true;  }
 
   // height inside the hole, read from the same triangles that are drawn (null outside the hole)
   function pitHeight(x, z) {
@@ -687,7 +717,7 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
       site = { x: pick.x, z: pick.z, y0: groundAt(pick.x, pick.z), rot, c: Math.cos(rot), s: Math.sin(rot) };
       buildPit();
       holeUniform.value.set(site.x, site.z, RP);
-      pit.visible = walls.visible = cave.visible = true;
+      pit.visible = walls.visible = rubble.visible = cave.visible = true;
       cave.position.set(site.x, site.y0, site.z);
       cave.rotation.y = -rot;
       cave.updateMatrixWorld(true);
@@ -765,7 +795,7 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
       canTake = false;
       site = null;
       holeUniform.value.set(0, 0, 0);
-      pit.visible = walls.visible = cave.visible = false;
+      pit.visible = walls.visible = rubble.visible = cave.visible = false;
       item.group.visible = false; light.intensity = 0;
       keepOut.length = 0;
       for (const c of cols) { c.x = 1e5; c.z = 1e5; }
