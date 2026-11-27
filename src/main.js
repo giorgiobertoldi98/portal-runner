@@ -669,11 +669,11 @@ class Game {
       }
     }
     // Opening the map swings the camera behind the explorer, so the arrow, the explorer and the way W goes all agree
-    // while you turn and once you close it. Closing before it's done finishes it at once. A room's fixed shot holds
-    // its own view, so there is nothing to swing.
+    // while you turn and once you close it. Closing before it's done finishes it at once. A room's fixed shot and a
+    // camera rail hold their own view, so there is nothing to swing.
     if (this.mapSwing) {
       const want = this.player.heading + Math.PI;
-      if (this.shot.active) this.mapSwing = false;
+      if (this.shot.active || this.rig.railed) this.mapSwing = false;
       else if (!this.mapView.open) { this.rig.yaw = want; this.mapSwing = false; }
       else {
         this.rig.yaw = dampAngle(this.rig.yaw, want, MAP_SWING, dt);

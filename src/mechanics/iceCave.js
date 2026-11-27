@@ -11,12 +11,14 @@
 //
 // The pit is a fine heightfield of its own: world.heightAt reads it inside the hole and the cave, the terrain is cut away
 // over the opening (a discard circle in the terrain shader), and cells too steep to walk (the walls, the ledge's drop,
-// the cave walls) block the explorer, so the only way in and out is the ledge.
+// the cave walls) block the explorer, so the only way in and out is the ledge. The walls are drawn apart from it, as
+// rough carved rock that only ever recedes into the rock: the space you walk in, and the camera's rail, keep the plain
+// shape the code reasons about (pitLocal, ceilLocal), however rough the walls look.
 import * as THREE from 'three';
 import { GLACIER } from '../config.js';
 import { mergeParts, m4, flatMat, instanced, softTexture, dist2D, damp } from '../engine/utils.js';
 import { glowPoints } from '../engine/props.js';
-import { mulberry32 } from '../engine/noise.js';
+import { mulberry32, createNoise2D, fbm } from '../engine/noise.js';
 
 // ── shape of the hole (local frame: u points from the shaft to the cave, v across) ──
 const RP = 7;          // opening radius
@@ -39,19 +41,26 @@ export const SITE_CLEAR = 24; // metres around each candidate site kept free of 
 const TWO_PI = Math.PI * 2;
 const ROOM_IN = LC - RC + 1.6, ROOM_OUT = LC - RC + 1.2; // how far into the chamber its fixed shot takes over, and lets go
 const PULL_IN = 6;         // m/s: the fastest the camera comes in when rock cuts between it and you
-const STEER = [0.2, 0.4, 0.6, 0.85, 1.1, 1.35, 1.6]; // camera turns tried each way when rock blocks it in the hole (radians)
 const SLIDE = [0.2, -0.2, 0.4, -0.4, 0.6, -0.6, 0.8, -0.8, 1.05, -1.05, 1.3, -1.3]; // turns tried when a step hits a wall
 const wrap = (a) => ((a % TWO_PI) + TWO_PI) % TWO_PI;
 const inFootprint = (u, v, pad = 0) => (u > RP - 1 && u < LC && Math.abs(v) < TW + pad) || Math.hypot(u - LC, v) < RC + pad;
 const inRegion = (u, v) => Math.hypot(u, v) < RP || inFootprint(u, v);
+// the ledge's height below the rim at phi: flat on the landing, then an even slope down to the floor that eases in
+// and out at its ends (a crease across the grid would shade as a zig-zag)
+const EASE = 0.08;   // the fraction of the slope at each end that rounds off
+function ledgeDrop(phi) {
+  if (phi <= LAND) return 0;
+  const x = Math.min(1, (phi - LAND) / (SWEEP - LAND));
+  const f = x < EASE ? x * x / (2 * EASE) : x > 1 - EASE ? 1 - EASE - (1 - x) ** 2 / (2 * EASE) : x - EASE / 2;
+  return -D * f / (1 - EASE);
+}
 // height below the rim (0 at the rim, -D at the floor), or null outside the hole
 function pitLocal(u, v) {
   const r = Math.hypot(u, v);
   if (r < RP) {
     if (r < RF) return -D;
     const phi = wrap(Math.atan2(v, u) - TH0);
-    if (phi >= SWEEP) return -D;
-    return phi < LAND ? 0 : -D * ((phi - LAND) / (SWEEP - LAND));
+    return phi >= SWEEP ? -D : ledgeDrop(phi);
   }
   return inFootprint(u, v) ? -D : null;
 }
@@ -62,6 +71,16 @@ function ceilLocal(u, v) {
   const cb = 2.4 * (1 - (d / RC) ** 2);
   return 3.3 + Math.max(tb, cb);
 }
+
+// ── rough rock: the walls and the vault are carved back into the rock, never out of it ──
+const rockNoise = createNoise2D(mulberry32(5150));
+const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
+const smooth01 = (x) => { const k = clamp01(x); return k * k * (3 - 2 * k); };
+const smax = (a, b, k = 0.6) => (a + b + Math.sqrt((a - b) ** 2 + k * k)) / 2;   // max with a rounded corner
+// how deep the rock is carved at a spot of a wall (s: metres along it, y: height), 0..1: broad hollows with crags in them
+const carve = (s, y) => clamp01((0.5 + 0.6 * fbm(rockNoise, s * 0.42, y * 0.3, 3)) * 0.8 + Math.abs(rockNoise(s * 1.3 + 31, y * 1.1 - 7)) * 0.35);
+// the vault lifted into the rock: none at the tunnel mouth, where it meets the shaft's wall
+const ceilLift = (u, v) => 0.4 * clamp01(0.45 + 0.7 * fbm(rockNoise, u * 0.6 + 90, v * 0.6, 3)) * smooth01((Math.hypot(u, v) - RP) / 1.2);
 
 // Prepared clearings for the hole, chosen once per world build: spread out over gentle ground away from landmarks.
 // base = the terrain's height function before flattening; avoid = [{x, z, d}]
@@ -133,8 +152,8 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
   let site = null;          // { x, z, y0, rot, c, s }
   let H = new Float32Array(NU * NV), walk = new Uint8Array((NU - 1) * (NV - 1));
   let mapState = 'none';    // 'cave' (on the crate) | 'held'
-  let toldNoCall = false, dripTimer = 2, moanTimer = 1, camBlend = 0, boom = 1, steerSide = 0, lastCamT = 0,
-    lastCam = null, hint = null, held = false, canTake = false;
+  let toldNoCall = false, dripTimer = 2, moanTimer = 1, boom = 1, lastCamT = 0, hint = null, held = false, canTake = false;
+  let free = null;   // the free camera's own angles while the rail holds it in part: { yaw, pitch, setYaw, setPitch }
   const keepOut = [];
 
   const toLocal = (x, z) => { const dx = x - site.x, dz = z - site.z; return { u: dx * site.c + dz * site.s, v: -dx * site.s + dz * site.c }; };
@@ -145,9 +164,9 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
   const pit = new THREE.Mesh(new THREE.BufferGeometry(), pitMat);
   pit.receiveShadow = true; // nothing underground casts shadows: the terrain doesn't, so they'd land on the snow above pit.visible = false; pit.frustumCulled = false;
   scene.add(pit);
-  const lintel = new THREE.Mesh(new THREE.BufferGeometry(), flatMat({ color: 0x5f8db4, side: THREE.DoubleSide }));
-  lintel.visible = false; lintel.frustumCulled = false;
-  scene.add(lintel);
+  const walls = new THREE.Mesh(new THREE.BufferGeometry(), flatMat({ vertexColors: true, roughness: 0.45, side: THREE.DoubleSide }));
+  walls.receiveShadow = true; walls.visible = false; walls.frustumCulled = false;
+  scene.add(walls);
 
   // everything that keeps its shape from site to site lives in one group, built once in the local frame
   // (y = 0 at the rim): cave ceiling, the rock mound above the cave, the rim shards, the explorers' camp
@@ -160,7 +179,7 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
     // ceiling: a heightfield facing down, over the tunnel and chamber
     const pos = [], col = [];
     const cA = new THREE.Color(0x4d6c8c), cB = new THREE.Color(0x6f93b5);
-    const vtx = (u, v) => [u, -D + ceilLocal(u, v), v];
+    const vtx = (u, v) => [u, -D + ceilLocal(u, v) + ceilLift(u, v), v];
     for (let i = 0; i < NU - 1; i++) for (let j = 0; j < NV - 1; j++) {
       const u = U0 + i * CS, v = V0 + j * CS, uc = u + CS / 2, vc = v + CS / 2, rc = Math.hypot(uc, vc);
       if (!inFootprint(uc, vc, 0.6)) continue;
@@ -187,7 +206,7 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
       let u = LC + Math.cos(a) * rr, v = Math.sin(a) * rr;
       if (i < 10) { u = RP + 0.4 + rng() * (LC - RC - RP); v = (rng() - 0.5) * 2 * (TW - 0.3); }
       const len = 0.3 + rng() * (i < 10 ? 0.5 : 1.1);
-      ics.push({ x: u, y: -D + ceilLocal(u, v) + 0.05, z: v, s: 0.8 + rng() * 0.6, sy: len });
+      ics.push({ x: u, y: -D + ceilLocal(u, v) + ceilLift(u, v) + 0.05, z: v, s: 0.8 + rng() * 0.6, sy: len });
     }
     const icGeo = new THREE.ConeGeometry(0.09, 1, 5); icGeo.rotateX(Math.PI); icGeo.translate(0, -0.5, 0);
     const iceGlow = new THREE.MeshStandardMaterial({ color: 0xbdefff, emissive: 0x3aa8e0, emissiveIntensity: 0.7, roughness: 0.1, flatShading: true });
@@ -320,33 +339,81 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
   // ── per-site heightfield ──
   function buildPit() {
     const node = (i, j) => j * NU + i;
+    // the shape's own height at a local spot: the pit inside, the terrain outside. The landing eases into the snow
+    // over its last metre and a half, so it meets the slope round the hole without a step.
+    const hAt = (u, v) => {
+      const h = pitLocal(u, v), w = toWorld(u, v);
+      if (h === null) return groundAt(w.x, w.z);
+      const r = Math.hypot(u, v);
+      if (h === 0 && r > RP - 1.5) return site.y0 + (groundAt(w.x, w.z) - site.y0) * smooth01((r - RP + 1.5) / 1.5);
+      return site.y0 + h;
+    };
     for (let j = 0; j < NV; j++) for (let i = 0; i < NU; i++) {
       const u = U0 + i * CS, v = V0 + j * CS;
-      const h = pitLocal(u, v);
-      const w = toWorld(u, v);
-      H[node(i, j)] = h === null ? groundAt(w.x, w.z) : site.y0 + h;
+      H[node(i, j)] = hAt(u, v);
     }
     const pos = [], col = [];
     const snow = new THREE.Color(0xe3ebf4), caveFloor = new THREE.Color(0x8496ad), wallA = new THREE.Color(0x7fb6db), wallB = new THREE.Color(0x3f6f99);
-    const cc = new THREE.Color();
+    const vein = new THREE.Color(0xb4def5), cc = new THREE.Color();
+    // up at the rim the terrain takes over exactly at the opening's edge (it is cut away inside it), so the pit's own
+    // surface stops there too instead of overlapping it in grid steps
+    const clipRim = (poly) => {
+      const out = [], f = (p) => Math.hypot(p.u, p.v) - (RP + 0.01);
+      for (let k = 0; k < poly.length; k++) {
+        const p = poly[k], q = poly[(k + 1) % poly.length], fp = f(p), fq = f(q);
+        if (fp <= 0) out.push(p);
+        if ((fp <= 0) !== (fq <= 0)) { const t = fp / (fp - fq); out.push({ u: p.u + (q.u - p.u) * t, v: p.v + (q.v - p.v) * t, h: p.h + (q.h - p.h) * t }); }
+      }
+      return out;
+    };
+    // one flat piece of floor, ledge or snow, coloured by how deep it lies
+    const face = (piece, out, colors) => {
+      const poly = Math.max(...piece.map((p) => p.h)) > site.y0 - 1 ? clipRim(piece) : piece;
+      if (poly.length < 3) return;
+      let lo = Infinity, uc = 0, vc = 0;
+      for (const p of poly) { lo = Math.min(lo, p.h); uc += p.u / poly.length; vc += p.v / poly.length; }
+      const depth = clamp01((site.y0 - lo) / D);
+      if (Math.hypot(uc, vc) > RP && depth > 0.9) cc.copy(caveFloor); else cc.copy(snow).lerp(caveFloor, depth * 0.55);
+      for (let k = 1; k < poly.length - 1; k++) for (const p of [poly[0], poly[k], poly[k + 1]]) {
+        const w = toWorld(p.u, p.v);
+        out.push(w.x, p.h, w.z); colors.push(cc.r, cc.g, cc.b);
+      }
+    };
+    // where the wall really stands between a low and a high corner of a grid triangle (the shape's own edge, found by
+    // halving), with the height on each side of it
+    const edgeCross = (lo, hi) => {
+      let a = 0, b = 1;
+      for (let k = 0; k < 12; k++) {
+        const t = (a + b) / 2, h = hAt(lo.u + (hi.u - lo.u) * t, lo.v + (hi.v - lo.v) * t);
+        if (Math.abs(h - lo.h) < Math.abs(h - hi.h)) a = t; else b = t;
+      }
+      const at = (t) => ({ u: lo.u + (hi.u - lo.u) * t, v: lo.v + (hi.v - lo.v) * t });
+      const m = at((a + b) / 2), pa = at(a), pb = at(b);
+      return { lo: { ...m, h: hAt(pa.u, pa.v) }, hi: { ...m, h: hAt(pb.u, pb.v) } };
+    };
+    // a grid triangle: drawn as it is where it's walkable; across a wall it's cut at the wall's true edge into its low
+    // and high parts (the walls themselves are drawn below), so floors and ledges end in clean curves, not grid steps
+    const tri = (A, B, C) => {
+      const s = [A, B, C].sort((p, q) => p.h - q.h);
+      if (s[2].h - s[0].h <= STEEP) return face([A, B, C], pos, col);
+      const cut = s[1].h - s[0].h > s[2].h - s[1].h ? s[0].h : s[1].h;   // the biggest step splits low from high
+      const low = [], high = [];
+      for (const [p, q] of [[A, B], [B, C], [C, A]]) {
+        const pl = p.h <= cut, ql = q.h <= cut;
+        (pl ? low : high).push(p);
+        if (pl !== ql) { const x = pl ? edgeCross(p, q) : edgeCross(q, p); low.push(x.lo); high.push(x.hi); }
+      }
+      face(low, pos, col); face(high, pos, col);
+    };
+    const N = (i, j) => ({ u: U0 + i * CS, v: V0 + j * CS, h: H[node(i, j)] });
     for (let i = 0; i < NU - 1; i++) for (let j = 0; j < NV - 1; j++) {
       const ia = node(i, j), id = node(i + 1, j), ib = node(i, j + 1), ic = node(i + 1, j + 1);
       const hs = [H[ia], H[id], H[ib], H[ic]];
-      const lo = Math.min(...hs), hi = Math.max(...hs);
-      walk[j * (NU - 1) + i] = hi - lo <= STEEP ? 1 : 0;
+      walk[j * (NU - 1) + i] = Math.max(...hs) - Math.min(...hs) <= STEEP ? 1 : 0;
       const u = U0 + i * CS, v = V0 + j * CS;
-      const any = inRegion(u, v) || inRegion(u + CS, v) || inRegion(u, v + CS) || inRegion(u + CS, v + CS);
-      if (!any) continue;
-      const P = (ii, jj, h) => { const w = toWorld(U0 + ii * CS, V0 + jj * CS); return [w.x, h, w.z]; };
-      const a = P(i, j, H[ia]), d = P(i + 1, j, H[id]), b = P(i, j + 1, H[ib]), c = P(i + 1, j + 1, H[ic]);
-      for (const tri of [[a, b, d], [d, b, c]]) {
-        const tl = Math.min(tri[0][1], tri[1][1], tri[2][1]), th = Math.max(tri[0][1], tri[1][1], tri[2][1]);
-        const depth = Math.min(1, Math.max(0, (site.y0 - tl) / D));
-        if (th - tl > STEEP) cc.copy(wallA).lerp(wallB, depth * 0.85 + 0.1 * Math.sin(tl * 2.1 + u));
-        else if (Math.hypot(u, v) > RP && depth > 0.9) cc.copy(caveFloor);
-        else cc.copy(snow).lerp(caveFloor, depth * 0.55);
-        for (const p of tri) { pos.push(...p); col.push(cc.r, cc.g, cc.b); }
-      }
+      if (!(inRegion(u, v) || inRegion(u + CS, v) || inRegion(u, v + CS) || inRegion(u + CS, v + CS))) continue;
+      const a = N(i, j), d = N(i + 1, j), b = N(i, j + 1), c = N(i + 1, j + 1);
+      tri(a, b, d); tri(d, b, c);
     }
     pit.geometry.dispose();
     const g = new THREE.BufferGeometry();
@@ -356,21 +423,71 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
     g.computeBoundingSphere();
     pit.geometry = g;
 
-    // the lintel above the tunnel mouth: closes the gap between the tunnel's vault and the rim
-    const lpos = [], idx = [];
-    const steps = 14;
-    for (let k = 0; k <= steps; k++) {
-      const v = -(TW + 0.6) + (k / steps) * 2 * (TW + 0.6);
-      const u = Math.sqrt(RP * RP - v * v) - 0.05;
-      const w = toWorld(u, v);
-      lpos.push(w.x, site.y0 - D + ceilLocal(u, v) - 0.15, w.z, w.x, groundAt(w.x, w.z) + 0.15, w.z);
-      if (k < steps) { const b = k * 2; idx.push(b, b + 1, b + 2, b + 1, b + 3, b + 2); }
+    // ── the walls: rough, faceted ice, carved back into the rock ──
+    const wpos = [], wcol = [];
+    // one wall along a curve: at(t) (t = 0..1 along it) gives the local spot {u, v}, the way into the rock {nu, nv} and
+    // the wall's foot and top heights {y0, y1}. The carving fades out at its foot (it meets the floor), at its ends (it
+    // meets the next wall) and, where the top edge shows (topTaper), at its top; walls whose top hides behind the vault
+    // reach above it instead.
+    const wall = (len, at, { amp = 0.5, topTaper = 0.6, seed = 0 } = {}) => {
+      const cols = Math.max(2, Math.ceil(len / 0.42)), spots = [];
+      let rows = 2;
+      for (let c = 0; c <= cols; c++) { const f = at(c / cols); spots.push(f); rows = Math.max(rows, Math.ceil((f.y1 - f.y0) / 0.5)); }
+      const grid = spots.map((f, c) => {
+        const sAlong = (c / cols) * len, end = Math.min(sAlong, len - sAlong) / 0.5, out = [];
+        for (let r = 0; r <= rows; r++) {
+          let y = f.y0 + (f.y1 - f.y0) * (r / rows);
+          if (r > 0 && r < rows) y += rockNoise(sAlong * 2.1 + seed, r * 1.7) * 0.25 * (f.y1 - f.y0) / rows;   // uneven courses
+          const taper = clamp01(Math.min(end, (y - f.y0) / 0.35, topTaper ? (f.y1 - y) / topTaper : 1));
+          const k = carve(sAlong + seed, y - site.y0) * taper;
+          out.push({ u: f.u + f.nu * amp * k, v: f.v + f.nv * amp * k, h: y, k, s: sAlong });
+        }
+        return out;
+      });
+      for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++) {
+        const a = grid[c][r], b = grid[c + 1][r], d = grid[c][r + 1], e = grid[c + 1][r + 1];
+        if (Math.max(d.h - a.h, e.h - b.h) < 0.02) continue;   // no wall here (the landing)
+        for (const t of [[a, b, e], [a, e, d]]) {
+          const ym = (t[0].h + t[1].h + t[2].h) / 3, km = (t[0].k + t[1].k + t[2].k) / 3;
+          const depth = clamp01((site.y0 - ym) / D);
+          // deeper is darker; pale veins run along the rock's courses; the hollows sit in shadow
+          cc.copy(wallA).lerp(wallB, depth * 0.85 + 0.1 * Math.sin(ym * 2.1 + t[0].s));
+          cc.lerp(vein, 0.22 * clamp01(Math.sin(ym * 3.3 + rockNoise(t[0].s * 0.25 + seed, ym * 0.2) * 2.5) * 2 - 1));
+          cc.multiplyScalar(1 - 0.3 * km);
+          for (const p of t) { const w = toWorld(p.u, p.v); wpos.push(w.x, p.h, w.z); wcol.push(cc.r, cc.g, cc.b); }
+        }
+      }
+    };
+    const y0 = site.y0, fl = y0 - D, thT = Math.asin(TW / RP), secEnd = TH0 + TWO_PI;   // the floor-level sector ends at secEnd
+    const rim = (th, foot) => {   // the shaft's wall at angle th, from foot(u, v) up to the snow
+      const u = Math.cos(th) * RP, v = Math.sin(th) * RP, w = toWorld(Math.cos(th) * (RP + 0.02), Math.sin(th) * (RP + 0.02));
+      return { u, v, nu: Math.cos(th), nv: Math.sin(th), y0: foot(u, v), y1: groundAt(w.x, w.z) };
+    };
+    const onLedge = (u, v) => hAt(u * 0.998, v * 0.998);
+    const underVault = (u, v) => fl + ceilLocal(u, v);
+    // the shaft's wall: from the top of the ledge round to the tunnel mouth, over the mouth (from the vault up), and on
+    // to where the ledge starts again
+    wall(RP * (-thT - TH0), (t) => rim(TH0 + t * (-thT - TH0), onLedge), { amp: 0.55, seed: 0 });
+    wall(RP * 2 * thT, (t) => rim(-thT + t * 2 * thT, underVault), { amp: 0.4, seed: 60 });
+    wall(RP * (secEnd - thT), (t) => rim(thT + t * (secEnd - 1e-4 - thT), onLedge), { amp: 0.55, seed: 120 });
+    // the ledge's drop to the floor, and the face under the landing where the ledge starts
+    wall(RF * SWEEP, (t) => { const th = TH0 + t * SWEEP; return { u: Math.cos(th) * RF, v: Math.sin(th) * RF, nu: Math.cos(th), nv: Math.sin(th), y0: fl, y1: y0 + ledgeDrop(t * SWEEP) }; }, { amp: 0.45, topTaper: 0.5, seed: 200 });
+    wall(RP - RF, (t) => { const r = RF + t * (RP - RF); return { u: Math.cos(TH0) * r, v: Math.sin(TH0) * r, nu: -Math.sin(TH0), nv: Math.cos(TH0), y0: fl, y1: y0 }; }, { amp: 0.45, topTaper: 0.5, seed: 260 });
+    // the tunnel's sides and the chamber's wall, up behind the vault
+    const ua = Math.sqrt(RP * RP - TW * TW), ub = LC - Math.sqrt(RC * RC - TW * TW), at = Math.asin(TW / RC);
+    for (const side of [1, -1]) {
+      wall(ub - ua, (t) => { const u = ua + t * (ub - ua); return { u, v: side * TW, nu: 0, nv: side, y0: fl, y1: fl + ceilLocal(u, side * TW) + 0.5 }; }, { amp: 0.35, topTaper: 0, seed: side > 0 ? 300 : 340 });
     }
-    lintel.geometry.dispose();
-    const lg = new THREE.BufferGeometry();
-    lg.setAttribute('position', new THREE.Float32BufferAttribute(lpos, 3));
-    lg.setIndex(idx); lg.computeVertexNormals(); lg.computeBoundingSphere();
-    lintel.geometry = lg;
+    wall(RC * 2 * (Math.PI - at), (t) => {
+      const a = -(Math.PI - at) + t * 2 * (Math.PI - at);
+      return { u: LC + Math.cos(a) * RC, v: Math.sin(a) * RC, nu: Math.cos(a), nv: Math.sin(a), y0: fl, y1: fl + ceilLocal(LC + RC, 0) + 0.5 };
+    }, { amp: 0.3, topTaper: 0, seed: 400 });
+    walls.geometry.dispose();
+    const wg = new THREE.BufferGeometry();
+    wg.setAttribute('position', new THREE.Float32BufferAttribute(wpos, 3));
+    wg.setAttribute('color', new THREE.Float32BufferAttribute(wcol, 3));
+    wg.computeVertexNormals(); wg.computeBoundingSphere();
+    walls.geometry = wg;
   }
 
   // height inside the hole, read from the same triangles that are drawn (null outside the hole)
@@ -417,15 +534,52 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
     return len;
   }
   const inCave = (p) => { if (!near(p.x, p.z, 24)) return false; const { u, v } = toLocal(p.x, p.z); return Math.hypot(u, v) > RP - 0.6 && inFootprint(u, v) && p.y < site.y0 - D + 2; };
-  // how far into the tunnel you are (0 in the shaft or up on the ledge, 1 inside): the camera lowers and comes in
-  // gradually as you walk towards the tunnel mouth, so it is already low when the vault closes over you
-  const smooth01 = (x) => { const k = Math.min(1, Math.max(0, x)); return k * k * (3 - 2 * k); };
-  const caveWeight = (p) => {
-    if (!near(p.x, p.z, 24)) return 0;
-    const { u, v } = toLocal(p.x, p.z);
-    if (!inRegion(u, v)) return 0;
-    return smooth01((site.y0 - D + 3 - p.y) / 1.5) * smooth01((u - (RP - 2.5)) / 3.5);
-  };
+  // ── the camera rail ──
+  // Inside the hole the camera doesn't follow you freely: it rides a rail, a spot that depends only on where you are,
+  // so rock can never knock it about. On the way in it hangs back over the snow behind you; down the ledge it trails
+  // a few metres behind and above you, looking down the way ahead; on the floor and in the tunnel it rides the line
+  // that runs from the shaft into the cave, with the tunnel ahead of you. Each stretch hands over to the next by where
+  // you stand, so stopping halfway stops the camera too. Every spot it can take is in open air of the plain shape.
+  // Its shape has no corners (rounded maxima, smooth clamps), so the camera never changes speed abruptly either.
+  const R_ARC = 4.4, R_LIFT = 2.7, GOAL = LC - 1, RCOL = RF - 0.5;
+  // how far the floor's camera line may stray from the axis at u, staying inside the open shaft, the floor-level sector
+  // and the tunnel
+  const halfW = (u) => smax(Math.abs(u) < RCOL ? RCOL * (0.5 + 0.5 * Math.cos(Math.PI * u / RCOL)) : 0,
+    u <= 0 ? 0 : u < 5 ? 1.8 * smooth01(u / 5) : 1.8 - (1.8 - (TW - 0.5)) * smooth01((u - 5) / 1.4), 0.3);
+  // T = the point the camera follows (the rig's smoothed target) -> { w (0..1, how much the rail holds the camera), cam, look }
+  function rail(T) {
+    if (!site || !near(T.x, T.z, 26)) return null;
+    const L = toLocal(T.x, T.z), r = Math.hypot(L.u, L.v), th = Math.atan2(L.v, L.u), fl = site.y0 - D;
+    const inside = inRegion(L.u, L.v), up = !inside || (T.y > fl + 0.25 && r > RF - 0.3);   // not on the floor
+    let phi = wrap(th - TH0), w = 1;
+    if (!inside) {   // on the snow: only around the landing, fading out as you walk away
+      phi = phi > Math.PI ? phi - TWO_PI : phi;
+      w = smooth01((0.8 - Math.abs(phi - LAND / 2)) / 0.35) * smooth01((RP + 6 - r) / 5.5);
+      if (w <= 0) return null;
+    }
+    let cu = 0, cv = 0, cy = 0, lu = 0, lv = 0, ly = 0;
+    // the ledge's last stretch hands over to the floor's line, done well before the floor (where `up` turns false)
+    const b = up ? smooth01((phi - (SWEEP - 1.8)) / 1.1) : 1;
+    if (b < 1) {
+      // the way in: straight back over the snow, where the free camera would be, turning a little towards the ledge
+      // as you reach the rim; then on to the ledge's spot
+      const e = smooth01((phi - 0.15) / 1.6), turn = 0.12 * smooth01((RP + 2.5 - r) / 4);
+      const rc = smax(RF - 0.3, r - 0.6, 0.4), rr = r + 5 + (rc - r - 5) * e, a = th - turn + (turn - R_ARC / rc) * e;
+      const la = th + (1.3 / Math.max(r, 1)) * e, lr = r - 0.3 * e;
+      cu = Math.cos(a) * rr; cv = Math.sin(a) * rr; cy = T.y + 3.6 + (R_LIFT - 3.6) * e;
+      lu = Math.cos(la) * lr; lv = Math.sin(la) * lr; ly = T.y + 1.3;
+    }
+    if (b > 0) {
+      const fu = smax(-(RF - 0.6), L.u - 4.2, 1), hw = halfW(fu), fv = hw * Math.tanh(L.v * 0.6 / hw);
+      const hd = Math.hypot(L.u - fu, L.v - fv), gu = GOAL - L.u, gv = -L.v, gl = Math.hypot(gu, gv) || 1;
+      const fy = smax(fl + R_LIFT, T.y + 1.6) + smax(0, 2.6 - hd, 0.8) * 0.9;   // higher when it can't hang back
+      const k = (x, y) => x + (y - x) * b;
+      cu = k(cu, fu); cv = k(cv, fv); cy = k(cy, fy);
+      lu = k(lu, L.u + gu / gl); lv = k(lv, L.v + gv / gl); ly = k(ly, T.y + 1.2);
+    }
+    const c = toWorld(cu, cv), l = toWorld(lu, lv);
+    return { w, cam: { x: c.x, y: cy, z: c.z }, look: { x: l.x, y: ly, z: l.z } };
+  }
   const sheltered = (p) => { if (!near(p.x, p.z, 24)) return false; const { u, v } = toLocal(p.x, p.z); return inRegion(u, v); };
 
   function placeItem(x, y, z) {
@@ -438,7 +592,7 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
     held = false; canTake = false;
     item.group.visible = false;
     light.intensity = 0;
-    camBlend = 0; steerSide = 0; lastCam = null;
+    boom = 1;
   }
 
   // the chamber's fixed camera shot (engine/fixedShot.js): from the end of the tunnel, high under the vault, looking
@@ -477,68 +631,42 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
       }
       pos.x = px; pos.z = pz;
     },
-    // keep the camera inside the hole and the cave: lower, closer and under the ceiling while you're in the cave,
-    // never inside rock, and swung away from the walls so it keeps its distance instead of pulling in close to you
+    // the camera around and inside the hole: on the rail wherever it holds (see rail), the free camera elsewhere, kept
+    // out of the rock by shortening its boom
     constrainCamera(camera, rig, P, frameDt) {
       const now = performance.now() / 1000, dt = Math.min(0.1, frameDt ?? (lastCamT ? now - lastCamT : 1 / 60));
       lastCamT = now;
-      if (!site || !near(P.x, P.z, 40)) { camBlend = 0; boom = 1; steerSide = 0; lastCam = null; return; }
-      const look = { x: rig.target.x, y: rig.target.y + 1.5, z: rig.target.z };
-      let lift = rig.lookLift || 0;   // looking up: the gaze tilts above the explorer's head
-      // the cave framing holds while either you or the camera is in the tunnel, so walking out into the shaft
-      // doesn't lift a camera that is still under the vault into its ceiling
-      const camIn = lastCam ? caveWeight({ x: lastCam.x, y: P.y, z: lastCam.z }) : 0;
-      camBlend = damp(camBlend, Math.max(caveWeight(P), camIn), 5, dt);
+      rig.railed = false;
+      if (!site || !near(P.x, P.z, 40)) { boom = 1; return; }
+      const R = rail(rig.target), w = R ? R.w : 0;
+      if (R) {
+        // the rail holds the controls too (you walk relative to where it looks): the rig's angles are the free camera's
+        // own (still turned by a drag or swinging behind you) mixed with the rail's by how much the rail holds, so
+        // they turn only as fast as you walk into it; leaving it, the free camera picks up from the rail's angles
+        const dx = R.cam.x - R.look.x, dz = R.cam.z - R.look.z;
+        const yaw = Math.atan2(dx, dz), pitch = Math.max(-0.08, Math.min(1.15, Math.atan2(R.cam.y - rig.target.y - 1.7, Math.hypot(dx, dz))));
+        if (!free || w > 0.999) free = { yaw: rig.yaw, pitch: rig.pitch };
+        else { free.yaw += Math.atan2(Math.sin(rig.yaw - free.setYaw), Math.cos(rig.yaw - free.setYaw)); free.pitch += rig.pitch - free.setPitch; }
+        if (w > 0.999) free = { yaw, pitch };
+        rig.yaw = free.yaw + Math.atan2(Math.sin(yaw - free.yaw), Math.cos(yaw - free.yaw)) * w;
+        rig.pitch = free.pitch + (pitch - free.pitch) * w;
+        free.setYaw = rig.yaw; free.setPitch = rig.pitch;
+        rig.railed = w > 0.999;
+      } else free = null;
       const cam = camera.position;
-      // in the cave the camera comes lower and closer than its usual orbit
-      const p = Math.max(-0.08, Math.min(rig.pitch, 0.26)), d = Math.min(rig.curDist ?? rig.distance, 5.2);
-      const caveSpot = (yaw) => ({ x: rig.target.x + Math.sin(yaw) * Math.cos(p) * d, y: rig.target.y + 1.7 + Math.sin(p) * d, z: rig.target.z + Math.cos(yaw) * Math.cos(p) * d });
-      const spot = (yaw) => {
-        const o = rig.spotAt(yaw), c = caveSpot(yaw);
-        return { x: o.x + (c.x - o.x) * camBlend, y: o.y + (c.y - o.y) * camBlend, z: o.z + (c.z - o.z) * camBlend };
-      };
-      // anywhere down in the hole, a camera blocked by rock swings round you towards open space: across the shaft,
-      // or along the tunnel. It takes the open direction nearest its own (each turn is worth what it frees up,
-      // minus its size, and the side it already leans to wins ties, so it never flips between two equal gaps).
-      // It gives way while you turn the camera yourself (then only the boom shortens) and eases in once you let go.
-      const yieldTo = Math.min(1, Math.max(0, (rig.sinceLook - 0.25) / 0.35));
-      const ideal = spot(rig.yaw), full = Math.hypot(ideal.x - look.x, ideal.y - look.y, ideal.z - look.z);
-      const here = sheltered(P) && yieldTo > 0 && !rig.fixedView ? clearance(look, ideal) : full;
-      if (here < full * 0.92) {
-        let best = 0, bestScore = here;
-        for (const a of STEER) {
-          let open = false;
-          for (const off of [a * (steerSide || 1), -a * (steerSide || 1)]) {
-            const room = clearance(look, spot(rig.yaw + off));
-            const score = room - off * Math.sign(off) * 0.7 + (steerSide && Math.sign(off) === steerSide ? 0.3 : 0);
-            if (score > bestScore + 0.05) { best = off; bestScore = score; }
-            if (room > full * 0.98) open = true;
-          }
-          if (open) break;   // a wider turn can't free up more
-        }
-        if (best) steerSide = Math.sign(best);
-        rig.yaw += Math.sign(best) * Math.min(Math.abs(best) * (1 - Math.exp(-3 * dt)), 2 * dt) * yieldTo;
-      } else steerSide = 0;
-      if (camBlend > 0.01) {
-        const c = caveSpot(rig.yaw);
-        cam.set(cam.x + (c.x - cam.x) * camBlend, cam.y + (c.y - cam.y) * camBlend, cam.z + (c.z - cam.z) * camBlend);
-        lift = lift * (1 - camBlend) + Math.tan(Math.max(0, p - rig.pitch)) * Math.cos(p) * d * camBlend;
-      }
-      let gaze = { x: look.x, y: look.y + lift, z: look.z };
+      const look = { x: rig.target.x, y: rig.target.y + 1.5, z: rig.target.z };
+      const gaze = { x: look.x, y: look.y + (rig.lookLift || 0), z: look.z };
       const dx = cam.x - look.x, dy = cam.y - look.y, dz = cam.z - look.z, len = Math.hypot(dx, dy, dz);
-      if (air(look.x, look.y, look.z) && len > 0.01) {
-        const free = clearance(look, cam);
+      if (w < 0.999 && air(look.x, look.y, look.z) && len > 0.01) {
         // the boom eases in (no faster than PULL_IN) and out more slowly, so rock coming between you and the camera
-        // never makes it lurch: a corner may hide you for a moment while it comes in. Only if the eased spot would
-        // sit inside rock does it come in at once, and only as far as it must: to the nearest open point towards you
-        const want = free / len;
+        // never makes it lurch. Only if the eased spot would sit inside rock does it come in at once, and only as far
+        // as it must: sideways along the wall first, else to the nearest open point towards you
+        const want = clearance(look, cam) / len;
         const inRock = (k) => !air(look.x + dx * k, look.y + dy * k, look.z + dz * k);
         boom = want < boom ? Math.max(damp(boom, want, 9, dt), boom - PULL_IN * dt / len) : damp(boom, want, 4, dt);
         if (boom > 0.999) boom = 1;
-        let f = boom;
-        let side = 0;
+        let f = boom, side = 0;
         if (f < 1 && inRock(f)) {
-          // slide along the wall first (sideways, to the nearest open spot); come in towards you only if that fails
           const sx = -dz / Math.hypot(dx, dz), sz = dx / Math.hypot(dx, dz);
           const at = (o) => air(look.x + dx * f + sx * o, look.y + dy * f, look.z + dz * f + sz * o);
           for (let o = 0.05; o <= 1.5 && !side; o += 0.05) side = at(o) ? o : at(-o) ? -o : 0;
@@ -547,11 +675,14 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
         if (f < 1) {
           const sx = side ? -dz / Math.hypot(dx, dz) * side : 0, sz = side ? dx / Math.hypot(dx, dz) * side : 0;
           cam.set(look.x + dx * f + sx, look.y + dy * f, look.z + dz * f + sz);
-          gaze.y = look.y + lift * f;
+          gaze.y = look.y + (rig.lookLift || 0) * f;
         }
+      } else boom = 1;
+      if (R) {
+        cam.set(cam.x + (R.cam.x - cam.x) * w, cam.y + (R.cam.y - cam.y) * w, cam.z + (R.cam.z - cam.z) * w);
+        gaze.x += (R.look.x - gaze.x) * w; gaze.y += (R.look.y - gaze.y) * w; gaze.z += (R.look.z - gaze.z) * w;
       }
       camera.lookAt(gaze.x, gaze.y, gaze.z);
-      lastCam = { x: cam.x, z: cam.z };
     },
     // places to keep storm devices away from
     avoid() {
@@ -571,7 +702,7 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
       site = { x: pick.x, z: pick.z, y0: groundAt(pick.x, pick.z), rot, c: Math.cos(rot), s: Math.sin(rot) };
       buildPit();
       holeUniform.value.set(site.x, site.z, RP);
-      pit.visible = lintel.visible = cave.visible = true;
+      pit.visible = walls.visible = cave.visible = true;
       cave.position.set(site.x, site.y0, site.z);
       cave.rotation.y = -rot;
       cave.updateMatrixWorld(true);
@@ -649,7 +780,7 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
       canTake = false;
       site = null;
       holeUniform.value.set(0, 0, 0);
-      pit.visible = lintel.visible = cave.visible = false;
+      pit.visible = walls.visible = cave.visible = false;
       item.group.visible = false; light.intensity = 0;
       keepOut.length = 0;
       for (const c of cols) { c.x = 1e5; c.z = 1e5; }

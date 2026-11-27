@@ -12,6 +12,7 @@ export class CameraRig {
     this.lookLift = 0;
     this.sinceLook = Infinity;   // seconds since the player last turned the camera
     this.fixedView = false;      // set by a world while it holds the camera on a fixed view (e.g. the ice cave's chamber)
+    this.railed = false;         // set by a world while its camera rail holds the view (e.g. down the ice hole)
     this.held = null;            // the walking direction being held (see moveYaw)
   }
 

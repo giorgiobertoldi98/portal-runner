@@ -9,8 +9,9 @@
 // - the camera holds it: no orbit, no drag (the rig's yaw is pinned to the view, so the controls follow the screen);
 // - rig.fixedView is set, so the rig holds your walking direction through the switches (see CameraRig.moveYaw);
 // - `active` is true, which the game uses to make you walk only (a small room has no space to run).
-// Switching eases in from wherever the camera was on the last frame (so nothing the following camera does meanwhile
-// shows) and eases out with the aim returning to you quickly, so you never leave the frame. Leaving the room
+// Switching eases between the following camera, as it moves, and the shot, so the camera keeps its speed and never
+// stops dead: the following camera around a room must therefore move smoothly near its doorway (in the ice cave it
+// is the pit's camera rail). Easing out, the aim returns to you quickly, so you never leave the frame. Leaving the room
 // through its exit swings the camera behind you, facing the way out.
 //
 // Choose each shot by measuring, not by eye: from the spot, you should stay fully in frame over most of the room's
@@ -30,7 +31,6 @@ export class FixedShot {
     this.shot = null;     // the shot that's on
     this.leaving = null;  // the shot being eased out of
     this.ramp = 0;        // 0..1, linear in time; eased with a smoothstep
-    this.last = null;     // the camera and aim actually shown last frame
     this.lastP = null;
   }
 
@@ -46,7 +46,7 @@ export class FixedShot {
     const gaze = { x: cam.x + dir.x * r, y: cam.y + dir.y * r, z: cam.z + dir.z * r };
 
     const next = find ? find(P, !!this.shot) : null;
-    if (next && !this.shot) this.shot = { ...next, from: this.last?.cam ?? { x: cam.x, y: cam.y, z: cam.z }, fromLook: this.last?.look ?? gaze, pitch: rig.pitch };
+    if (next && !this.shot) this.shot = { ...next, pitch: rig.pitch };
     else if (next) Object.assign(this.shot, next);
     else if (this.shot) this.end(rig, moved);
 
@@ -54,21 +54,20 @@ export class FixedShot {
     const k = this.ramp * this.ramp * (3 - 2 * this.ramp);
     rig.fixedView = !!this.shot;
     const s = this.shot ?? this.leaving;
-    if (!s || k < 0.001) { this.leaving = null; this.last = { cam: { x: cam.x, y: cam.y, z: cam.z }, look: gaze }; return; }
+    if (!s || k < 0.001) { this.leaving = null; return; }
 
     let p, look;
     if (this.shot) {
       rig.yaw = Math.atan2(s.cam.x - s.look.x, s.cam.z - s.look.z);   // the drag can't turn it: the view stays put
       rig.pitch = s.pitch;
-      p = mix(s.from, s.cam, k);
-      look = mix(s.fromLook, s.look, k);
+      p = mix(cam, s.cam, k);
+      look = mix(gaze, s.look, k);
     } else {
       p = mix(cam, s.cam, k);
       look = mix(gaze, s.look, this.ramp ** 8);   // the aim comes back to you well before the camera does
     }
     cam.set(p.x, p.y, p.z);
     camera.lookAt(look.x, look.y, look.z);
-    this.last = { cam: p, look };
   }
 
   // leaving: if you're walking out through the exit, the camera swings round behind you, facing the way out
