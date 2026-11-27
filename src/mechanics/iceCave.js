@@ -55,13 +55,17 @@ function ledgeDrop(phi) {
   const f = x < EASE ? x * x / (2 * EASE) : x > 1 - EASE ? 1 - EASE - (1 - x) ** 2 / (2 * EASE) : x - EASE / 2;
   return -D * f / (1 - EASE);
 }
+// Where the landing ends (its drop to the floor), as an angle past TH0 at radius r: a curve, flush with the rim at
+// the outer edge and cutting back into the landing towards the inner edge, rather than a straight radial cut.
+const CUT = 0.35;
+const landingEnd = (r) => CUT * Math.pow(Math.max(0, (RP - r) / (RP - RF)), 1.5);
 // height below the rim (0 at the rim, -D at the floor), or null outside the hole
 function pitLocal(u, v) {
   const r = Math.hypot(u, v);
   if (r < RP) {
     if (r < RF) return -D;
     const phi = wrap(Math.atan2(v, u) - TH0);
-    return phi >= SWEEP ? -D : ledgeDrop(phi);
+    return phi >= SWEEP || phi < landingEnd(r) ? -D : ledgeDrop(phi);
   }
   return inFootprint(u, v) ? -D : null;
 }
@@ -618,8 +622,19 @@ export function createIceCave({ scene, groundAt, groundColor, sites, holeUniform
     wall(RP * 2 * thT, (t) => rim(-thT + t * 2 * thT, underVault), { amp: 0.2, seed: 60 });
     wall(RP * (secEnd - thT), (t) => rim(thT + t * (secEnd - 1e-4 - thT), onLedge), { amp: 0.55, seed: 120 });
     // the ledge's drop to the floor, and the face under the landing where the ledge starts
-    wall(RF * SWEEP, (t) => { const th = TH0 + t * SWEEP; return { u: Math.cos(th) * RF, v: Math.sin(th) * RF, nu: Math.cos(th), nv: Math.sin(th), y0: hAt(Math.cos(th) * (RF - 0.002), Math.sin(th) * (RF - 0.002)), y1: hAt(Math.cos(th) * (RF + 0.002), Math.sin(th) * (RF + 0.002)) }; }, { amp: 0.45, topTaper: 0.5, seed: 200 });
-    wall(RP - RF, (t) => { const r = RF + t * (RP - RF), ri = Math.min(r, RP - 0.01); return { u: Math.cos(TH0) * r, v: Math.sin(TH0) * r, nu: -Math.sin(TH0), nv: Math.cos(TH0), y0: hAt(Math.cos(TH0 - 0.001) * ri, Math.sin(TH0 - 0.001) * ri), y1: hAt(Math.cos(TH0 + 0.001) * ri, Math.sin(TH0 + 0.001) * ri) }; }, { amp: 0.45, topTaper: 0.5, seed: 260 });
+    const e0 = landingEnd(RF);
+    wall(RF * (SWEEP - e0), (t) => { const th = TH0 + e0 + t * (SWEEP - e0); return { u: Math.cos(th) * RF, v: Math.sin(th) * RF, nu: Math.cos(th), nv: Math.sin(th), y0: hAt(Math.cos(th) * (RF - 0.002), Math.sin(th) * (RF - 0.002)), y1: hAt(Math.cos(th) * (RF + 0.002), Math.sin(th) * (RF + 0.002)) }; }, { amp: 0.45, topTaper: 0.5, seed: 200 });
+    // the face under the landing's end, along its curve (pushed into the landing, the way the angle grows)
+    const endAt = (r) => { const th = TH0 + landingEnd(r); return { u: Math.cos(th) * r, v: Math.sin(th) * r, th }; };
+    let endLen = 0;
+    for (let k = 0; k < 20; k++) { const a = endAt(RF + (k / 20) * (RP - RF)), b = endAt(RF + ((k + 1) / 20) * (RP - RF)); endLen += Math.hypot(b.u - a.u, b.v - a.v); }
+    wall(endLen, (t) => {
+      const r = RF + t * (RP - RF), p = endAt(r), q = endAt(Math.min(RP, r + 0.01)), o = endAt(Math.max(RF, r - 0.01));
+      const tu = q.u - o.u, tv = q.v - o.v, tl = Math.hypot(tu, tv);   // along the curve, outwards; the rock is to its left
+      const ri = Math.min(r, RP - 0.01), lo = endAt(ri);
+      return { u: p.u, v: p.v, nu: -tv / tl, nv: tu / tl,
+        y0: hAt(Math.cos(lo.th - 0.002) * ri, Math.sin(lo.th - 0.002) * ri), y1: hAt(Math.cos(lo.th + 0.002) * ri, Math.sin(lo.th + 0.002) * ri) };
+    }, { amp: 0.45, topTaper: 0.5, seed: 260 });
     // the tunnel's sides and the chamber's wall, up behind the vault
     const at = Math.asin(TW / RC);
     for (const side of [1, -1]) {
