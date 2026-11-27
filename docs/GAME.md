@@ -208,7 +208,7 @@ Why these values:
 - The map belongs to one run of the Glacier; other worlds have no map.
 
 ## Glacier snow storms
-- 10 hidden storm devices, placed at the start of each run. They are spread evenly over the walkable map: most stay inland, but a few (about one in four) may sit right up near its border, so walking along the edge can start a storm too. They stay at least 45 m from the portal and 55 m from the spawn point, and clear of the ice hole.
+- 10 hidden storm devices, placed at the start of each run. They are spread evenly over the walkable map, away from its border, and stay at least 45 m from the portal and 55 m from the spawn point, and clear of the ice hole.
 - No gem ever starts inside a trigger zone: devices are always placed at least the trigger radius + 6 m from every gem on the ground, so fetching a gem never forces a storm.
 - **Devices shift** (all together, to new spots following the same placement rules and also staying at least 70 m from you) on two occasions: when you take the explorers' map, and when a gem goes into the portal. After a shift, further insertions don't shift them again for 10 s, so feeding several gems at once causes one shift. Every shift is marked by a falling glassy chime, and nothing else. The gem that opens the portal doesn't shift them, since devices stop triggering once the portal is open.
 - Devices are invisible and silent: nothing warns you before you cross a device's 20 m trigger radius (a hum would be mistaken for a gem's).
