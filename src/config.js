@@ -18,7 +18,8 @@ export const PORTAL = {
 
 export const GEMS = {
   pickupRadius: 1.9,
-  extraPerLevel: 0,     // gems in each level on top of the quota (0 = exactly the gems needed)
+  portalClearance: 50,  // gems are hidden at least this far beyond the portal's safe zone edge (soft: the best spot is used if none fits)
+  extraPerLevel: 0,    // gems in each level on top of the quota (0 = exactly the gems needed)
   humRadius: 14,        // a dark gem starts humming (and faintly glimmering) inside this distance once you have a way to find gems (the Resonance Call, or a world's map)…
   humRadiusBlind: 4,    // …and only this close before that (e.g. the Glacier before you find the explorers' map), so gems aren't found by stumbling around
   slowPerGem: 0.15,     // each carried gem removes 15% of your speed… (editable: Speed lost per gem)
