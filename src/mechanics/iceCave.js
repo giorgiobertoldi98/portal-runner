@@ -83,6 +83,26 @@ const carve = (s, y) => clamp01((0.5 + 0.6 * fbm(rockNoise, s * 0.42, y * 0.3, 3
 // fading out towards the rim and the tunnel mouth, so it meets the snow outside and the tunnel's floor without a step
 // (smooth up in the snow, like the snow outside, growing lumpier lower down where the ice shows)
 const pitBumps = (u, v, depth) => 0.11 * fbm(rockNoise, u * 0.7 + 200, v * 0.7 - 40, 3) * smooth01((RP - Math.hypot(u, v)) / 1.2) * (0.15 + 0.85 * smooth01((depth - 0.1) / 0.5));
+// The trodden track's centre line (local frame): from the way in at the middle of the landing it curves round onto
+// the ledge and follows it down, wandering a little. Sampled once; trackAt gives the distance to it and how far along.
+const TRACK = (() => {
+  const pts = [], P = (r, phi) => ({ u: Math.cos(TH0 + phi) * r, v: Math.sin(TH0 + phi) * r });
+  const a = P(RP + 0.3, LAND / 2), c = P(5.9, LAND / 2 + 0.15), b = P(5.45, LAND + 0.4);
+  for (let t = 0; t <= 1; t += 0.05) pts.push({ u: (1 - t) ** 2 * a.u + 2 * t * (1 - t) * c.u + t * t * b.u, v: (1 - t) ** 2 * a.v + 2 * t * (1 - t) * c.v + t * t * b.v });
+  for (let phi = LAND + 0.43; phi <= SWEEP; phi += 0.03) pts.push(P(5.45 + 0.15 * Math.sin(phi * 3.1), phi));
+  let along = 0;
+  pts.forEach((p, i) => { if (i) along += Math.hypot(p.u - pts[i - 1].u, p.v - pts[i - 1].v); p.s = along; });
+  return pts;
+})();
+function trackAt(u, v) {
+  let d = Infinity, along = 0;
+  for (let i = 1; i < TRACK.length; i++) {
+    const p = TRACK[i - 1], q = TRACK[i], dx = q.u - p.u, dv = q.v - p.v, L2 = dx * dx + dv * dv;
+    const t = clamp01(((u - p.u) * dx + (v - p.v) * dv) / L2), x = p.u + dx * t - u, z = p.v + dv * t - v, dd = x * x + z * z;
+    if (dd < d) { d = dd; along = p.s + (q.s - p.s) * t; }
+  }
+  return { d: Math.sqrt(d), along };
+}
 // the vault lifted into the rock: none at the tunnel mouth, where it meets the shaft's wall
 const ceilLift = (u, v) => 0.4 * clamp01(0.45 + 0.7 * fbm(rockNoise, u * 0.6 + 90, v * 0.6, 3)) * smooth01((Math.hypot(u, v) - RP) / 1.2);
 
@@ -429,10 +449,9 @@ export function createIceCave({ scene, groundAt, groundColor, sites, holeUniform
     const stone = C(0x868c98), stoneDark = C(0x666d7a), frost = C(0xc3d0dd), slate = C(0x485366), slateLight = C(0x626e82);
     const cc = new THREE.Color(), c2 = new THREE.Color(), vcol = new THREE.Color(), gc = new THREE.Color(), trodden = C(0xb9c3d1);
     // How much of a spot in the shaft is still covered by the snow from outside (cover, 0..1: the terrain's own snow,
-    // smooth, no pattern), by depth, and how trodden it is (path). PROPOSALS (temporary switch, ?pitsnow=A|B|C)
-    const VARIANT = (globalThis.location && new URLSearchParams(location.search).get('pitsnow')) || 'B';
+    // smooth, no pattern), and how trodden it is (path, 0..1). The snow gives way to ice going down, unevenly: it
+    // lingers in drifts and against the outer wall, and the inner edge, by the drop, ices first.
     const snowCover = (u, v, r, dv) => {
-      if (VARIANT === 'A') return { cover: 1 - smooth01((dv - 0.13) / 0.55), path: 0 };
       const s0 = 1 - smooth01((dv - 0.2) / 0.6);
       const onLedge = r >= RF - 0.05 && r < RP;
       const drift = 0.25 * fbm(rockNoise, u * 0.35 + 11, v * 0.35 - 5, 2);
@@ -440,9 +459,13 @@ export function createIceCave({ scene, groundAt, groundColor, sites, holeUniform
       const edge = onLedge ? 0.2 * smooth01((RF + 0.9 - r) / 0.9) : 0;     // the inner edge, by the drop, ices first
       const mid = 4 * s0 * (1 - s0) + 0.6 * smooth01((0.8 - dv) / 0.3) * (1 - s0);
       const cover = clamp01(s0 + (drift + wall - edge) * mid);
-      if (VARIANT !== 'C' || !onLedge) return { cover, path: 0 };
+      if (!onLedge || cover <= 0.1) return { cover, path: 0 };   // (no track where the snow is gone)
+      // the trodden track: soft-edged, a little uneven in width, fading in from the rim and out as the snow thins
       const phi = wrap(Math.atan2(v, u) - TH0);
-      const path = 0.85 * (1 - smooth01(Math.abs(r - (RF + RP) / 2 - 0.1 * Math.sin(phi * 3)) / 0.55)) * smooth01((phi - 0.05) / 0.4) * smooth01((cover - 0.2) / 0.4);
+      if (phi > LAND + 0.6 && Math.abs(r - 5.45) > 1.25) return { cover, path: 0 };   // too far from the track to matter
+      const { d, along } = trackAt(u, v);
+      const half = 0.32 + 0.1 * rockNoise(along * 0.6 + 3, 7);
+      const path = 0.8 * (1 - smooth01((d - half) / 0.45)) * smooth01((RP - 0.15 - r) / 0.9) * smooth01((cover - 0.1) / 0.6);
       return { cover, path };
     };
     const between = (out, stops, t) => {   // stops = colours evenly along t = 0..1
