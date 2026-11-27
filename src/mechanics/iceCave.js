@@ -81,7 +81,8 @@ const smooth01 = (x) => { const k = clamp01(x); return k * k * (3 - 2 * k); };
 const carve = (s, y) => clamp01((0.5 + 0.6 * fbm(rockNoise, s * 0.42, y * 0.3, 3)) * 0.8 + Math.abs(rockNoise(s * 1.3 + 31, y * 1.1 - 7)) * 0.35);
 // the shaft's trodden, lumpy snow (landing, ledge and floor): gentle enough to walk (well under the wall test's step),
 // fading out towards the rim and the tunnel mouth, so it meets the snow outside and the tunnel's floor without a step
-const pitBumps = (u, v) => 0.11 * fbm(rockNoise, u * 0.7 + 200, v * 0.7 - 40, 3) * smooth01((RP - Math.hypot(u, v)) / 1.2);
+// (smooth up in the snow, like the snow outside, growing lumpier lower down where the ice shows)
+const pitBumps = (u, v, depth) => 0.11 * fbm(rockNoise, u * 0.7 + 200, v * 0.7 - 40, 3) * smooth01((RP - Math.hypot(u, v)) / 1.2) * (0.15 + 0.85 * smooth01((depth - 0.1) / 0.5));
 // the vault lifted into the rock: none at the tunnel mouth, where it meets the shaft's wall
 const ceilLift = (u, v) => 0.4 * clamp01(0.45 + 0.7 * fbm(rockNoise, u * 0.6 + 90, v * 0.6, 3)) * smooth01((Math.hypot(u, v) - RP) / 1.2);
 
@@ -409,7 +410,7 @@ export function createIceCave({ scene, groundAt, groundColor, sites, holeUniform
       const h = pitLocal(u, v), w = toWorld(u, v);
       if (h === null) return groundAt(w.x, w.z);
       const r = Math.hypot(u, v);
-      const lumps = r < RP ? pitBumps(u, v) : 0;
+      const lumps = r < RP ? pitBumps(u, v, -h / D) : 0;
       if (h === 0 && r > RP - 1.5) return site.y0 + (groundAt(w.x, w.z) - site.y0) * smooth01((r - RP + 1.5) / 1.5) + lumps;
       return site.y0 + h + lumps;
     };
@@ -426,7 +427,24 @@ export function createIceCave({ scene, groundAt, groundColor, sites, holeUniform
     const snow = C(0xe3ebf4), packed = C(0xc2d2e3), floorIce = C(0x93b4d0), icePatch = C(0x7fa9cc), drift = C(0xeef3f9);
     const crust = C(0xdde8f2), paleIce = C(0xa6d0ea), wallA = C(0x7fb6db), wallB = C(0x3f6f99), vein = C(0xb4def5);
     const stone = C(0x868c98), stoneDark = C(0x666d7a), frost = C(0xc3d0dd), slate = C(0x485366), slateLight = C(0x626e82);
-    const cc = new THREE.Color(), c2 = new THREE.Color(), vcol = new THREE.Color(), gc = new THREE.Color();
+    const cc = new THREE.Color(), c2 = new THREE.Color(), vcol = new THREE.Color(), gc = new THREE.Color(), trodden = C(0xb9c3d1);
+    // How much of a spot in the shaft is still covered by the snow from outside (cover, 0..1: the terrain's own snow,
+    // smooth, no pattern), by depth, and how trodden it is (path). PROPOSALS (temporary switch, ?pitsnow=A|B|C)
+    const VARIANT = (globalThis.location && new URLSearchParams(location.search).get('pitsnow')) || 'B';
+    const snowCover = (u, v, r, dv) => {
+      if (VARIANT === 'A') return { cover: 1 - smooth01((dv - 0.13) / 0.55), path: 0 };
+      const s0 = 1 - smooth01((dv - 0.2) / 0.6);
+      const onLedge = r >= RF - 0.05 && r < RP;
+      const drift = 0.25 * fbm(rockNoise, u * 0.35 + 11, v * 0.35 - 5, 2);
+      const wall = onLedge ? 0.45 * smooth01((r - (RP - 1.1)) / 0.8) : 0;   // snow lingers against the outer wall
+      const edge = onLedge ? 0.2 * smooth01((RF + 0.9 - r) / 0.9) : 0;     // the inner edge, by the drop, ices first
+      const mid = 4 * s0 * (1 - s0) + 0.6 * smooth01((0.8 - dv) / 0.3) * (1 - s0);
+      const cover = clamp01(s0 + (drift + wall - edge) * mid);
+      if (VARIANT !== 'C' || !onLedge) return { cover, path: 0 };
+      const phi = wrap(Math.atan2(v, u) - TH0);
+      const path = 0.85 * (1 - smooth01(Math.abs(r - (RF + RP) / 2 - 0.1 * Math.sin(phi * 3)) / 0.55)) * smooth01((phi - 0.05) / 0.4) * smooth01((cover - 0.2) / 0.4);
+      return { cover, path };
+    };
     const between = (out, stops, t) => {   // stops = colours evenly along t = 0..1
       const x = clamp01(t) * (stops.length - 1), i = Math.min(stops.length - 2, Math.floor(x));
       return out.copy(stops[i]).lerp(stops[i + 1], smooth01(x - i));
@@ -463,13 +481,17 @@ export function createIceCave({ scene, groundAt, groundColor, sites, holeUniform
         between(c2, [stoneDark, stone, frost], 0.45 + 0.35 * n).multiplyScalar(1 + 0.03 * m);
         cc.lerp(c2, toRock(uc));
       }
-      // up on the landing, over its last two metres the snow turns into the terrain's own, corner by corner, so the
-      // rim shows no line between the snow outside and the snow in the hole
-      const top = depth < 0.15;
       for (let k = 1; k < poly.length - 1; k++) for (const p of [poly[0], poly[k], poly[k + 1]]) {
         const w = toWorld(p.u, p.v), r = Math.hypot(p.u, p.v);
         vcol.copy(cc);
-        if (top && r > RP - 2) vcol.lerp(groundColor(gc, w.x, w.z), smooth01((r - RP + 2) / 2));
+        if (r < RP + 0.05) {
+          const s = snowCover(p.u, p.v, r, clamp01((site.y0 - p.h) / D));
+          if (s.cover > 0) {
+            groundColor(gc, w.x, w.z);
+            if (s.path > 0) gc.lerp(trodden, s.path);
+            vcol.lerp(gc, s.cover);
+          }
+        }
         out.push(w.x, p.h, w.z); colors.push(vcol.r, vcol.g, vcol.b);
       }
     };
