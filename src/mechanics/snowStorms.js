@@ -104,11 +104,12 @@ export function createSnowStorms({ scene, heightAt, createParticles, density = 1
     return list;
   }
 
-  // Best-candidate sampling: among many random valid spots, take the one farthest from every other device
-  // (the map edge counts as a neighbour, so devices don't pile up along the border). This spreads them evenly.
+  // Best-candidate sampling: among many random valid spots, take the one farthest from every other device. This spreads
+  // them evenly. The map edge counts as a neighbour too, keeping most devices inland; about one in four only feels it
+  // faintly and may sit right up near the border, so walking along the edge can start a storm as well.
   function pickSpot(ctx) {
     const clear = keepClear(ctx);
-    const R = world.radius - 18;
+    const R = world.radius - 13, edgy = rng() < 0.25, edgeK = edgy ? 14 : 2, edgeC = edgy ? 40 : 20;
     let best = null, bestScore = -Infinity;
     for (let i = 0; i < 400; i++) {
       const a = rng() * Math.PI * 2, rr = Math.sqrt(rng()) * R;
@@ -116,7 +117,7 @@ export function createSnowStorms({ scene, heightAt, createParticles, density = 1
       if (!world.isValidSpot(x, z) || insideColliders(x, z, 1.5, world.colliders)) continue;
       let slack = Infinity;
       for (const c of clear) slack = Math.min(slack, Math.hypot(x - c.x, z - c.z) - c.d);
-      let spread = (R - rr) * 2 + 20;
+      let spread = (R - rr) * edgeK + edgeC;
       for (const d of devices) if (d.placed) spread = Math.min(spread, Math.hypot(x - d.x, z - d.z));
       const score = slack >= 0 ? spread : slack - 1e5; // keeping clear comes first, then spreading out
       if (score > bestScore) { bestScore = score; best = { x, z }; }
