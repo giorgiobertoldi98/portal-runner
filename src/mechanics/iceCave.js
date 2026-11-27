@@ -31,9 +31,7 @@ const TW = 1.5;        // tunnel half-width
 const LC = 13.5;       // cave chamber centre (u)
 const RC = 4.6;        // cave chamber radius
 const CS = 0.2;        // heightfield cell size (fine, so the ledge's edges are smooth to walk along)
-const RING = 2.5;      // the terrain is cut away this far past the rim too: the pit's own surface fades into the snow there
-const OUTER = RP + RING;
-const U0 = -OUTER - 0.5, U1 = LC + RC + 1.2, V0 = -OUTER - 0.5, V1 = OUTER + 0.5;
+const U0 = -RP - 1, U1 = LC + RC + 1.2, V0 = -RP - 1, V1 = RP + 1;
 const NU = Math.ceil((U1 - U0) / CS) + 1, NV = Math.ceil((V1 - V0) / CS) + 1;
 const STEEP = CS * 1.1; // a cell whose corners differ by more than this is a wall
 const PROBE = 0.32;     // how far around the explorer's centre the walls are felt
@@ -152,7 +150,7 @@ function createMapItem() {
   return { group: g, scroll, halo };
 }
 
-export function createIceCave({ scene, groundAt, groundColor, sites, holeUniform, colliders, density = 1 }) {
+export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, density = 1 }) {
   const cfg = GLACIER;
   let site = null;          // { x, z, y0, rot, c, s }
   let H = new Float32Array(NU * NV), walk = new Uint8Array((NU - 1) * (NV - 1));
@@ -374,9 +372,10 @@ export function createIceCave({ scene, groundAt, groundColor, sites, holeUniform
     const pos = [], col = [];
     const snow = new THREE.Color(0xe3ebf4), caveFloor = new THREE.Color(0x8496ad), wallA = new THREE.Color(0x7fb6db), wallB = new THREE.Color(0x3f6f99);
     const vein = new THREE.Color(0xb4def5), icePatch = new THREE.Color(0x8fb4d6), cc = new THREE.Color();
-    // keep the part of a polygon where f <= 0 (heights follow the edges)
-    const clip = (poly, f) => {
-      const out = [];
+    // up at the rim the terrain takes over exactly at the opening's edge (it is cut away inside it), so the pit's own
+    // surface stops there too instead of overlapping it in grid steps
+    const clipRim = (poly) => {
+      const out = [], f = (p) => Math.hypot(p.u, p.v) - (RP + 0.01);
       for (let k = 0; k < poly.length; k++) {
         const p = poly[k], q = poly[(k + 1) % poly.length], fp = f(p), fq = f(q);
         if (fp <= 0) out.push(p);
@@ -384,34 +383,26 @@ export function createIceCave({ scene, groundAt, groundColor, sites, holeUniform
       }
       return out;
     };
-    // one flat piece of floor, ledge or snow, coloured by how deep it lies. Up at ground level the pit's surface
-    // reaches RING metres past the rim (the terrain is cut away that far) and stops exactly where the terrain takes over,
-    // instead of overlapping it in grid steps; over the last stretch its colour blends, corner by corner, into the
-    // terrain's own, so there is no edge.
-    const gc = new THREE.Color(), vcol = new THREE.Color();
+    // one flat piece of floor, ledge or snow, coloured by how deep it lies
     const face = (piece, out, colors) => {
-      const top = Math.max(...piece.map((p) => p.h)) > site.y0 - 1;
-      const poly = top ? clip(piece, (p) => Math.hypot(p.u, p.v) - (OUTER + 0.01)) : piece;
+      const poly = Math.max(...piece.map((p) => p.h)) > site.y0 - 1 ? clipRim(piece) : piece;
       if (poly.length < 3) return;
       let lo = Infinity, uc = 0, vc = 0;
       for (const p of poly) { lo = Math.min(lo, p.h); uc += p.u / poly.length; vc += p.v / poly.length; }
       const depth = clamp01((site.y0 - lo) / D);
       const rc = Math.hypot(uc, vc);
       if (rc > RP && depth > 0.9) cc.copy(caveFloor); else cc.copy(snow).lerp(caveFloor, depth * 0.55);
-      if (rc < RP || top) {
-        // in the shaft and round its rim: patches of bare blue ice and pale drifts, so no part is one smooth sheet
+      if (rc < RP) {
+        // in the shaft: patches of bare blue ice and pale drifts, so no part is one smooth sheet. Up at the rim (the
+        // landing) they fade out into plain snow, like the snow outside.
+        const k = 1 - (1 - smooth01((RP - rc) / 1.5)) * (1 - smooth01(depth / 0.15));
         const n = fbm(rockNoise, uc * 0.9 - 70, vc * 0.9 + 15, 3), m = rockNoise(uc * 3.1, vc * 3.1);
-        cc.lerp(icePatch, 0.45 * smooth01((n - 0.05) / 0.35)).lerp(snow, 0.25 * smooth01(-n / 0.4));
-        cc.multiplyScalar(0.95 + 0.07 * m);
+        cc.lerp(icePatch, k * 0.45 * smooth01((n - 0.05) / 0.35)).lerp(snow, k * 0.25 * smooth01(-n / 0.4));
+        cc.multiplyScalar(1 + k * (0.07 * m - 0.05));
       }
       for (let k = 1; k < poly.length - 1; k++) for (const p of [poly[0], poly[k], poly[k + 1]]) {
         const w = toWorld(p.u, p.v);
-        vcol.copy(cc);
-        if (top) {   // from 1.5 m inside the rim to the ring's outer edge, into the terrain's colour
-          const r = Math.hypot(p.u, p.v);
-          if (r > RP - 1.5) vcol.lerp(groundColor(gc, w.x, w.z), smooth01((r - RP + 1.5) / (RING + 1.5)));
-        }
-        out.push(w.x, p.h, w.z); colors.push(vcol.r, vcol.g, vcol.b);
+        out.push(w.x, p.h, w.z); colors.push(cc.r, cc.g, cc.b);
       }
     };
     // where the wall really stands between a low and a high corner of a grid triangle (the shape's own edge, found by
@@ -446,18 +437,9 @@ export function createIceCave({ scene, groundAt, groundColor, sites, holeUniform
       const hs = [H[ia], H[id], H[ib], H[ic]];
       walk[j * (NU - 1) + i] = Math.max(...hs) - Math.min(...hs) <= STEEP ? 1 : 0;
       const u = U0 + i * CS, v = V0 + j * CS;
-      const near = (uu, vv) => inRegion(uu, vv) || Math.hypot(uu, vv) < OUTER;
-      if (!(near(u, v) || near(u + CS, v) || near(u, v + CS) || near(u + CS, v + CS))) continue;
+      if (!(inRegion(u, v) || inRegion(u + CS, v) || inRegion(u, v + CS) || inRegion(u + CS, v + CS))) continue;
       const a = N(i, j), d = N(i + 1, j), b = N(i, j + 1), c = N(i + 1, j + 1);
       tri(a, b, d); tri(d, b, c);
-      // over the tunnel, in the ring where the terrain is cut away, the snow above it (from the rim outward only)
-      if (inFootprint(u + CS / 2, v + CS / 2, CS) && Math.hypot(u + CS / 2, v + CS / 2) > RP - CS && Math.hypot(u + CS / 2, v + CS / 2) < OUTER + CS) {
-        const G = (p) => { const w = toWorld(p.u, p.v); return { u: p.u, v: p.v, h: groundAt(w.x, w.z) }; };
-        for (const t of [[a, b, d], [d, b, c]]) {
-          const lid = clip(t.map(G), (p) => RP + 0.01 - Math.hypot(p.u, p.v));
-          if (lid.length >= 3) face(lid, pos, col);
-        }
-      }
     }
     pit.geometry.dispose();
     const g = new THREE.BufferGeometry();
@@ -742,7 +724,7 @@ export function createIceCave({ scene, groundAt, groundColor, sites, holeUniform
       const rot = rngR() * TWO_PI;
       site = { x: pick.x, z: pick.z, y0: groundAt(pick.x, pick.z), rot, c: Math.cos(rot), s: Math.sin(rot) };
       buildPit();
-      holeUniform.value.set(site.x, site.z, OUTER);
+      holeUniform.value.set(site.x, site.z, RP);
       pit.visible = walls.visible = rubble.visible = cave.visible = true;
       cave.position.set(site.x, site.y0, site.z);
       cave.rotation.y = -rot;

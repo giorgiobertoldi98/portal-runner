@@ -5,7 +5,7 @@
 // somewhere new every run, shows the gems instead (see mechanics/iceCave.js).
 import * as THREE from 'three';
 import { mulberry32, createNoise2D, fbm, ridged } from '../engine/noise.js';
-import { createTerrain, gridHeight, gridColor, withFlats, edgeFactor, slopeAt } from '../engine/terrain.js';
+import { createTerrain, gridHeight, withFlats, edgeFactor, slopeAt } from '../engine/terrain.js';
 import { createSky, createLighting, createHorizonRing, createParticles, skyFollower } from '../engine/environment.js';
 import { archPath, archTube } from '../engine/shapes.js';
 import { smoothstep, mergeParts, m4, instanced, flatMat, scatterPoints, fogColor } from '../engine/utils.js';
@@ -663,7 +663,7 @@ function build({ quality }) {
   const driftFx = createParticles({ count: Math.floor(500 * density), area: [70, 2.5, 70], color: 0xffffff, size: 0.14, opacity: 0.6, velocity: [7, 0.2, 2.5], sway: 1.5 });
   add(snowFx.points); add(driftFx.points);
   driftFx.points.position.y = 0;
-  const cave = createIceCave({ scene, groundAt: heightAt, groundColor: gridColor(terrain, TERRAIN_SIZE, quality.terrainSegments), sites: caveSites, holeUniform, colliders, density });
+  const cave = createIceCave({ scene, groundAt: heightAt, sites: caveSites, holeUniform, colliders, density });
   // the ground everything stands on: the ice hole where it is open, the terrain everywhere else
   const worldHeight = (x, z) => cave.heightAt(x, z) ?? heightAt(x, z);
   const note = createNotePickup({ scene, heightAt: worldHeight });
