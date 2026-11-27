@@ -167,8 +167,8 @@ Why these values:
 - Hunters walk round rocks, trees and ruins rather than pressing into them, and never squeeze into gaps too narrow for them: they take the nearer way round and keep to it, trying the other side only if it leads nowhere.
 - **Portal safe zone (every world)**: within 13 m of the portal (beyond the 7.5 m insertion range, so you can always feed gems in safely), no hunter can follow you, whatever its distance or state, storms included. While you're inside, it stops chasing, can't enter the zone and can't reach you from its edge, and the danger cues are off. Once you step out, its normal behaviour resumes straight away. Each hunter decides what it does meanwhile (the Yeti goes back to searching, heading away from you; plain-chase hunters walk away from the portal). A radius of 0 turns the safe zone off.
 - You start each level (and respawn after being caught) facing the middle of the world, just inside the edge of the safe zone (1.5 m in from the ring), never on the portal platform. If that spot isn't walkable, the start swings around the portal at the same distance, then a little closer.
-- The zone is marked by a faint ring on the ground in the portal's glow colour. It follows the terrain, breathes gently and fades out when the portal opens.
-- The hunter vanishes once the portal is activated (last needed gem inserted).
+- The zone is marked by a faint ring on the ground in the portal's glow colour. It follows the terrain, breathes gently and stays once the portal opens, since the zone still shelters you.
+- The hunter stays once the portal is activated (last needed gem inserted): the safe zone still shelters you, but step out of it before going through and the hunter comes after you as usual.
 - Danger cues (red screen-edge vignette and heartbeat) tell you the hunter is close. Each hunter defines what "close" means; by default it is within 55 m, getting stronger as it nears.
 
 ### Glacier — the Yeti

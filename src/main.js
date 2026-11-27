@@ -768,11 +768,7 @@ class Game {
         const done = portal.insert();
         if (!done && w.mechanics?.onGemInserted) w.mechanics.onGemInserted({ player: P, audio: this.audio, hud: this.hud, gems: this.groundGemSpots(), portal: { x: portal.position.x, z: portal.position.z }, base: this.base });
         if (done) {
-          portal.activate();
-          // the hunter vanishes: you are free to roam until you choose to step through
-          w.monster.active = false;
-          w.monster.object.visible = false;
-          this.hud.setDanger(0);
+          portal.activate();   // the hunter stays: the safe zone still shelters you until you step through
           this.audio.activate();
         }
         this.updateGemHud();
