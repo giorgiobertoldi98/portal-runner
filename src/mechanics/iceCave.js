@@ -183,6 +183,7 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
   scene.add(cave);
   const rng = mulberry32(911);
   const lp = []; // local colliders for the cave props: { u, v, r }
+  const dm0 = new THREE.Object3D();
   {
     // ceiling: a heightfield facing down, over the tunnel and chamber
     const pos = [], col = [];
@@ -227,58 +228,105 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
     const icGeo = new THREE.ConeGeometry(0.09, 1, 5); icGeo.rotateX(Math.PI); icGeo.translate(0, -0.5, 0);
     const iceGlow = new THREE.MeshStandardMaterial({ color: 0xbdefff, emissive: 0x3aa8e0, emissiveIntensity: 0.7, roughness: 0.1, flatShading: true });
     cave.add(instanced(icGeo, iceGlow, ics, { castShadow: false }));
-    const crys = [];
-    for (let k = 0; k < 7; k++) {
-      const a = -2.3 + k * 0.75 + (rng() - 0.5) * 0.3;
-      const cu = LC + Math.cos(a) * (RC - 0.35), cv = Math.sin(a) * (RC - 0.35);
-      for (let n = 0; n < 4; n++) {
-        const s = 0.18 + rng() * 0.3;
-        crys.push({ x: cu + (rng() - 0.5) * 0.6, y: -D + s * 1.2, z: cv + (rng() - 0.5) * 0.6, s, sy: s * (2 + rng() * 2), rx: (rng() - 0.5) * 0.8, rz: (rng() - 0.5) * 0.8, ry: rng() * 3 });
+    // glowing ice crystals growing out of the room's walls: a few clusters of uneven size, spaced unevenly (clear of
+    // the camp), some low, some higher up, each shard leaning out at its own angle and a few loose ones on their own
+    const crystals = [], up = new THREE.Vector3(0, 1, 0), dir = new THREE.Vector3(), q = new THREE.Quaternion();
+    const shard = (a, h, len, w, lean, twist) => {
+      const r = RC - 0.15 - h * 0.08, cx = Math.cos(a), cz = Math.sin(a);
+      dir.set(-cx * Math.sin(lean), Math.cos(lean), -cz * Math.sin(lean)).applyAxisAngle(up, twist).normalize();
+      q.setFromUnitVectors(up, dir);
+      crystals.push({ x: LC + cx * r, y: -D + h, z: cz * r, q: q.clone(), sx: w * (0.7 + rng() * 0.5), sy: len, sz: w * (0.7 + rng() * 0.5) });
+    };
+    for (const [a0, n, h0] of [[-2.0, 5, 0], [-1.2, 3, 0.9], [-0.3, 6, 0], [0.25, 2, 1.5], [1.5, 2, 1.4], [2.0, 4, 0]]) {
+      for (let k = 0; k < n; k++) {
+        const big = k === 0 ? 1.6 : 1;
+        shard(a0 + (rng() - 0.5) * 0.35, h0 + rng() * 0.25, (0.35 + rng() * 0.7) * big, (0.08 + rng() * 0.07) * big, 0.35 + rng() * 0.75, (rng() - 0.5) * 1.2);
       }
     }
-    cave.add(instanced(new THREE.OctahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0xc9f6ff, emissive: 0x29c0ff, emissiveIntensity: 1.1, roughness: 0.1, flatShading: true }), crys, { castShadow: false }));
-    cave.add(glowPoints(crys.filter((_, i) => i % 4 === 0).map((c) => ({ x: c.x, y: c.y + 0.3, z: c.z })), { color: 0x6fdcff, size: 2.4, opacity: 0.45 }));
+    for (const a of [-1.6, 0.55, 1.15]) shard(a, rng() * 1.2, 0.3 + rng() * 0.3, 0.07, 0.6 + rng() * 0.6, (rng() - 0.5) * 1.5);   // loose ones
+    // a five-sided prism, narrowing to a point
+    const shardGeo = new THREE.CylinderGeometry(0.55, 1, 1, 5, 1).translate(0, 0.5, 0);
+    const tipGeo = new THREE.ConeGeometry(0.55, 0.45, 5).translate(0, 1.22, 0);
+    const shardMesh = new THREE.InstancedMesh(mergeParts([{ geo: shardGeo, color: 0xffffff }, { geo: tipGeo, color: 0xffffff }]),
+      new THREE.MeshStandardMaterial({ color: 0xc9f6ff, emissive: 0x29c0ff, emissiveIntensity: 1.05, roughness: 0.1, flatShading: true }), crystals.length);
+    crystals.forEach((sh, i) => { dm0.position.set(sh.x, sh.y, sh.z); dm0.quaternion.copy(sh.q); dm0.scale.set(sh.sx, sh.sy, sh.sz); dm0.updateMatrix(); shardMesh.setMatrixAt(i, dm0.matrix); });
+    shardMesh.instanceMatrix.needsUpdate = true; shardMesh.computeBoundingSphere();
+    cave.add(shardMesh);
+    cave.add(glowPoints(crystals.filter((sh) => sh.sy > 0.6).map((sh) => ({ x: sh.x, y: sh.y + 0.35, z: sh.z })), { color: 0x6fdcff, size: 2.4, opacity: 0.4 }));
 
-    // the abandoned explorers' camp: crates (the map lies on the near one), bedroll, lantern, pickaxe, rope, pack
-    const fy = -D;
+    // what's left of an explorer's camp, long cold: a weathered crate (the map lies on it) and a smaller one with the
+    // lantern still lit, a collapsed lean-to against the wall with a frosted sleeping bag under it, a ring of stones
+    // around a dead fire, an ice axe left standing in the floor and a frozen coil of rope. Frost has settled on all of it.
+    const fy = -D, FROST = 0xe8eef5;
     const camp = mergeParts([
-      { geo: new THREE.BoxGeometry(0.9, 0.8, 0.9), color: 0x8a5a33, matrix: m4(0, 0.4, 0, 0, 0.2, 0) },
-      { geo: new THREE.BoxGeometry(0.92, 0.08, 0.92), color: 0xf2f6fb, matrix: m4(0, 0.82, 0, 0, 0.2, 0) },
-      { geo: new THREE.BoxGeometry(0.8, 0.7, 0.8), color: 0x9c6a3c, matrix: m4(0.95, 0.35, 0.3, 0, -0.3, 0) },
-      { geo: new THREE.BoxGeometry(0.7, 0.6, 0.7), color: 0x8a5a33, matrix: m4(0.9, 1.0, 0.25, 0, 0.5, 0) },
-      // bedroll
-      { geo: (() => { const c = new THREE.CylinderGeometry(0.28, 0.28, 1.9, 8); c.rotateX(Math.PI / 2); return c; })(), color: 0x3d6b4f, matrix: m4(-1.9, 0.2, 1.7, 0, 0.35, 0) },
-      { geo: new THREE.BoxGeometry(0.75, 0.1, 1.6), color: 0x2e4e3a, matrix: m4(-1.6, 0.05, 0.6, 0, 0.35, 0) },
-      // backpack
-      { geo: new THREE.BoxGeometry(0.55, 0.75, 0.35), color: 0xc8682b, matrix: m4(-2.6, 0.38, -1.0, 0.15, 0.8, 0) },
-      { geo: new THREE.BoxGeometry(0.45, 0.25, 0.2), color: 0x9b4f20, matrix: m4(-2.5, 0.25, -0.8, 0.15, 0.8, 0) },
-      // rope coil
-      { geo: new THREE.TorusGeometry(0.32, 0.07, 5, 14), color: 0xb79a63, matrix: m4(1.0, 0.07, -1.3, Math.PI / 2, 0, 0) },
-      { geo: new THREE.TorusGeometry(0.24, 0.07, 5, 14), color: 0xa58855, matrix: m4(1.0, 0.18, -1.3, Math.PI / 2, 0, 0) },
-      // pickaxe leaning on the wall
-      { geo: new THREE.CylinderGeometry(0.035, 0.04, 1.4, 5), color: 0x5c3a22, matrix: m4(2.9, 0.7, -2.6, 0.3, 0, 0.25) },
-      { geo: new THREE.BoxGeometry(0.75, 0.08, 0.1), color: 0x6b7480, matrix: m4(3.07, 1.36, -2.43, 0.3, 0, 0.25) },
-      // lantern on the upper crate
-      { geo: new THREE.CylinderGeometry(0.13, 0.15, 0.06, 8), color: 0x2b2b2b, matrix: m4(0.9, 1.33, 0.25) },
-      { geo: new THREE.CylinderGeometry(0.13, 0.13, 0.04, 8), color: 0x2b2b2b, matrix: m4(0.9, 1.62, 0.25) },
-      { geo: new THREE.TorusGeometry(0.08, 0.015, 4, 10), color: 0x2b2b2b, matrix: m4(0.9, 1.7, 0.25) },
+      { geo: new THREE.BoxGeometry(0.85, 0.78, 0.85), color: 0x7a5534, matrix: m4(0, 0.39, 0, 0, 0.2, 0) },
+      { geo: new THREE.BoxGeometry(0.87, 0.05, 0.87), color: FROST, matrix: m4(0, 0.8, 0, 0, 0.2, 0) },
+      { geo: new THREE.BoxGeometry(0.6, 0.06, 0.06), color: 0x5e4128, matrix: m4(0, 0.55, 0.43, 0, 0.2, 0) },   // a slat
+      { geo: new THREE.BoxGeometry(0.55, 0.5, 0.55), color: 0x6e4c2f, matrix: m4(0.85, 0.25, 0.35, 0, -0.35, 0.03) },
+      { geo: new THREE.BoxGeometry(0.57, 0.04, 0.57), color: FROST, matrix: m4(0.85, 0.52, 0.35, 0, -0.35, 0.03) },
+      // the lantern on the small crate
+      { geo: new THREE.CylinderGeometry(0.11, 0.13, 0.05, 8), color: 0x2b2b2b, matrix: m4(0.85, 0.57, 0.35) },
+      { geo: new THREE.CylinderGeometry(0.11, 0.11, 0.04, 8), color: 0x2b2b2b, matrix: m4(0.85, 0.85, 0.35) },
+      { geo: new THREE.TorusGeometry(0.07, 0.014, 4, 10), color: 0x2b2b2b, matrix: m4(0.85, 0.93, 0.35) },
     ]);
     const campG = new THREE.Group();
     campG.position.set(LC + 1.4, fy, -0.6);
     campG.rotation.y = 0.4;
-    const campMesh = new THREE.Mesh(camp, flatMat({ vertexColors: true }));
+    const campMat = flatMat({ vertexColors: true });
+    const campMesh = new THREE.Mesh(camp, campMat);
     campMesh.receiveShadow = true;
     campG.add(campMesh);
-    const flame = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.26, 8), new THREE.MeshBasicMaterial({ color: 0xffcf7a, toneMapped: false }));
-    flame.position.set(0.9, 1.48, 0.25); campG.add(flame);
-    campG.add(glowPoints([{ x: 0.9, y: 1.48, z: 0.25 }], { color: 0xffa94a, size: 5, opacity: 0.6 }));
+    const flame = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.22, 8), new THREE.MeshBasicMaterial({ color: 0xffcf7a, toneMapped: false }));
+    flame.position.set(0.85, 0.71, 0.35); campG.add(flame);
+    campG.add(glowPoints([{ x: 0.85, y: 0.71, z: 0.35 }], { color: 0xffa94a, size: 4.5, opacity: 0.6 }));
     cave.add(campG);
+    // the rest of the camp, placed in the room's own frame (du, dv from its middle)
+    const at = (du, dv) => [LC + du, dv];
+    const [fu, fv] = at(0.1, 1.45), [au, av] = at(-1.0, -2.6), [ru, rv] = at(2.7, -1.9);
+    // the tent: pitched against the wall, its far end collapsed onto the floor (built along its ridge, then placed)
+    const tA = 0.7, tu = LC + Math.cos(tA) * 4.0, tv = Math.sin(tA) * 4.0;
+    const T = m4(tu, 0, tv, 0, Math.PI - tA, 0), slump = m4(1.45, 0.42, 0, 0, 0, -0.55);
+    const inTent = (...ms) => ms.reduce((acc, m) => acc.multiply(m), T.clone());
+    const fire = [];
+    for (let k = 0; k < 8; k++) { const a = k * 0.785 + rng() * 0.3; fire.push({ geo: new THREE.DodecahedronGeometry(0.11 + rng() * 0.05, 0), color: k % 3 ? 0x6b717c : 0x585e69, matrix: m4(fu + Math.cos(a) * 0.36, 0.06, fv + Math.sin(a) * 0.36, rng(), rng(), rng(), 1, 0.7, 1) }); }
+    const CANVAS = 0xa98a5e, CANVAS2 = 0x957750, POLE = 0x5c3a22;
+    const rest = mergeParts([
+      // the half still standing: a pole at the wall, the ridge, the two sides down to the floor
+      { geo: new THREE.CylinderGeometry(0.03, 0.035, 0.95, 5), color: POLE, matrix: inTent(m4(0.03, 0.47, 0)) },
+      { geo: new THREE.CylinderGeometry(0.025, 0.025, 1.05, 5), color: POLE, matrix: inTent(m4(0.5, 0.95, 0, 0, 0, Math.PI / 2)) },
+      { geo: new THREE.BoxGeometry(1.05, 0.025, 1.18), color: CANVAS, matrix: inTent(m4(0.5, 0.475, 0.35, 0.94, 0, 0)) },
+      { geo: new THREE.BoxGeometry(1.05, 0.025, 1.18), color: CANVAS2, matrix: inTent(m4(0.5, 0.475, -0.35, -0.94, 0, 0)) },
+      { geo: new THREE.BoxGeometry(1.0, 0.04, 0.22), color: FROST, matrix: inTent(m4(0.5, 0.97, 0)) },
+      // the half that gave way: its canvas slumped towards the floor, its pole fallen beside it
+      { geo: new THREE.BoxGeometry(1.0, 0.025, 1.1), color: CANVAS, matrix: inTent(slump, m4(0, -0.12, 0.3, 0.45, 0, 0)) },
+      { geo: new THREE.BoxGeometry(1.0, 0.025, 1.1), color: CANVAS2, matrix: inTent(slump, m4(0, -0.12, -0.3, -0.45, 0, 0)) },
+      { geo: new THREE.BoxGeometry(0.9, 0.04, 0.3), color: FROST, matrix: inTent(slump, m4(0, 0.02, 0)) },
+      { geo: new THREE.CylinderGeometry(0.03, 0.035, 0.95, 5), color: POLE, matrix: inTent(m4(1.7, 0.04, -0.85, Math.PI / 2, 0.5, 0)) },
+      // the sleeping bag beside it, frosted
+      { geo: (() => { const c = new THREE.CapsuleGeometry(0.2, 1.1, 2, 6); c.rotateZ(Math.PI / 2); return c; })(), color: 0x3f5f78, matrix: inTent(m4(1.1, 0.16, 0.78, 0, -0.15, 0, 1, 0.7, 1)) },
+      { geo: new THREE.BoxGeometry(0.85, 0.04, 0.22), color: FROST, matrix: inTent(m4(1.1, 0.3, 0.78, 0, -0.15, 0)) },
+      // a dead fire: stones round charred sticks and a little ash
+      ...fire,
+      { geo: new THREE.CylinderGeometry(0.26, 0.3, 0.03, 8), color: 0x4a4c52, matrix: m4(fu, 0.015, fv) },
+      { geo: new THREE.CylinderGeometry(0.03, 0.035, 0.55, 5), color: 0x2a2320, matrix: m4(fu, 0.07, fv, Math.PI / 2, 0.4, 0) },
+      { geo: new THREE.CylinderGeometry(0.03, 0.035, 0.5, 5), color: 0x332a24, matrix: m4(fu + 0.05, 0.1, fv - 0.04, Math.PI / 2, 1.9, 0) },
+      // an ice axe left standing in the floor
+      { geo: new THREE.CylinderGeometry(0.025, 0.03, 0.85, 5), color: 0x5c3a22, matrix: m4(au, 0.4, av, 0.12, 0, 0.08) },
+      { geo: new THREE.BoxGeometry(0.42, 0.06, 0.06), color: 0x7b848f, matrix: m4(au + 0.035, 0.83, av + 0.05, 0.12, 0.6, 0.08) },
+      // a coil of rope, stiff with frost
+      { geo: new THREE.TorusGeometry(0.28, 0.055, 5, 14), color: 0xa89470, matrix: m4(ru, 0.06, rv, Math.PI / 2, 0, 0) },
+      { geo: new THREE.TorusGeometry(0.2, 0.05, 5, 14), color: 0xb7a786, matrix: m4(ru + 0.04, 0.15, rv, Math.PI / 2 - 0.1, 0, 0) },
+    ]);
+    const restMesh = new THREE.Mesh(rest, campMat);
+    restMesh.position.y = fy; restMesh.receiveShadow = true;
+    cave.add(restMesh);
     // where things stand, in the local frame (for colliders and the map's crate)
     const local = (x, z) => { const c = Math.cos(0.4), s = Math.sin(0.4); return { u: LC + 1.4 + x * c + z * s, v: -0.6 - x * s + z * c }; };
-    const crate = local(0, 0), crates2 = local(0.95, 0.3), bed = local(-1.8, 1.3), pack = local(-2.6, -1.0);
-    lp.push({ ...crate, r: 0.55 }, { ...crates2, r: 0.5 }, { ...bed, r: 0.55 }, { ...pack, r: 0.35 });
-    cave.userData.crate = { u: crate.u, v: crate.v, y: 0.86 };
-    cave.userData.lantern = { ...local(0.9, 0.25), y: 1.6 };
+    const crate = local(0, 0), crate2 = local(0.85, 0.35);
+    const tentMid = { u: tu - Math.cos(tA) * 0.95, v: tv - Math.sin(tA) * 0.95 };
+    lp.push({ ...crate, r: 0.55 }, { ...crate2, r: 0.4 }, { ...tentMid, r: 0.85 }, { u: fu, v: fv, r: 0.4 });
+    cave.userData.crate = { u: crate.u, v: crate.v, y: 0.82 };
+    cave.userData.lantern = { ...crate2, y: 0.95 };
 
     // a mound of snowy rock over the cave, so the ground above it looks like what it is: something you can't walk on
     const mound = [];
@@ -377,7 +425,7 @@ export function createIceCave({ scene, groundAt, sites, holeUniform, colliders, 
     const C = (hex) => new THREE.Color(hex);
     const snow = C(0xe3ebf4), packed = C(0xc2d2e3), floorIce = C(0x93b4d0), icePatch = C(0x7fa9cc), drift = C(0xeef3f9);
     const crust = C(0xdde8f2), paleIce = C(0xa6d0ea), wallA = C(0x7fb6db), wallB = C(0x3f6f99), vein = C(0xb4def5);
-    const stone = C(0x868c98), stoneDark = C(0x666d7a), frost = C(0xc3d0dd), slate = C(0x515a68), slateLight = C(0x6e7786);
+    const stone = C(0x868c98), stoneDark = C(0x666d7a), frost = C(0xc3d0dd), slate = C(0x485366), slateLight = C(0x626e82);
     const cc = new THREE.Color(), c2 = new THREE.Color();
     const between = (out, stops, t) => {   // stops = colours evenly along t = 0..1
       const x = clamp01(t) * (stops.length - 1), i = Math.min(stops.length - 2, Math.floor(x));
