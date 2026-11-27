@@ -267,13 +267,7 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 }
 @keyframes worlds-drift { from { background-position: 0% 50%; } to { background-position: 300% 50%; } }
 /* the tagline, handwritten like a line in the explorer's journal */
-.landing .lead { font: 600 clamp(24px, 3vw, 32px)/1.15 Caveat, 'Segoe Print', cursive; margin: 0 0 18px; max-width: 28ch; color: var(--ink); }
-/* the loop: three plain steps, each marked in a world's colour */
-.landing .loop { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 8px; font-size: 14px; line-height: 1.35; color: var(--ink); opacity: .9; }
-.landing .loop li { display: flex; align-items: center; gap: 10px; }
-.landing .loop svg { flex: none; width: 18px; height: 18px; fill: currentColor; color: var(--w0, #8fe8ff); }
-.landing .loop li:nth-child(2) svg { color: var(--w1, #e07bff); }
-.landing .loop li:nth-child(3) svg { color: var(--w2, #ffc35c); }
+.landing .lead { font: 600 clamp(24px, 3vw, 32px)/1.15 Caveat, 'Segoe Print', cursive; margin: 0 0 24px; max-width: 28ch; color: var(--ink); }
 .landing .actions { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
 .landing .actions .ghost { margin-top: 0; padding-inline: 22px; }
 /* Controls: a quiet text link under the buttons, less weight than Settings */
@@ -297,7 +291,6 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
 
 @media (max-height: 640px) {
   .landing .title { font-size: clamp(36px, 10vw, 60px); }
-  .landing .loop { gap: 5px; margin-bottom: 18px; font-size: 13px; }
 }
 /* phones held sideways: very little height, so the title follows the height and the spacing tightens */
 @media (max-height: 480px) {
@@ -305,7 +298,6 @@ button.ghost { margin-top: 8px; background: transparent; color: #fff; border: 1p
   .landing .title { font-size: clamp(28px, 11vh, 60px); margin-bottom: 8px; }
   .landing .lead { font-size: 23px; margin-bottom: 16px; }
   .menu-link { margin-top: 10px; font-size: 15px; }
-  .landing .loop { display: none; } /* the tagline already says it; longer languages wouldn't fit both */
 }
 @media (prefers-reduced-motion: reduce) { .landing .title, .menu-art * { animation: none !important; } }
 

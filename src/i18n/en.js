@@ -5,10 +5,6 @@ export default {
 
   menu: {
     lead: 'Explore worlds, hunt gems, jump into portals… but be careful on your way',
-    loopLabel: 'How a world works',
-    loop1: 'Hunt the dark gems hidden in every world.',
-    loop2: 'Carry them to the portal. Each one slows you down.',
-    loop3: 'Fill the portal and step through to the next world.',
     start: 'Begin the expedition',
     settings: 'Settings',
     controls: 'Controls',
