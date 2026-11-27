@@ -101,6 +101,7 @@ export default {
   toast: {
     call: 'Stand still… and listen. They answer.',
     firstGem: 'Heavier than it looks, huh?',
+    portalOpen: 'Jump in, my friend',   // the first world's portal opening
     // the catch toast, joined with ' · '
     caught: { one: '{hunter} caught you — {count} life left', other: '{hunter} caught you — {count} lives left' },
     dropped: { one: '{count} gem dropped', other: '{count} gems dropped' },
