@@ -339,7 +339,7 @@ class Game {
     w.portal.setQuota(this.quota);
     const count = this.quota + GEMS.extraPerLevel;
     const pp = w.portal.position;
-    const portalGap = PORTAL.safeRadius + GEMS.portalClearance; // measured from the portal's centre
+    const portalGap = PORTAL.safeRadius + GEMS.portalClearances[Math.min(w.index, GEMS.portalClearances.length - 1)]; // measured from the portal's centre
     for (let i = 0; i < count; i++) {
       const avoid = [{ x: pp.x, z: pp.z, d: portalGap },...w.gems.map((g) => ({ x: g.group.position.x, z: g.group.position.z, d: 40 }))];
       const s = findSpot(this.rng, w, { avoid });
