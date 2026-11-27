@@ -47,6 +47,21 @@ export function gridHeight(fn, size, segments) {
   };
 }
 
+// The ground's colour exactly as drawn: reads createTerrain's vertex colours the way the GPU blends them across the same
+// triangles, so something drawn over the terrain can fade into it without a visible edge. Pass the terrain mesh and the
+// same size and segments.
+export function gridColor(mesh, size, segments) {
+  const N = segments + 1, cell = size / segments, half = size / 2, C = mesh.geometry.attributes.color.array;
+  return (out, x, z) => {
+    const fx = Math.min(segments - 1e-6, Math.max(0, (x + half) / cell)), fz = Math.min(segments - 1e-6, Math.max(0, (z + half) / cell));
+    const i = Math.floor(fx), j = Math.floor(fz), u = fx - i, v = fz - j;
+    const a = (j * N + i) * 3, d = (j * N + i + 1) * 3, b = ((j + 1) * N + i) * 3, c = ((j + 1) * N + i + 1) * 3;
+    const ch = (k) => (u + v <= 1 ? C[a + k] + (C[d + k] - C[a + k]) * u + (C[b + k] - C[a + k]) * v
+      : C[c + k] + (C[b + k] - C[c + k]) * (1 - u) + (C[d + k] - C[c + k]) * (1 - v));
+    return out.setRGB(ch(0), ch(1), ch(2));
+  };
+}
+
 // Flatten the terrain smoothly around given spots (portals, landmarks).
 export function withFlats(base, spots, inner = 10, outer = 26) {
   const hs = spots.map((s) => ({ x: s.x, z: s.z, h: base(s.x, s.z), inner: s.inner ?? inner, outer: s.outer ?? outer }));
