@@ -775,6 +775,7 @@ class Game {
           w.monster.object.visible = false;
           this.hud.setDanger(0);
           this.audio.activate();
+          if (this.level === 0) this.hud.toast(tr('toast.portalOpen'), 3200);   // only the first world's portal says it
         }
         this.updateGemHud();
       }

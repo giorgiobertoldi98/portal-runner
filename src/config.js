@@ -86,7 +86,7 @@ export const GLACIER = {
   deviceGemClearance: 6,    // …and from any gem on the ground by this much MORE than their trigger radius (so no gem sits inside a trigger zone)
   deviceAvoidPlayer: 70,    // when devices shift, none lands within this distance of you
   deviceShufflePause: 10,   // seconds after a shift during which further gem insertions don't shift the devices again
-  stormMin: 45,             // storm radius range
+  stormMin: 55,             // storm radius range
   stormMax: 80,
   stormCooldown: 4,         // seconds after a storm ends before any device can trigger again
   stormFogNear: 1,          // fog inside a storm (outside: the world's normal fog)

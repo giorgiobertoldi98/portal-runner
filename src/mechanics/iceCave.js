@@ -19,6 +19,7 @@ import { GLACIER } from '../config.js';
 import { mergeParts, m4, flatMat, instanced, softTexture, dist2D, damp } from '../engine/utils.js';
 import { glowPoints } from '../engine/props.js';
 import { mulberry32, createNoise2D, fbm } from '../engine/noise.js';
+import { tr } from '../i18n/i18n.js';
 
 // ── shape of the hole (local frame: u points from the shaft to the cave, v across) ──
 const RP = 7;          // opening radius
@@ -184,6 +185,8 @@ export function createIceCave({ scene, groundAt, groundColor, sites, holeUniform
   let mapState = 'none';    // 'cave' (on the crate) | 'held'
   let toldNoCall = false, dripTimer = 2, moanTimer = 1, camBlend = 0, boom = 1, steerSide = 0, lastCamT = 0,
     lastCam = null, hint = null, held = false, canTake = false;
+  // the voice's line on leaving the map's room: 'pending' once the map is taken there, 'told' once said (once per run)
+  let refuge = 'none';
   const keepOut = [];
 
   const toLocal = (x, z) => { const dx = x - site.x, dz = z - site.z; return { u: dx * site.c + dz * site.s, v: -dx * site.s + dz * site.c }; };
@@ -887,7 +890,7 @@ export function createIceCave({ scene, groundAt, groundColor, sites, holeUniform
       const ln = cave.userData.lantern, lw = toWorld(ln.u, ln.v);
       light.position.set(lw.x, site.y0 - D + ln.y + 0.2, lw.z);
       light.intensity = 26; light.distance = 12;
-      toldNoCall = false; dripTimer = 2; moanTimer = 1;
+      toldNoCall = false; dripTimer = 2; moanTimer = 1; refuge = 'none';
     },
 
     // ctx = { player (Vector3), audio, hud, still (seconds standing still) }
@@ -912,6 +915,14 @@ export function createIceCave({ scene, groundAt, groundColor, sites, holeUniform
           ctx.audio.tone({ freq: f * 0.5, type: 'sine', dur: 2, gain: 0.035 * k, attack: 0.6, glideTo: f * 0.38 });
         }
       }
+      // walking out of the room with the map you just took there (not with one you brought in), the voice speaks
+      if (refuge === 'pending') {
+        const L = toLocal(P.x, P.z);
+        if (Math.hypot(L.u - LC, L.v) > RC + 0.3 || P.y > site.y0 - D + 2) {
+          refuge = 'told';
+          if (ctx.hud) ctx.hud.toast(tr('glacier.refuge'), 4500);
+        }
+      }
       // cave ambience: water dripping somewhere in the dark
       if (inCave(P) && ctx.audio) {
         dripTimer -= dt;
@@ -928,6 +939,7 @@ export function createIceCave({ scene, groundAt, groundColor, sites, holeUniform
     take(ctx = {}) {
       if (!canTake || held) return false;
       api.grant();
+      if (refuge === 'none') refuge = 'pending';
       const a = ctx.audio;
       if (a) {
         a.noiseBurst({ type: 'bandpass', freq: 2600, q: 1.1, dur: 0.35, gain: 0.12, attack: 0.01, sweepTo: 1100 });
